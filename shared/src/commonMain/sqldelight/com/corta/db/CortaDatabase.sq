@@ -1,0 +1,82 @@
+import kotlin.Boolean;
+
+-- SQLCipher Setup
+CREATE TABLE Contact (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phoneNumber TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE FilterRule (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL,
+    action TEXT NOT NULL, -- "WARN", "MUTE", "BLOCK", "ALLOW"
+    isRegex INTEGER AS Boolean DEFAULT 0,
+    alias TEXT,
+    source TEXT NOT NULL DEFAULT 'USER', -- 'SUBTEL' or 'USER'
+    UNIQUE(pattern, source)
+);
+
+CREATE TABLE CallLogEntry (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    phoneNumber TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    actionTaken TEXT NOT NULL, -- "BLOCK", "MUTE", "WARN", "ALLOW"
+    duration INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE BlockedSms (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    sender TEXT NOT NULL,
+    body TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
+);
+
+CREATE TABLE SmsLogEntry (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    sender TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    actionTaken TEXT NOT NULL, -- "BLOCK", "MUTE", "WARN", "ALLOW"
+    bodyPreview TEXT NOT NULL
+);
+
+-- Initial schema setup complete. Subtel rules might be injected by domain logic or migrations.
+
+getContacts:
+SELECT * FROM Contact;
+
+getContactByPhone:
+SELECT * FROM Contact WHERE phoneNumber = ?;
+
+insertContact:
+INSERT OR REPLACE INTO Contact(name, phoneNumber) VALUES (?, ?);
+
+getRules:
+SELECT * FROM FilterRule;
+
+insertRule:
+INSERT OR REPLACE INTO FilterRule(pattern, action, isRegex, alias, source) VALUES (?, ?, ?, ?, ?);
+
+deleteRule:
+DELETE FROM FilterRule WHERE pattern = ?;
+
+deleteRulesBySource:
+DELETE FROM FilterRule WHERE source = ?;
+
+getCallLogs:
+SELECT * FROM CallLogEntry ORDER BY timestamp DESC;
+
+insertCallLog:
+INSERT INTO CallLogEntry(phoneNumber, timestamp, actionTaken, duration) VALUES (?, ?, ?, ?);
+
+getBlockedSms:
+SELECT * FROM BlockedSms ORDER BY timestamp DESC;
+
+insertBlockedSms:
+INSERT INTO BlockedSms(sender, body, timestamp) VALUES (?, ?, ?);
+
+getSmsLogs:
+SELECT * FROM SmsLogEntry ORDER BY timestamp DESC;
+
+insertSmsLog:
+INSERT INTO SmsLogEntry(sender, timestamp, actionTaken, bodyPreview) VALUES (?, ?, ?, ?);

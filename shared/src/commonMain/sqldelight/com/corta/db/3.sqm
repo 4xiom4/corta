@@ -1,0 +1,7 @@
+CREATE TABLE SmsLogEntry (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    sender TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    actionTaken TEXT NOT NULL,
+    bodyPreview TEXT NOT NULL
+);

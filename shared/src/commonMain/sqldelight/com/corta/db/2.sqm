@@ -1,0 +1,2 @@
+ALTER TABLE FilterRule ADD COLUMN source TEXT NOT NULL DEFAULT 'USER';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_filter_rule_pattern_source ON FilterRule(pattern, source);

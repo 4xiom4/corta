@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+*/build/
+gradle.properties
+
+# Android
+.android/
+local.properties
+.idea/
+*.iml
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aar
+*.jks
+*.keystore
+
+# Kotlin Multiplatform
+.kotlin/
+shared/build/
+composeApp/build/
+
+# IDE settings
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db
