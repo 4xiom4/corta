@@ -20,6 +20,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -45,9 +46,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.corta.app.ui.designsystem.CortaCategoryExploreButton
 import com.corta.app.ui.designsystem.CortaFloatingActionButton
 import com.corta.app.ui.designsystem.StitchFilterChip
+import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
 import com.corta.app.ui.theme.Handedness
 import com.corta.app.ui.theme.LocalDetailedMode
@@ -61,6 +65,7 @@ import com.corta.domain.PhoneNumberUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.corta.db.ContactGroup
 import org.koin.compose.koinInject
 
 enum class ContactCategoryFilter {
@@ -70,6 +75,21 @@ enum class ContactCategoryFilter {
     MUNICIPAL,
     OFFICIAL_600,
     PERSONAL
+}
+
+enum class ContactSourceFilter(val displayName: String) {
+    ALL("Todas las cuentas"),
+    GOOGLE("Google"),
+    WHATSAPP("WhatsApp"),
+    SIM("Tarjeta SIM"),
+    DEVICE("Teléfono local")
+}
+
+enum class ContactSortOrder(val displayName: String) {
+    NAME_ASC("Nombre (A - Z)"),
+    NAME_DESC("Nombre (Z - A)"),
+    FAVORITES_FIRST("Favoritos primero"),
+    PHONE_ONLY("Solo con teléfono")
 }
 
 enum class ContactAvatarType {
@@ -124,11 +144,104 @@ fun ContactsScreen(
     var currentFilter by remember { mutableStateOf(initialContactFilter) }
     var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
     var showCategoriesSheet by remember { mutableStateOf(false) }
+    var showRegionPicker by remember { mutableStateOf(false) }
+    var showReorderSheet by remember { mutableStateOf(false) }
     var selectedContactForOptions by remember { mutableStateOf<ClassifiedContact?>(null) }
 
-    // Pre-seeded Chilean Directory
-    val chileanDirectory = remember {
-        buildChileanDirectory()
+    val defaultOrder = remember {
+        listOf(
+            ContactCategoryFilter.PERSONAL,
+            ContactCategoryFilter.FAVORITES,
+            ContactCategoryFilter.EMERGENCIES,
+            ContactCategoryFilter.MUNICIPAL,
+            ContactCategoryFilter.OFFICIAL_600,
+            ContactCategoryFilter.ALL
+        )
+    }
+    var categoryOrder by remember {
+        val saved = prefs.getString("contact_category_order", null)
+        val list = if (saved != null) {
+            saved.split(",").mapNotNull { name ->
+                try { ContactCategoryFilter.valueOf(name) } catch (e: Exception) { null }
+            }
+        } else emptyList()
+        mutableStateOf(if (list.size == defaultOrder.size) list else defaultOrder)
+    }
+
+    var selectedRegion by remember {
+        val savedCode = prefs.getString("user_selected_region", ChileanRegion.ALL.code)
+        mutableStateOf(ChileanRegion.fromCode(savedCode))
+    }
+
+    var selectedComuna by remember {
+        mutableStateOf(prefs.getString("user_selected_comuna", null))
+    }
+
+    val contactGroups by cortaRepository.observeContactGroups().collectAsState(initial = emptyList())
+    var selectedGroup by remember { mutableStateOf<ContactGroup?>(null) }
+    var groupMemberIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(selectedGroup) {
+        val grp = selectedGroup
+        groupMemberIds = if (grp != null) {
+            withContext(Dispatchers.IO) {
+                cortaRepository.getGroupMembers(grp.id).toSet()
+            }
+        } else emptySet()
+    }
+
+    var currentSourceFilter by remember { mutableStateOf(ContactSourceFilter.ALL) }
+    var currentSortOrder by remember {
+        val savedSort = prefs.getString("contact_sort_order", ContactSortOrder.NAME_ASC.name)
+        mutableStateOf(try { ContactSortOrder.valueOf(savedSort ?: ContactSortOrder.NAME_ASC.name) } catch (e: Exception) { ContactSortOrder.NAME_ASC })
+    }
+
+    val sourceCounts = remember(rawContacts) {
+        val total = rawContacts.size
+        val google = rawContacts.count { it.source.equals("GOOGLE", ignoreCase = true) }
+        val wa = rawContacts.count { it.source.equals("WHATSAPP", ignoreCase = true) }
+        val sim = rawContacts.count { it.source.equals("SIM", ignoreCase = true) }
+        val dev = rawContacts.count { it.source.equals("DEVICE", ignoreCase = true) || it.source.isBlank() }
+        mapOf(
+            ContactSourceFilter.ALL to total,
+            ContactSourceFilter.GOOGLE to google,
+            ContactSourceFilter.WHATSAPP to wa,
+            ContactSourceFilter.SIM to sim,
+            ContactSourceFilter.DEVICE to dev
+        )
+    }
+
+    val vcfPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            coroutineScope.launch(Dispatchers.IO) {
+                val imported = CortaExportImportHelper.importContactsFromVcf(context, it)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "${imported.size} contactos leídos desde archivo vCard", Toast.LENGTH_SHORT).show()
+                    viewModel.refresh()
+                }
+            }
+        }
+    }
+
+    val csvPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            coroutineScope.launch(Dispatchers.IO) {
+                val imported = CortaExportImportHelper.importContactsFromCsv(context, it)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "${imported.size} contactos importados desde archivo CSV", Toast.LENGTH_SHORT).show()
+                    viewModel.refresh()
+                }
+            }
+        }
+    }
+
+    // Comprehensive Chilean Directory (~650 numbers filtered by user region and prioritized by comuna)
+    val chileanDirectory = remember(selectedRegion, selectedComuna) {
+        ChileanRegionalDirectory.getEntriesForRegionAndComuna(selectedRegion, selectedComuna).map { it.toClassifiedContact() }
     }
 
     // Memoized classified contacts
@@ -157,8 +270,13 @@ fun ContactsScreen(
     }
 
     // Category counts for badges
-    val categoryCounts = remember(classifiedContacts) {
-        val total = classifiedContacts.size
+    val categoryCounts = remember(classifiedContacts, selectedGroup, groupMemberIds) {
+        val total = if (selectedGroup != null) {
+            classifiedContacts.count { c ->
+                val personalId = c.rawContact?.id ?: c.id.removePrefix("personal_")
+                personalId in groupMemberIds
+            }
+        } else classifiedContacts.size
         val favs = classifiedContacts.count { it.isFavorite }
         val emerg = classifiedContacts.count { it.category == ContactCategoryFilter.EMERGENCIES }
         val munic = classifiedContacts.count { it.category == ContactCategoryFilter.MUNICIPAL }
@@ -175,39 +293,79 @@ fun ContactsScreen(
     }
 
     // Filtered and grouped contacts
-    val (favoriteList, groupedContacts) = remember(classifiedContacts, currentFilter, searchQuery) {
+    val (favoriteList, groupedContacts) = remember(
+        classifiedContacts,
+        currentFilter,
+        currentSourceFilter,
+        currentSortOrder,
+        selectedGroup,
+        groupMemberIds,
+        searchQuery
+    ) {
         val query = searchQuery.trim()
         val filtered = classifiedContacts.filter { c ->
-            val matchesFilter = when (currentFilter) {
-                ContactCategoryFilter.ALL -> true
-                ContactCategoryFilter.FAVORITES -> c.isFavorite
-                ContactCategoryFilter.EMERGENCIES -> c.category == ContactCategoryFilter.EMERGENCIES
-                ContactCategoryFilter.MUNICIPAL -> c.category == ContactCategoryFilter.MUNICIPAL
-                ContactCategoryFilter.OFFICIAL_600 -> c.category == ContactCategoryFilter.OFFICIAL_600
-                ContactCategoryFilter.PERSONAL -> c.category == ContactCategoryFilter.PERSONAL
+            if (selectedGroup != null) {
+                val personalId = c.rawContact?.id ?: c.id.removePrefix("personal_")
+                if (personalId !in groupMemberIds) return@filter false
+            } else {
+                val matchesFilter = when (currentFilter) {
+                    ContactCategoryFilter.ALL -> true
+                    ContactCategoryFilter.FAVORITES -> c.isFavorite
+                    ContactCategoryFilter.EMERGENCIES -> c.category == ContactCategoryFilter.EMERGENCIES
+                    ContactCategoryFilter.MUNICIPAL -> c.category == ContactCategoryFilter.MUNICIPAL
+                    ContactCategoryFilter.OFFICIAL_600 -> c.category == ContactCategoryFilter.OFFICIAL_600
+                    ContactCategoryFilter.PERSONAL -> c.category == ContactCategoryFilter.PERSONAL
+                }
+                if (!matchesFilter) return@filter false
             }
-            if (!matchesFilter) return@filter false
 
-            if (query.isEmpty()) true
+            // Source filter
+            val matchesSource = when (currentSourceFilter) {
+                ContactSourceFilter.ALL -> true
+                ContactSourceFilter.GOOGLE -> c.rawContact?.source?.equals("GOOGLE", ignoreCase = true) == true
+                ContactSourceFilter.WHATSAPP -> c.rawContact?.source?.equals("WHATSAPP", ignoreCase = true) == true
+                ContactSourceFilter.SIM -> c.rawContact?.source?.equals("SIM", ignoreCase = true) == true
+                ContactSourceFilter.DEVICE -> c.rawContact?.source?.equals("DEVICE", ignoreCase = true) == true || c.rawContact == null
+            }
+            if (!matchesSource) return@filter false
+
+            // Phone only sort check
+            if (currentSortOrder == ContactSortOrder.PHONE_ONLY && c.phoneNumber.isBlank()) {
+                return@filter false
+            }
+
+            val normQuery = query.normalizeForSearch()
+            if (normQuery.isEmpty()) true
             else {
-                c.name.contains(query, ignoreCase = true) ||
+                c.name.normalizeForSearch().contains(normQuery) ||
                     c.phoneNumber.contains(query) ||
-                    c.tag.contains(query, ignoreCase = true) ||
-                    (c.subtitle?.contains(query, ignoreCase = true) == true)
+                    c.tag.normalizeForSearch().contains(normQuery) ||
+                    (c.subtitle?.normalizeForSearch()?.contains(normQuery) == true)
             }
         }
 
-        if (currentFilter == ContactCategoryFilter.ALL && query.isEmpty()) {
-            val favs = filtered.filter { it.isFavorite }
-            val nonFavs = filtered.filter { !it.isFavorite }
+        val sortedList = when (currentSortOrder) {
+            ContactSortOrder.NAME_ASC, ContactSortOrder.PHONE_ONLY -> filtered.sortedBy { it.name.lowercase() }
+            ContactSortOrder.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+            ContactSortOrder.FAVORITES_FIRST -> filtered.sortedWith(compareByDescending<ClassifiedContact> { it.isFavorite }.thenBy { it.name.lowercase() })
+        }
+
+        if (currentSortOrder == ContactSortOrder.NAME_DESC) {
+            val grouped = sortedList.groupBy {
+                it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+            }.toSortedMap(compareByDescending { it })
+            Pair(emptyList(), grouped)
+        } else if (currentFilter == ContactCategoryFilter.ALL && query.isEmpty() && selectedGroup == null && currentSortOrder != ContactSortOrder.NAME_DESC) {
+            val favs = sortedList.filter { it.isFavorite }
+            val nonFavs = sortedList.filter { !it.isFavorite }
             val grouped = nonFavs.groupBy {
                 it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
             }.toSortedMap()
             Pair(favs, grouped)
-        } else if (currentFilter == ContactCategoryFilter.FAVORITES) {
-            Pair(filtered, emptyMap<String, List<ClassifiedContact>>())
+        } else if (currentFilter == ContactCategoryFilter.FAVORITES && selectedGroup == null) {
+            Pair(sortedList, emptyMap<String, List<ClassifiedContact>>())
         } else {
-            val grouped = filtered.groupBy {
+            val grouped = sortedList.groupBy {
                 it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
             }.toSortedMap()
             Pair(emptyList(), grouped)
@@ -234,7 +392,18 @@ fun ContactsScreen(
             ContactCategoryChipsRow(
                 currentFilter = currentFilter,
                 counts = categoryCounts,
-                onFilterSelect = { currentFilter = it },
+                categoryOrder = categoryOrder,
+                selectedRegion = selectedRegion,
+                selectedComuna = selectedComuna,
+                selectedGroup = selectedGroup,
+                currentSourceFilter = currentSourceFilter,
+                onFilterSelect = {
+                    currentFilter = it
+                    selectedGroup = null
+                },
+                onClearGroup = { selectedGroup = null },
+                onClearSourceFilter = { currentSourceFilter = ContactSourceFilter.ALL },
+                onOpenRegionPicker = { showRegionPicker = true },
                 onOpenMoreCategories = { showCategoriesSheet = true }
             )
 
@@ -328,14 +497,7 @@ fun ContactsScreen(
                             items(favoriteList, key = { it.id }) { contact ->
                                 ContactCard(
                                     contact = contact,
-                                    onClick = {
-                                        if (contact.rawContact != null) {
-                                            selectedContactForOptions = contact
-                                        } else {
-                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phoneNumber}"))
-                                            context.startActivity(intent)
-                                        }
-                                    },
+                                    onClick = { selectedContactForOptions = contact },
                                     onLongClick = { selectedContactForOptions = contact },
                                     onCallClick = {
                                         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phoneNumber}"))
@@ -358,14 +520,7 @@ fun ContactsScreen(
                             items(contactsInLetter, key = { it.id }) { contact ->
                                 ContactCard(
                                     contact = contact,
-                                    onClick = {
-                                        if (contact.rawContact != null) {
-                                            selectedContactForOptions = contact
-                                        } else {
-                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phoneNumber}"))
-                                            context.startActivity(intent)
-                                        }
-                                    },
+                                    onClick = { selectedContactForOptions = contact },
                                     onLongClick = { selectedContactForOptions = contact },
                                     onCallClick = {
                                         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phoneNumber}"))
@@ -414,26 +569,115 @@ fun ContactsScreen(
         )
     }
 
-    // Modal: All Categories Explorer
+    // Modal: All Categories Explorer & Reordering
+    // Modal: All Categories Explorer & Reordering
     if (showCategoriesSheet) {
         ContactCategoriesBottomSheet(
             currentFilter = currentFilter,
             counts = categoryCounts,
+            categoryOrder = categoryOrder,
+            defaultFilter = initialContactFilter,
+            selectedRegion = selectedRegion,
+            selectedComuna = selectedComuna,
+            contactGroups = contactGroups,
+            selectedGroup = selectedGroup,
+            currentSourceFilter = currentSourceFilter,
+            sourceCounts = sourceCounts,
+            onSelectSourceFilter = { currentSourceFilter = it },
+            currentSortOrder = currentSortOrder,
+            onSelectSortOrder = {
+                currentSortOrder = it
+                prefs.edit().putString("contact_sort_order", it.name).apply()
+            },
             onSelectFilter = {
                 currentFilter = it
+                selectedGroup = null
                 showCategoriesSheet = false
+            },
+            onSelectGroup = { group ->
+                selectedGroup = group
+                showCategoriesSheet = false
+            },
+            onCreateGroup = { name ->
+                coroutineScope.launch(Dispatchers.IO) {
+                    cortaRepository.addContactGroup(name)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Grupo '$name' creado", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onReorderCategories = { newOrder, newDefault ->
+                categoryOrder = newOrder
+                prefs.edit()
+                    .putString("contact_category_order", newOrder.joinToString(",") { it.name })
+                    .putString("default_contact_tab", newDefault.name)
+                    .apply()
+            },
+            onOpenRegionPicker = {
+                showCategoriesSheet = false
+                showRegionPicker = true
+            },
+            onImportSimContacts = {
+                showCategoriesSheet = false
+                coroutineScope.launch(Dispatchers.IO) {
+                    val imported = CortaExportImportHelper.importContactsFromSim(context)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "${imported.size} contactos leídos desde la tarjeta SIM", Toast.LENGTH_SHORT).show()
+                        viewModel.refresh()
+                    }
+                }
+            },
+            onExportVcf = {
+                showCategoriesSheet = false
+                CortaExportImportHelper.exportAllContactsToVcf(context, rawContacts)
+            },
+            onImportVcf = {
+                showCategoriesSheet = false
+                vcfPickerLauncher.launch(arrayOf("text/x-vcard", "text/vcard", "*/*"))
+            },
+            onExportCsv = {
+                showCategoriesSheet = false
+                CortaExportImportHelper.exportContactsToCsv(context, rawContacts)
+            },
+            onImportCsv = {
+                showCategoriesSheet = false
+                csvPickerLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "application/csv", "*/*"))
             },
             onDismiss = { showCategoriesSheet = false }
         )
     }
 
-    // Modal: Contact Options & Actions
+    // Modal: Region & Comuna Selector
+    if (showRegionPicker) {
+        RegionSelectorBottomSheet(
+            selectedRegion = selectedRegion,
+            selectedComuna = selectedComuna,
+            onSelectLocation = { region, comuna ->
+                selectedRegion = region
+                selectedComuna = comuna
+                val editor = prefs.edit().putString("user_selected_region", region.code)
+                if (comuna != null) {
+                    editor.putString("user_selected_comuna", comuna)
+                } else {
+                    editor.remove("user_selected_comuna")
+                }
+                editor.apply()
+                val locText = if (comuna != null) "$comuna (${region.shortName})" else region.displayName
+                Toast.makeText(context, "Ubicación: $locText", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showRegionPicker = false }
+        )
+    }
+
+    // Modal: Contact Details & Actions (Rich Truecaller-style sheet)
     selectedContactForOptions?.let { contact ->
-        ContactOptionsSheet(
+        ContactDetailBottomSheet(
             contact = contact,
-            onDismiss = { selectedContactForOptions = null },
             cortaRepository = cortaRepository,
-            viewModel = viewModel
+            onDismiss = { selectedContactForOptions = null },
+            onToggleFavorite = { id, fav ->
+                viewModel.toggleFavorite(id, fav)
+            }
         )
     }
 }
@@ -491,7 +735,15 @@ private fun SectionHeader(
 private fun ContactCategoryChipsRow(
     currentFilter: ContactCategoryFilter,
     counts: Map<ContactCategoryFilter, Int>,
+    categoryOrder: List<ContactCategoryFilter>,
+    selectedRegion: ChileanRegion,
+    selectedComuna: String?,
+    selectedGroup: ContactGroup?,
+    currentSourceFilter: ContactSourceFilter = ContactSourceFilter.ALL,
     onFilterSelect: (ContactCategoryFilter) -> Unit,
+    onClearGroup: () -> Unit,
+    onClearSourceFilter: () -> Unit = {},
+    onOpenRegionPicker: () -> Unit,
     onOpenMoreCategories: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -499,7 +751,7 @@ private fun ContactCategoryChipsRow(
         ContactCategoryFilter.MUNICIPAL,
         ContactCategoryFilter.OFFICIAL_600,
         ContactCategoryFilter.PERSONAL
-    )
+    ) || selectedGroup != null || currentSourceFilter != ContactSourceFilter.ALL
 
     Row(
         modifier = Modifier
@@ -514,62 +766,104 @@ private fun ContactCategoryChipsRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Chip 1: Personales (Default)
+            // Location Chip (Región y/o Comuna seleccionada)
+            val locationLabel = when {
+                selectedComuna != null -> "$selectedComuna (${selectedRegion.shortName})"
+                selectedRegion != ChileanRegion.ALL -> selectedRegion.shortName
+                else -> "Chile"
+            }
             StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.PERSONAL,
-                onClick = { onFilterSelect(ContactCategoryFilter.PERSONAL) },
-                label = "Personal",
-                icon = Icons.Rounded.Person,
-                count = counts[ContactCategoryFilter.PERSONAL]
+                selected = selectedRegion != ChileanRegion.ALL || selectedComuna != null,
+                onClick = onOpenRegionPicker,
+                label = locationLabel,
+                icon = Icons.Rounded.LocationOn,
+                iconTint = MaterialTheme.colorScheme.tertiary
             )
 
-            // Chip 2: Favoritos
-            StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.FAVORITES,
-                onClick = { onFilterSelect(ContactCategoryFilter.FAVORITES) },
-                label = "Favoritos",
-                icon = Icons.Rounded.Star,
-                iconTint = MaterialTheme.colorScheme.primary,
-                count = counts[ContactCategoryFilter.FAVORITES]
-            )
+            // Active Contact Group Chip (if any selected)
+            if (selectedGroup != null) {
+                StitchFilterChip(
+                    selected = true,
+                    onClick = onClearGroup,
+                    label = "Grupo: ${selectedGroup.name} ✕",
+                    icon = Icons.Rounded.Group,
+                    iconTint = MaterialTheme.colorScheme.primary
+                )
+            }
 
-            // Chip 3: Emergencias
-            StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.EMERGENCIES,
-                onClick = { onFilterSelect(ContactCategoryFilter.EMERGENCIES) },
-                label = "Emergencias",
-                icon = Icons.Rounded.Shield,
-                iconTint = MaterialTheme.colorScheme.secondary,
-                count = counts[ContactCategoryFilter.EMERGENCIES]
-            )
+            // Active Account Source Filter Chip (if not ALL)
+            if (currentSourceFilter != ContactSourceFilter.ALL) {
+                StitchFilterChip(
+                    selected = true,
+                    onClick = onClearSourceFilter,
+                    label = "${currentSourceFilter.displayName} ✕",
+                    icon = Icons.Rounded.AccountCircle,
+                    iconTint = MaterialTheme.colorScheme.secondary
+                )
+            }
 
-            // Chip 4: Comunas 14xx
-            StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.MUNICIPAL,
-                onClick = { onFilterSelect(ContactCategoryFilter.MUNICIPAL) },
-                label = "Comunas",
-                icon = Icons.Rounded.LocalPolice,
-                iconTint = MaterialTheme.colorScheme.tertiary,
-                count = counts[ContactCategoryFilter.MUNICIPAL]
-            )
-
-            // Chip 5: Oficiales 600
-            StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.OFFICIAL_600,
-                onClick = { onFilterSelect(ContactCategoryFilter.OFFICIAL_600) },
-                label = "Oficiales",
-                icon = Icons.Rounded.AccountBalance,
-                iconTint = MaterialTheme.colorScheme.primary,
-                count = counts[ContactCategoryFilter.OFFICIAL_600]
-            )
-
-            // Chip 6: Todos
-            StitchFilterChip(
-                selected = currentFilter == ContactCategoryFilter.ALL,
-                onClick = { onFilterSelect(ContactCategoryFilter.ALL) },
-                label = "Todos",
-                count = counts[ContactCategoryFilter.ALL]
-            )
+            // Dynamic User Category Order
+            categoryOrder.forEach { cat ->
+                when (cat) {
+                    ContactCategoryFilter.PERSONAL -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.PERSONAL,
+                            onClick = { onFilterSelect(ContactCategoryFilter.PERSONAL) },
+                            label = "Personal",
+                            icon = Icons.Rounded.Person,
+                            count = counts[ContactCategoryFilter.PERSONAL]
+                        )
+                    }
+                    ContactCategoryFilter.FAVORITES -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.FAVORITES,
+                            onClick = { onFilterSelect(ContactCategoryFilter.FAVORITES) },
+                            label = "Favoritos",
+                            icon = Icons.Rounded.Star,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            count = counts[ContactCategoryFilter.FAVORITES]
+                        )
+                    }
+                    ContactCategoryFilter.EMERGENCIES -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.EMERGENCIES,
+                            onClick = { onFilterSelect(ContactCategoryFilter.EMERGENCIES) },
+                            label = "Emergencias",
+                            icon = Icons.Rounded.Shield,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            count = counts[ContactCategoryFilter.EMERGENCIES]
+                        )
+                    }
+                    ContactCategoryFilter.MUNICIPAL -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.MUNICIPAL,
+                            onClick = { onFilterSelect(ContactCategoryFilter.MUNICIPAL) },
+                            label = "Comunas",
+                            icon = Icons.Rounded.LocalPolice,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            count = counts[ContactCategoryFilter.MUNICIPAL]
+                        )
+                    }
+                    ContactCategoryFilter.OFFICIAL_600 -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.OFFICIAL_600,
+                            onClick = { onFilterSelect(ContactCategoryFilter.OFFICIAL_600) },
+                            label = "Oficiales",
+                            icon = Icons.Rounded.AccountBalance,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            count = counts[ContactCategoryFilter.OFFICIAL_600]
+                        )
+                    }
+                    ContactCategoryFilter.ALL -> {
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.ALL,
+                            onClick = { onFilterSelect(ContactCategoryFilter.ALL) },
+                            label = "Todos",
+                            count = counts[ContactCategoryFilter.ALL]
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.width(6.dp))
@@ -619,57 +913,69 @@ fun ContactCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Main Info Column
+            // Main Info Column (3 structured lines: Line 1 Name+Badges, Line 2 Tag+Number, Line 3 Subtitle)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                // Row 1: Name + Star/Verified + Tag Badge
+                // Line 1: Name + Star / Verified
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = contact.name,
-                            fontSize = 15.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
+                    Text(
+                        text = contact.name,
+                        fontSize = 15.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (contact.isFavorite) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.Star,
+                            contentDescription = "Favorito",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
                         )
-                        if (contact.isFavorite) {
-                            Icon(
-                                imageVector = Icons.Rounded.Star,
-                                contentDescription = "Favorito",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        if (contact.isVerified) {
-                            Icon(
-                                imageVector = Icons.Rounded.Verified,
-                                contentDescription = "Verificado",
-                                tint = if (contact.isEmergency) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-
-                        // Single-Word Interactive Tag Badge right next to name
-                        ContactTagBadge(
-                            tag = contact.tag,
-                            category = contact.category,
-                            onClick = { onTagClick(contact.tag) }
+                    }
+                    if (contact.isVerified) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.Verified,
+                            contentDescription = "Verificado",
+                            tint = if (contact.isEmergency) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
 
-                // Row 2: Category Icon + Subtitle / Formatted Phone Number
+                // Line 2: Tag Badge + Formatted Phone Number (always visible!)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    ContactTagBadge(
+                        tag = contact.tag,
+                        category = contact.category,
+                        onClick = { onTagClick(contact.tag) }
+                    )
+
+                    if (contact.displayPhone.isNotBlank() && contact.displayPhone != contact.name) {
+                        Text(
+                            text = contact.displayPhone,
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Line 3: Category Icon + Subtitle / Comuna description
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -699,8 +1005,8 @@ fun ContactCard(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = contact.subtitle ?: contact.displayPhone,
-                        fontSize = 13.sp,
+                        text = contact.subtitle ?: "Contacto guardado",
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -739,11 +1045,12 @@ fun ContactCard(
  * Contextual Telecom Avatar with badge indicators (42dp harmonized).
  */
 @Composable
-private fun ContactAvatar(
-    contact: ClassifiedContact
+fun ContactAvatar(
+    contact: ClassifiedContact,
+    modifier: Modifier = Modifier.size(42.dp)
 ) {
     Box(
-        modifier = Modifier.size(42.dp),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         when (contact.avatarType) {
@@ -987,16 +1294,89 @@ fun ContactTagDictionaryBottomSheet(
 }
 
 /**
- * Bottom sheet to explore and switch all contact categories with live counts.
+ * Bottom sheet to explore, switch, and reorder contact categories with inline Up/Down controls,
+ * default tab setting, and contact group management.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactCategoriesBottomSheet(
     currentFilter: ContactCategoryFilter,
     counts: Map<ContactCategoryFilter, Int>,
+    categoryOrder: List<ContactCategoryFilter>,
+    defaultFilter: ContactCategoryFilter,
+    selectedRegion: ChileanRegion,
+    selectedComuna: String?,
+    contactGroups: List<ContactGroup>,
+    selectedGroup: ContactGroup?,
+    currentSourceFilter: ContactSourceFilter = ContactSourceFilter.ALL,
+    sourceCounts: Map<ContactSourceFilter, Int> = emptyMap(),
+    onSelectSourceFilter: (ContactSourceFilter) -> Unit = {},
+    currentSortOrder: ContactSortOrder = ContactSortOrder.NAME_ASC,
+    onSelectSortOrder: (ContactSortOrder) -> Unit = {},
     onSelectFilter: (ContactCategoryFilter) -> Unit,
+    onSelectGroup: (ContactGroup?) -> Unit,
+    onCreateGroup: (String) -> Unit,
+    onReorderCategories: (List<ContactCategoryFilter>, ContactCategoryFilter) -> Unit,
+    onOpenRegionPicker: () -> Unit,
+    onImportSimContacts: () -> Unit = {},
+    onExportVcf: () -> Unit,
+    onImportVcf: () -> Unit,
+    onExportCsv: () -> Unit = {},
+    onImportCsv: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
+    var showCreateGroupDialog by remember { mutableStateOf(false) }
+    var newGroupName by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
+    val defaultContactTabName = prefs.getString("default_contact_tab", ContactCategoryFilter.PERSONAL.name)
+
+    if (showCreateGroupDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateGroupDialog = false },
+            title = { Text("Nuevo Grupo de Contactos", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        text = "Crea un grupo personalizado para organizar a tu familia, trabajo o amigos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = newGroupName,
+                        onValueChange = { newGroupName = it },
+                        placeholder = { Text("Ej. Familia, Trabajo, Amigos...") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val trimmed = newGroupName.trim()
+                        if (trimmed.isNotEmpty()) {
+                            onCreateGroup(trimmed)
+                            newGroupName = ""
+                            showCreateGroupDialog = false
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Crear Grupo", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateGroupDialog = false }) {
+                    Text("Cancelar")
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         dragHandle = { BottomSheetDefaults.DragHandle() },
@@ -1006,137 +1386,478 @@ fun ContactCategoriesBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
         ) {
-            Text(
-                text = "Categorías de Contactos",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Explora el directorio chileno y tus contactos clasificados.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Categorías y Grupos",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Reordena las pestañas con ↑/↓ y fija la pestaña inicial con ★",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(
+                    onClick = {
+                        val defaultList = listOf(
+                            ContactCategoryFilter.PERSONAL,
+                            ContactCategoryFilter.FAVORITES,
+                            ContactCategoryFilter.EMERGENCIES,
+                            ContactCategoryFilter.MUNICIPAL,
+                            ContactCategoryFilter.OFFICIAL_600,
+                            ContactCategoryFilter.ALL
+                        )
+                        onReorderCategories(defaultList, ContactCategoryFilter.PERSONAL)
+                    }
+                ) {
+                    Text("Restablecer", fontSize = 12.sp)
+                }
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            val options = listOf(
-                Pair(ContactCategoryFilter.PERSONAL, "Libreta telefónica del dispositivo"),
-                Pair(ContactCategoryFilter.FAVORITES, "Contactos prioritarios guardados con estrella"),
-                Pair(ContactCategoryFilter.EMERGENCIES, "Líneas nacionales de emergencia (13x, 4141)"),
-                Pair(ContactCategoryFilter.MUNICIPAL, "Seguridad Comunal y Patrullaje vecinal 14xx"),
-                Pair(ContactCategoryFilter.OFFICIAL_600, "Servicios y Utilidad Pública verificados 600 / 800"),
-                Pair(ContactCategoryFilter.ALL, "Todos los contactos y servicios del directorio")
-            )
+            // Categories list with inline reorder
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                categoryOrder.forEachIndexed { index, cat ->
+                    val isSelected = cat == currentFilter && selectedGroup == null
+                    val isDefault = cat.name == defaultContactTabName
+                    val count = counts[cat] ?: 0
 
-            val context = LocalContext.current
-            val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-            val defaultContactTabName = prefs.getString("default_contact_tab", ContactCategoryFilter.PERSONAL.name)
+                    val catName = when (cat) {
+                        ContactCategoryFilter.ALL -> "Todos"
+                        ContactCategoryFilter.FAVORITES -> "Favoritos"
+                        ContactCategoryFilter.EMERGENCIES -> "Emergencias"
+                        ContactCategoryFilter.MUNICIPAL -> "Comunas 14xx"
+                        ContactCategoryFilter.OFFICIAL_600 -> "Oficiales 600"
+                        ContactCategoryFilter.PERSONAL -> "Personales"
+                    }
 
-            options.forEach { (cat, desc) ->
-                val isSelected = cat == currentFilter
-                val isDefault = cat.name == defaultContactTabName
-                val count = counts[cat] ?: 0
+                    val catDesc = when (cat) {
+                        ContactCategoryFilter.PERSONAL -> "Libreta telefónica del dispositivo"
+                        ContactCategoryFilter.FAVORITES -> "Contactos con estrella"
+                        ContactCategoryFilter.EMERGENCIES -> "Líneas nacionales de emergencia"
+                        ContactCategoryFilter.MUNICIPAL -> "Seguridad comunal y patrullaje 14xx"
+                        ContactCategoryFilter.OFFICIAL_600 -> "Servicios públicos y bancos"
+                        ContactCategoryFilter.ALL -> "Directorio completo y contactos"
+                    }
 
-                ListItem(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelectFilter(cat) },
-                    headlineContent = {
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLowest
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = when (cat) {
-                                    ContactCategoryFilter.ALL -> "Todos ($count)"
-                                    ContactCategoryFilter.FAVORITES -> "Favoritos ($count)"
-                                    ContactCategoryFilter.EMERGENCIES -> "Emergencias ($count)"
-                                    ContactCategoryFilter.MUNICIPAL -> "Comunas 14xx ($count)"
-                                    ContactCategoryFilter.OFFICIAL_600 -> "Oficiales 600 ($count)"
-                                    ContactCategoryFilter.PERSONAL -> "Personales ($count)"
+                            // Default tab star toggle
+                            IconButton(
+                                onClick = {
+                                    onReorderCategories(categoryOrder, cat)
                                 },
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                            if (isDefault) {
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isDefault) Icons.Rounded.Star else Icons.Rounded.StarOutline,
+                                    contentDescription = "Pestaña predeterminada",
+                                    tint = if (isDefault) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            // Body (clickable to select)
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onSelectFilter(cat) }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = "Inicial",
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                        text = "$catName ($count)",
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        fontSize = 14.5.sp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isDefault) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Text(
+                                                text = "Predeterminada",
+                                                fontSize = 9.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = if (isDefault) "Se abrirá al iniciar la app" else catDesc,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isDefault) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // Reordering buttons (↑ and ↓)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = {
+                                        if (index > 0) {
+                                            val mutable = categoryOrder.toMutableList()
+                                            val item = mutable.removeAt(index)
+                                            mutable.add(index - 1, item)
+                                            val currentDef = categoryOrder.firstOrNull { it.name == defaultContactTabName } ?: ContactCategoryFilter.PERSONAL
+                                            onReorderCategories(mutable, currentDef)
+                                        }
+                                    },
+                                    enabled = index > 0,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowUp,
+                                        contentDescription = "Mover arriba",
+                                        tint = if (index > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        if (index < categoryOrder.size - 1) {
+                                            val mutable = categoryOrder.toMutableList()
+                                            val item = mutable.removeAt(index)
+                                            mutable.add(index + 1, item)
+                                            val currentDef = categoryOrder.firstOrNull { it.name == defaultContactTabName } ?: ContactCategoryFilter.PERSONAL
+                                            onReorderCategories(mutable, currentDef)
+                                        }
+                                    },
+                                    enabled = index < categoryOrder.size - 1,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowDown,
+                                        contentDescription = "Mover abajo",
+                                        tint = if (index < categoryOrder.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant
                                     )
                                 }
                             }
                         }
-                    },
-                    supportingContent = {
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Contact Groups Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Mis Grupos de Contactos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = { showCreateGroupDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Nuevo Grupo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+
+            if (contactGroups.isEmpty()) {
+                Text(
+                    text = "No tienes grupos creados. Toca en '+ Nuevo Grupo' para crear uno.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Option to clear group filter if any
+                    if (selectedGroup != null) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier.clickable { onSelectGroup(null) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Quitar filtro de grupo",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
+                    contactGroups.forEach { group ->
+                        val isGroupActive = selectedGroup?.id == group.id
+                        FilterChip(
+                            selected = isGroupActive,
+                            onClick = {
+                                if (isGroupActive) onSelectGroup(null) else onSelectGroup(group)
+                            },
+                            label = { Text(group.name, fontWeight = if (isGroupActive) FontWeight.Bold else FontWeight.Medium) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Group,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (isGroupActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Origen de los Contactos (Cuentas)
+            Text(
+                text = "Origen de Contactos (Cuentas)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ContactSourceFilter.entries.forEach { src ->
+                    val isSelected = currentSourceFilter == src
+                    val count = sourceCounts[src] ?: 0
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onSelectSourceFilter(src) },
+                        label = { Text("${src.displayName} ($count)", fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium) },
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Orden de visualización
+            Text(
+                text = "Orden de Visualización",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ContactSortOrder.entries.forEach { sort ->
+                    val isSelected = currentSortOrder == sort
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onSelectSortOrder(sort) },
+                        label = { Text(sort.displayName, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium) },
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Gestión de Tarjeta SIM
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SimCard,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = desc,
+                            text = "Contactos en Tarjeta SIM",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Importar contactos guardados en chips SIM 1 / SIM 2 a la app",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    },
-                    leadingContent = {
-                        val icon = when (cat) {
-                            ContactCategoryFilter.ALL -> Icons.Rounded.Contacts
-                            ContactCategoryFilter.FAVORITES -> Icons.Rounded.Star
-                            ContactCategoryFilter.EMERGENCIES -> Icons.Rounded.Shield
-                            ContactCategoryFilter.MUNICIPAL -> Icons.Rounded.LocalPolice
-                            ContactCategoryFilter.OFFICIAL_600 -> Icons.Rounded.AccountBalance
-                            ContactCategoryFilter.PERSONAL -> Icons.Rounded.Person
-                        }
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingContent = {
-                        if (isSelected) {
-                            Icon(
-                                Icons.Rounded.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent
-                    )
-                )
+                    }
+                    FilledTonalButton(
+                        onClick = onImportSimContacts,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Importar", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            OutlinedButton(
-                onClick = {
-                    prefs.edit().putString("default_contact_tab", currentFilter.name).apply()
-                    Toast.makeText(context, "Categoría inicial de Contactos guardada", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+            // Region & Comuna Row
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenRegionPicker() }
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Fijar categoría actual como inicial al abrir Contactos",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Ubicación activa",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val locLabel = when {
+                            selectedComuna != null -> "$selectedComuna (${selectedRegion.displayName})"
+                            selectedRegion != ChileanRegion.ALL -> selectedRegion.displayName
+                            else -> "Chile (Todas las regiones)"
+                        }
+                        Text(
+                            text = locLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    TextButton(onClick = onOpenRegionPicker) {
+                        Text("Cambiar", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Actions: Export & Import VCF / CSV
+            Text(
+                text = "Exportación y Respaldo",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onExportVcf,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.FileDownload, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Exportar vCard", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = onImportVcf,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.FileUpload, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Importar vCard", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onExportCsv,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.TableChart, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Exportar CSV", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = onImportCsv,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.UploadFile, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Importar CSV", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -1435,88 +2156,400 @@ private fun BoxScope.ContactsFastScrollBar(
 }
 
 /**
- * Builds the official Chilean telecom directory entries pre-seeded locally.
+ * Extension to convert a ChileanDirectoryEntry from ChileanRegionalDirectory to a ClassifiedContact.
  */
-private fun buildChileanDirectory(): List<ClassifiedContact> {
-    val list = mutableListOf<ClassifiedContact>()
+fun ChileanDirectoryEntry.toClassifiedContact(): ClassifiedContact {
+    val categoryFilter = when (this.category) {
+        DirectoryCategory.EMERGENCY -> ContactCategoryFilter.EMERGENCIES
+        DirectoryCategory.MUNICIPAL -> ContactCategoryFilter.MUNICIPAL
+        DirectoryCategory.OFFICIAL_600, DirectoryCategory.UTILITIES -> ContactCategoryFilter.OFFICIAL_600
+        DirectoryCategory.HEALTH_HOSPITAL, DirectoryCategory.POLICE_PDI, DirectoryCategory.FIRE_DEPARTMENT -> ContactCategoryFilter.EMERGENCIES
+    }
+    val avatarType = when (this.category) {
+        DirectoryCategory.EMERGENCY, DirectoryCategory.FIRE_DEPARTMENT -> ContactAvatarType.EMERGENCY_SHIELD
+        DirectoryCategory.MUNICIPAL, DirectoryCategory.POLICE_PDI -> ContactAvatarType.MUNICIPAL_POLICE
+        DirectoryCategory.HEALTH_HOSPITAL -> ContactAvatarType.EMERGENCY_SHIELD
+        DirectoryCategory.OFFICIAL_600, DirectoryCategory.UTILITIES -> ContactAvatarType.OFFICIAL_BANK
+    }
+    val tagText = when (this.category) {
+        DirectoryCategory.EMERGENCY -> "Emergencia"
+        DirectoryCategory.MUNICIPAL -> "Municipal"
+        DirectoryCategory.HEALTH_HOSPITAL -> "Hospital"
+        DirectoryCategory.POLICE_PDI -> "Policial"
+        DirectoryCategory.FIRE_DEPARTMENT -> "Bomberos"
+        DirectoryCategory.UTILITIES -> "Servicio"
+        DirectoryCategory.OFFICIAL_600 -> "Oficial"
+    }
 
-    // National Emergencies
-    val emergencies = listOf(
-        Pair("131", "SAMU Ambulancia"),
-        Pair("132", "Bomberos de Chile"),
-        Pair("133", "Carabineros de Chile"),
-        Pair("134", "PDI Investigaciones"),
-        Pair("130", "Conaf Incendios Forestales"),
-        Pair("137", "Rescate Marítimo Armada"),
-        Pair("147", "Fono Niños Protegidos"),
-        Pair("149", "Fono Familia Carabineros"),
-        Pair("4141", "Prevención del Suicidio (*4141)"),
-        Pair("1514", "Fono Ayuda Mujer")
+    return ClassifiedContact(
+        id = this.id,
+        name = this.name,
+        phoneNumber = this.number,
+        displayPhone = PhoneNumberUtils.formatDisplayNumber(this.number),
+        isFavorite = this.isFavorite,
+        category = categoryFilter,
+        avatarType = avatarType,
+        tag = tagText,
+        isVerified = this.isVerified,
+        isEmergency = this.category in listOf(
+            DirectoryCategory.EMERGENCY,
+            DirectoryCategory.HEALTH_HOSPITAL,
+            DirectoryCategory.FIRE_DEPARTMENT,
+            DirectoryCategory.POLICE_PDI
+        ),
+        isMunicipal = this.category == DirectoryCategory.MUNICIPAL,
+        subtitle = this.subtitle,
+        rawContact = ContactInfo(
+            id = this.id,
+            name = this.name,
+            phoneNumber = this.number,
+            isFavorite = this.isFavorite,
+            source = "CHILEAN_DIRECTORY"
+        )
     )
-    emergencies.forEach { (num, name) ->
-        list.add(
-            ClassifiedContact(
-                id = "dir_emerg_$num",
-                name = name,
-                phoneNumber = num,
-                displayPhone = num,
-                isFavorite = num in listOf("133", "131", "132"), // Key 3 starred by default
-                category = ContactCategoryFilter.EMERGENCIES,
-                avatarType = ContactAvatarType.EMERGENCY_SHIELD,
-                tag = "Emergencia",
-                isVerified = true,
-                isEmergency = true,
-                subtitle = "$num · Marcación prioritaria protegida"
-            )
-        )
+}
+
+/**
+ * Bottom Sheet allowing user to choose their Chilean region and comuna to personalize telecom and emergency numbers.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegionSelectorBottomSheet(
+    selectedRegion: ChileanRegion,
+    selectedComuna: String?,
+    onSelectLocation: (ChileanRegion, String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var expandedRegionCode by remember { mutableStateOf<String?>(selectedRegion.code) }
+    val allComunasWithRegion = remember { ChileanRegionalDirectory.getAllComunasWithRegion() }
+
+    val filteredResults = remember(searchQuery) {
+        val q = searchQuery.normalizeForSearch()
+        if (q.isEmpty()) emptyList()
+        else {
+            allComunasWithRegion.filter { (comuna, region) ->
+                comuna.normalizeForSearch().contains(q) ||
+                    region.displayName.normalizeForSearch().contains(q) ||
+                    region.shortName.normalizeForSearch().contains(q)
+            }
+        }
     }
 
-    // Municipal Security 14xx (from classifier)
-    val municipalEntries = ChileanTelecomClassifier.getAllEmergencyAndMunicipalEntries()
-        .filter { it.first.startsWith("14") && it.first.length == 4 && it.first !in listOf("147", "149") }
-    municipalEntries.forEach { (num, name) ->
-        list.add(
-            ClassifiedContact(
-                id = "dir_muni_$num",
-                name = name,
-                phoneNumber = num,
-                displayPhone = num,
-                isFavorite = false,
-                category = ContactCategoryFilter.MUNICIPAL,
-                avatarType = ContactAvatarType.MUNICIPAL_POLICE,
-                tag = "Municipal",
-                isVerified = true,
-                isMunicipal = true,
-                subtitle = "$num · Patrullaje vecinal protegido"
-            )
-        )
-    }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+                Column {
+                    Text(
+                        text = "Selecciona tu Ubicación",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Prioriza comisarías, SAMU y seguridad municipal de tu comuna",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-    // Verified Public Services 600 / 800
-    val officialEntries = listOf(
-        Triple("6003607777", "Salud Responde (MINSAL)", "+56 600 360 7777 · Verificado SUBTEL 600"),
-        Triple("6003702000", "Registro Civil e Identificación", "+56 600 370 2000 · Verificado SUBTEL 600"),
-        Triple("6006003000", "BancoEstado 600", "+56 600 600 3000 · Verificado SUBTEL 600"),
-        Triple("800220800", "FONASA Fonoinformativo", "+56 800 220 800 · Verificado SUBTEL 800"),
-        Triple("6005946000", "SERNAC Atención Ciudadana", "+56 600 594 6000 · Verificado SUBTEL 600"),
-        Triple("800800800", "Chilexpress", "+56 800 800 800 · Verificado SUBTEL")
-    )
-    officialEntries.forEach { (num, name, sub) ->
-        list.add(
-            ClassifiedContact(
-                id = "dir_off_$num",
-                name = name,
-                phoneNumber = num,
-                displayPhone = PhoneNumberUtils.formatDisplayNumber(num),
-                isFavorite = false,
-                category = ContactCategoryFilter.OFFICIAL_600,
-                avatarType = ContactAvatarType.OFFICIAL_BANK,
-                tag = "Oficial",
-                isVerified = true,
-                subtitle = sub
-            )
-        )
-    }
+            Spacer(modifier = Modifier.height(12.dp))
 
-    return list
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Buscar comuna o región (ej. Maipú, Viña...)") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = "Buscar",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Rounded.Clear, "Limpiar")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (searchQuery.isNotBlank()) {
+                    if (filteredResults.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No se encontraron comunas para \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        items(filteredResults, key = { "${it.second.code}_${it.first}" }) { (comuna, region) ->
+                            val isSelected = selectedComuna.equals(comuna, ignoreCase = true) && selectedRegion == region
+                            ListItem(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        onSelectLocation(region, comuna)
+                                        onDismiss()
+                                    },
+                                headlineContent = {
+                                    Text(
+                                        text = comuna,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = region.displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Place,
+                                        contentDescription = null,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                trailingContent = {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.CheckCircle,
+                                            contentDescription = "Seleccionada",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent
+                                )
+                            )
+                        }
+                    }
+                } else {
+                    // Option: Chile completo (sin filtrar por comuna)
+                    item {
+                        val isAllSelected = selectedRegion == ChileanRegion.ALL && selectedComuna == null
+                        ListItem(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onSelectLocation(ChileanRegion.ALL, null)
+                                    onDismiss()
+                                },
+                            headlineContent = {
+                                Text(
+                                    text = "Chile (Todas las regiones y comunas)",
+                                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                    color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "Directorio nacional completo (~650 números de todo Chile)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Public,
+                                    contentDescription = null,
+                                    tint = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                if (isAllSelected) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = "Seleccionada",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = if (isAllSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent
+                            )
+                        )
+                    }
+
+                    // Regions with expandable comunas list
+                    items(ChileanRegion.entries.filter { it != ChileanRegion.ALL }, key = { it.code }) { region ->
+                        val isRegionActive = selectedRegion == region
+                        val isExpanded = expandedRegionCode == region.code
+                        val comunasForRegion = remember(region) { ChileanRegionalDirectory.getComunasForRegion(region) }
+
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isRegionActive && selectedComuna == null) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerLowest
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isRegionActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                            ),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                        ) {
+                            Column {
+                                ListItem(
+                                    modifier = Modifier.clickable {
+                                        expandedRegionCode = if (isExpanded) null else region.code
+                                    },
+                                    headlineContent = {
+                                        Text(
+                                            text = region.displayName,
+                                            fontWeight = if (isRegionActive) FontWeight.Bold else FontWeight.SemiBold,
+                                            color = if (isRegionActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            text = if (isRegionActive && selectedComuna != null) "Comuna activa: $selectedComuna" else "${comunasForRegion.size} comunas",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (isRegionActive && selectedComuna != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    leadingContent = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Place,
+                                            contentDescription = null,
+                                            tint = if (isRegionActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    trailingContent = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            TextButton(onClick = {
+                                                onSelectLocation(region, null)
+                                                onDismiss()
+                                            }) {
+                                                Text("Toda la región", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                            }
+                                            Icon(
+                                                imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                                                contentDescription = if (isExpanded) "Colapsar" else "Expandir",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                                )
+
+                                if (isExpanded) {
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                        modifier = Modifier.padding(horizontal = 14.dp)
+                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = "Selecciona tu comuna:",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(bottom = 6.dp)
+                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            // Chip for "Toda la región"
+                                            FilterChip(
+                                                selected = isRegionActive && selectedComuna == null,
+                                                onClick = {
+                                                    onSelectLocation(region, null)
+                                                    onDismiss()
+                                                },
+                                                label = { Text("Toda la región") },
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            comunasForRegion.forEach { com ->
+                                                val isComunaSelected = isRegionActive && selectedComuna.equals(com, ignoreCase = true)
+                                                FilterChip(
+                                                    selected = isComunaSelected,
+                                                    onClick = {
+                                                        onSelectLocation(region, com)
+                                                        onDismiss()
+                                                    },
+                                                    label = { Text(com, fontWeight = if (isComunaSelected) FontWeight.Bold else FontWeight.Normal) },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal fun String.normalizeForSearch(): String {
+    val temp = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD)
+    return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(temp, "")
+        .replace("ñ", "n", ignoreCase = true)
+        .lowercase()
+        .trim()
 }

@@ -32,9 +32,9 @@
     <string name="onboarding_desc_bold">Para protegerte del Spam</string>
     <string name="onboarding_desc_rest"> necesitamos los siguientes permisos del sistema.</string>
     <string name="permissions_reasoning_title">Por qué CORTA necesita estos permisos</string>
-    <string name="permissions_reasoning_desc_part1">CORTA requiere acceso total a tus </string>
+    <string name="permissions_reasoning_desc_part1">"CORTA requiere acceso total a tus "</string>
     <string name="permissions_reasoning_desc_bold1">Llamadas, Registro de Llamadas, Contactos y mensajes SMS</string>
-    <string name="permissions_reasoning_desc_part2">. Estos permisos fundamentales se utilizan de forma estrictamente local para bloquear números spam de la lista SUBTEL y manejar tus comunicaciones con facilidad. </string>
+    <string name="permissions_reasoning_desc_part2">". Estos permisos fundamentales se utilizan de forma estrictamente local para bloquear números spam de la lista SUBTEL y manejar tus comunicaciones con facilidad. "</string>
     <string name="permissions_reasoning_desc_bold2">Tu privacidad está completamente a salvo.</string>
     <string name="privacy_details_title">Privacidad y Seguridad</string>
     <string name="privacy_details_desc">CORTA procesa todos los datos localmente en tu dispositivo. No transmitimos tus llamadas, mensajes ni contactos a servidores externos. Los permisos solicitados son estrictamente necesarios por el sistema operativo Android para bloquear el spam y gestionar tu registro de llamadas según las normativas de la SUBTEL.</string>

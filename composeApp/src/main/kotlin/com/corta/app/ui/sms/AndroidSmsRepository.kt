@@ -223,4 +223,45 @@ class AndroidSmsRepository(
         }
         messages
     }
+
+    suspend fun getAllMessages(): List<SmsMessage> = withContext(Dispatchers.IO) {
+        val messages = mutableListOf<SmsMessage>()
+        val projection = arrayOf(
+            Telephony.Sms._ID,
+            Telephony.Sms.THREAD_ID,
+            Telephony.Sms.ADDRESS,
+            Telephony.Sms.BODY,
+            Telephony.Sms.DATE,
+            Telephony.Sms.TYPE
+        )
+        val cursor = context.contentResolver.query(
+            Telephony.Sms.CONTENT_URI,
+            projection,
+            null,
+            null,
+            Telephony.Sms.DEFAULT_SORT_ORDER
+        )
+        cursor?.use {
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val threadIdIndex = it.getColumnIndex(Telephony.Sms.THREAD_ID)
+            val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
+            val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
+            val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
+
+            while (it.moveToNext()) {
+                messages.add(
+                    SmsMessage(
+                        id = it.getString(idIndex) ?: "",
+                        threadId = it.getString(threadIdIndex) ?: "",
+                        address = it.getString(addressIndex) ?: "Desconocido",
+                        body = it.getString(bodyIndex) ?: "",
+                        date = it.getLong(dateIndex),
+                        type = it.getInt(typeIndex)
+                    )
+                )
+            }
+        }
+        messages
+    }
 }

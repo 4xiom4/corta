@@ -43,12 +43,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.corta.app.ui.CortaAppViewModel
+import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
+import com.corta.app.ui.sms.AndroidSmsRepository
+import com.corta.app.ui.sms.SpamKeywordsSheet
 import com.corta.app.ui.theme.AccentColor
 import com.corta.app.ui.theme.Handedness
 import com.corta.app.ui.theme.ThemeMode
 import com.corta.app.ui.theme.UiScale
+import com.corta.app.ui.trash.TrashBottomSheet
 import com.corta.app.workers.SubtelSyncScheduler
+import com.corta.domain.ContactRepository
 import com.corta.domain.CortaRepository
 import com.corta.domain.FilterAction
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +80,15 @@ enum class SettingsSubmenu(val title: String) {
     HELP("Ayuda, Privacidad y Soporte")
 }
 
+data class SettingsSimSlot(
+    val slotIndex: Int,
+    val carrierName: String,
+    val number: String?,
+    val countryIso: String?,
+    val subId: Int,
+    val isActive: Boolean
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -85,7 +99,8 @@ fun SettingsScreen(
     onNavigateToStats: (() -> Unit)? = null,
     onNavigateToRules: (() -> Unit)? = null,
     viewModel: CortaAppViewModel = koinViewModel(),
-    cortaRepository: CortaRepository = koinInject()
+    cortaRepository: CortaRepository = koinInject(),
+    contactRepository: ContactRepository = koinInject()
 ) {
     val context = LocalContext.current
     val strings = Strings
@@ -129,6 +144,9 @@ fun SettingsScreen(
 
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEmergencySheet by remember { mutableStateOf(false) }
+    var showTrashSheet by remember { mutableStateOf(false) }
+    var showSpamKeywordsSheet by remember { mutableStateOf(false) }
+    var selectedSimForDetails by remember { mutableStateOf<SettingsSimSlot?>(null) }
 
     val rules by cortaRepository.observeRules().collectAsState(initial = emptyList())
 
@@ -180,9 +198,28 @@ fun SettingsScreen(
         }
     }
 
-    // SIM card detection
-    val simCarriers = remember(context) {
-        val list = mutableListOf<String>()
+    val importFullBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val count = CortaExportImportHelper.importFullBackupJson(context, uri, cortaRepository, prefs)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Respaldo restaurado: $count elementos recuperados", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error al importar respaldo: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    // SIM cards detection with carrier and slot details
+    val simCards = remember(context) {
+        val list = mutableListOf<SettingsSimSlot>()
         val hasPhonePermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.READ_PHONE_STATE
@@ -197,17 +234,34 @@ fun SettingsScreen(
                     val name = sub.carrierName?.toString()?.takeIf { it.isNotBlank() }
                         ?: sub.displayName?.toString()?.takeIf { it.isNotBlank() }
                         ?: "SIM ${sub.simSlotIndex + 1}"
-                    list.add(name)
+                    val rawNumber = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        try { sm.getPhoneNumber(sub.subscriptionId) } catch (e: Exception) { @Suppress("DEPRECATION") sub.number }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        sub.number
+                    }
+                    list.add(
+                        SettingsSimSlot(
+                            slotIndex = sub.simSlotIndex,
+                            carrierName = name,
+                            number = rawNumber?.takeIf { it.isNotBlank() },
+                            countryIso = sub.countryIso?.uppercase() ?: "CL",
+                            subId = sub.subscriptionId,
+                            isActive = true
+                        )
+                    )
                 }
             } catch (e: Exception) {
                 // Ignore
             }
         }
         if (list.isEmpty()) {
-            list.add("SIM Principal")
+            list.add(SettingsSimSlot(0, "SIM Principal", null, "CL", -1, true))
         }
         list
     }
+
+    val simCarriers = remember(simCards) { simCards.map { it.carrierName } }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -464,6 +518,29 @@ fun SettingsScreen(
                                 onClick = onNavigateToRules
                             )
                         }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Papelera de Llamadas Rechazadas",
+                            subtitle = "Revisa, restaura o elimina permanentemente llamadas en la papelera",
+                            icon = Icons.Rounded.DeleteSweep,
+                            onClick = { showTrashSheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Historial de Llamadas a CSV",
+                            subtitle = "Crea un archivo CSV con el registro de llamadas para respaldo o denuncias SERNAC",
+                            icon = Icons.Rounded.FileDownload,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val calls = cortaRepository.getCallLogs()
+                                    CortaExportImportHelper.exportCallLogEntriesToCsv(context, calls)
+                                }
+                            }
+                        )
                     }
                 }
 
@@ -700,6 +777,52 @@ fun SettingsScreen(
                                 prefs.edit().putBoolean("sms_spam_notifications_enabled", it).apply()
                             }
                         )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Gestionar Palabras Clave Bloqueadas",
+                            subtitle = "Personaliza términos de smishing bancario, premios falsos y estafas",
+                            icon = Icons.Rounded.Key,
+                            onClick = { showSpamKeywordsSheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Papelera de Mensajes SMS",
+                            subtitle = "Revisa y restaura mensajes SMS enviados a la papelera",
+                            icon = Icons.Rounded.DeleteSweep,
+                            onClick = { showTrashSheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Mensajes SMS a CSV",
+                            subtitle = "Descarga todos tus mensajes en un archivo CSV para análisis o respaldo",
+                            icon = Icons.Rounded.FileDownload,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
+                                    CortaExportImportHelper.exportSmsToCsv(context, messages)
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Mensajes SMS a JSON",
+                            subtitle = "Descarga una copia completa de tus SMS en formato JSON estándar",
+                            icon = Icons.Rounded.Code,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
+                                    CortaExportImportHelper.exportSmsToJson(context, messages)
+                                }
+                            }
+                        )
                     }
                 }
 
@@ -710,11 +833,11 @@ fun SettingsScreen(
                     )
 
                     SettingsCardContainer {
-                        simCarriers.forEachIndexed { index, carrier ->
-                            val slot = index + 1
+                        simCards.forEach { sim ->
+                            val slot = sim.slotIndex + 1
                             val isChecked = if (slot == 1) protectSim1 else protectSim2
                             SettingsSwitchItem(
-                                title = "Proteger Ranura $slot: $carrier",
+                                title = "Proteger Ranura $slot: ${sim.carrierName}",
                                 subtitle = "Aplica bloqueo de telemarketing 809 y filtro de spam en las llamadas entrantes de este chip",
                                 icon = Icons.Rounded.SimCard,
                                 checked = isChecked,
@@ -728,6 +851,16 @@ fun SettingsScreen(
                                     }
                                 }
                             )
+
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                            SettingsActionItem(
+                                title = "Detalles Técnicos de Ranura $slot",
+                                subtitle = "Operador: ${sim.carrierName} • Número: ${sim.number ?: "No publicado"} (Toca para inspeccionar)",
+                                icon = Icons.Rounded.Info,
+                                onClick = { selectedSimForDetails = sim }
+                            )
+
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         }
 
@@ -739,6 +872,29 @@ fun SettingsScreen(
                             onCheckedChange = {
                                 showSimBadges = it
                                 prefs.edit().putBoolean("show_sim_badges", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Sincronizar Contactos de SIM y Dispositivo",
+                            subtitle = "Lee contactos almacenados en los chips SIM y teléfono para sumarlos a la agenda segura de Corta",
+                            icon = Icons.Rounded.Sync,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val contacts = contactRepository.getContacts()
+                                        cortaRepository.syncContacts(contacts)
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Sincronizados ${contacts.size} contactos de SIM y dispositivo", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Error al sincronizar: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
                         )
                     }
@@ -1017,44 +1173,17 @@ fun SettingsScreen(
                 SettingsSubmenu.BACKUP -> {
                     SubmenuInfoCard(
                         title = "Respaldo y Seguridad de Datos",
-                        description = "Tus reglas y listas negras están encriptadas con SQLCipher. Puedes exportar un respaldo en formato JSON plano para conservarlo o transferirlo a otro equipo."
+                        description = "Tus reglas y listas negras están encriptadas con SQLCipher. Puedes exportar un respaldo completo en formato JSON seguro para conservarlo o transferirlo a otro equipo."
                     )
 
                     SettingsCardContainer {
                         SettingsActionItem(
-                            title = "Exportar Reglas a JSON",
-                            subtitle = "Crea un respaldo de las ${rules.size} reglas registradas",
+                            title = "Exportar Respaldo Completo (JSON)",
+                            subtitle = "Crea un respaldo seguro con tus ${rules.size} reglas, palabras clave de spam y preferencias",
                             icon = Icons.Rounded.UploadFile,
                             onClick = {
                                 coroutineScope.launch(Dispatchers.IO) {
-                                    try {
-                                        val jsonArray = JSONArray()
-                                        rules.forEach { rule ->
-                                            val obj = JSONObject().apply {
-                                                put("pattern", rule.pattern)
-                                                put("action", rule.action.toString())
-                                                put("isRegex", rule.isRegex == true)
-                                                put("alias", rule.alias ?: "")
-                                                put("source", rule.source)
-                                            }
-                                            jsonArray.put(obj)
-                                        }
-                                        val backupFile = File(context.cacheDir, "corta_backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json")
-                                        backupFile.writeText(jsonArray.toString(2))
-                                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", backupFile)
-                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "application/json"
-                                            putExtra(Intent.EXTRA_STREAM, uri)
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        }
-                                        withContext(Dispatchers.Main) {
-                                            context.startActivity(Intent.createChooser(shareIntent, "Exportar respaldo Corta"))
-                                        }
-                                    } catch (e: Exception) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Error al exportar: ${e.message}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
+                                    CortaExportImportHelper.exportFullBackupJson(context, rules, cortaRepository, prefs)
                                 }
                             }
                         )
@@ -1062,11 +1191,53 @@ fun SettingsScreen(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         SettingsActionItem(
-                            title = "Importar Reglas desde JSON",
-                            subtitle = "Restaura o combina reglas desde un archivo JSON de respaldo",
+                            title = "Importar Respaldo Completo (JSON)",
+                            subtitle = "Restaura o combina reglas, palabras de spam y preferencias desde un respaldo JSON",
                             icon = Icons.Rounded.Download,
                             onClick = {
-                                importRulesLauncher.launch("application/json")
+                                importFullBackupLauncher.launch("application/json")
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Contactos a vCard (.vcf)",
+                            subtitle = "Guarda todos los contactos seguros en formato universal vCard 3.0",
+                            icon = Icons.Rounded.Contacts,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val contacts = contactRepository.getContacts()
+                                    CortaExportImportHelper.exportAllContactsToVcf(context, contacts)
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Historial de Llamadas a CSV",
+                            subtitle = "Genera un archivo CSV con el historial de llamadas para respaldo o denuncias",
+                            icon = Icons.Rounded.Call,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val calls = cortaRepository.getCallLogs()
+                                    CortaExportImportHelper.exportCallLogEntriesToCsv(context, calls)
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Mensajes SMS a CSV",
+                            subtitle = "Descarga todos los mensajes de texto a un archivo de hoja de cálculo CSV",
+                            icon = Icons.Rounded.Sms,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
+                                    CortaExportImportHelper.exportSmsToCsv(context, messages)
+                                }
                             }
                         )
 
@@ -1142,6 +1313,94 @@ fun SettingsScreen(
 
     if (showEmergencySheet) {
         EmergencyWhitelistSheet(onDismiss = { showEmergencySheet = false })
+    }
+
+    if (showTrashSheet) {
+        TrashBottomSheet(
+            repository = cortaRepository,
+            onDismiss = { showTrashSheet = false }
+        )
+    }
+
+    if (showSpamKeywordsSheet) {
+        SpamKeywordsSheet(
+            repository = cortaRepository,
+            onDismiss = { showSpamKeywordsSheet = false }
+        )
+    }
+
+    selectedSimForDetails?.let { sim ->
+        SimCardDetailsDialog(
+            sim = sim,
+            onDismiss = { selectedSimForDetails = null }
+        )
+    }
+}
+
+@Composable
+fun SimCardDetailsDialog(
+    sim: SettingsSimSlot,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.SimCard,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(36.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "Ranura ${sim.slotIndex + 1}: ${sim.carrierName}",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SettingsSimDetailRow(label = "Operador", value = sim.carrierName)
+                SettingsSimDetailRow(label = "Estado", value = if (sim.isActive) "Activa y Protegida" else "Inactiva / Sin SIM")
+                SettingsSimDetailRow(label = "Número", value = sim.number ?: "No publicado por operador")
+                SettingsSimDetailRow(label = "País", value = sim.countryIso ?: "CL")
+                if (sim.subId != -1) {
+                    SettingsSimDetailRow(label = "ID Suscripción", value = "${sim.subId}")
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                Text(
+                    text = "Corta evalúa en memoria (<2ms) todas las llamadas y SMS que entran por esta línea según la normativa chilena.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Entendido", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun SettingsSimDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

@@ -34,9 +34,9 @@
     <string name="onboarding_desc_bold">To protect you from Spam</string>
     <string name="onboarding_desc_rest"> we need the following system permissions.</string>
     <string name="permissions_reasoning_title">Why CORTA needs permissions</string>
-    <string name="permissions_reasoning_desc_part1">CORTA requires full access to your </string>
+    <string name="permissions_reasoning_desc_part1">"CORTA requires full access to your "</string>
     <string name="permissions_reasoning_desc_bold1">Phone Calls, Call Logs, Contacts, and SMS messages</string>
-    <string name="permissions_reasoning_desc_part2">. These core permissions are strictly used locally to block SUBTEL-identified spam numbers and manage your communications intuitively. </string>
+    <string name="permissions_reasoning_desc_part2">". These core permissions are strictly used locally to block SUBTEL-identified spam numbers and manage your communications intuitively. "</string>
     <string name="permissions_reasoning_desc_bold2">Your privacy is totally secure.</string>
     <string name="privacy_details_title">Privacy &amp; Security</string>
     <string name="privacy_details_desc">CORTA processes all data locally on your device. We do not transmit your calls, messages, or contacts to any external servers. The requested permissions are strictly required by the Android OS to block spam and manage your call log according to SUBTEL regulations.</string>

@@ -53,7 +53,9 @@ import com.corta.app.ui.i18n.Strings
 import com.corta.app.ui.designsystem.CortaCategoryExploreButton
 import com.corta.app.ui.designsystem.CortaFloatingActionButton
 import com.corta.app.ui.designsystem.StitchFilterChip
+import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.theme.LocalDetailedMode
+import com.corta.app.ui.trash.TrashBottomSheet
 import com.corta.db.FilterRule
 import com.corta.domain.ChileanNumberType
 import com.corta.domain.ChileanTelecomClassifier
@@ -173,6 +175,7 @@ fun CallLogScreen(
         CallLogTabFilter.entries.firstOrNull { it.name == savedName } ?: CallLogTabFilter.INCOMING
     }
     var currentFilter by remember { mutableStateOf(initialCallFilter) }
+    var showTrashSheet by remember { mutableStateOf(false) }
 
     var hasPermission by remember {
         mutableStateOf(
@@ -553,6 +556,14 @@ fun CallLogScreen(
                 currentFilter = selected
                 showCategoriesSheet = false
             },
+            onOpenTrash = {
+                showCategoriesSheet = false
+                showTrashSheet = true
+            },
+            onExportCsv = {
+                showCategoriesSheet = false
+                CortaExportImportHelper.exportCallsToCsv(context, classifiedCalls.map { it.log })
+            },
             onDismiss = { showCategoriesSheet = false }
         )
     }
@@ -562,6 +573,14 @@ fun CallLogScreen(
         CallTagDictionaryBottomSheet(
             highlightedTag = highlightedTagForDictionary,
             onDismiss = { showTagDictionarySheet = false }
+        )
+    }
+
+    // Trash Bottom Sheet (Papelera de reciclaje)
+    if (showTrashSheet) {
+        TrashBottomSheet(
+            repository = repository,
+            onDismiss = { showTrashSheet = false }
         )
     }
 
@@ -618,6 +637,15 @@ fun CallLogScreen(
         CallDetailsBottomSheet(
             item = item,
             onDismiss = { selectedCallLog = null },
+            onMoveToTrash = {
+                repository.moveToTrash(
+                    itemType = "CALL",
+                    originalId = item.log.id.toString(),
+                    senderOrNumber = item.log.number,
+                    contentPreview = "${item.displayName} (${item.dateDisplay})"
+                )
+                Toast.makeText(context, "Llamada movida a la papelera", Toast.LENGTH_SHORT).show()
+            },
             onBlockWithAlias = {
                 showAliasDialog = item.log
                 aliasText = if (!item.log.name.isNullOrBlank()) {
@@ -687,52 +715,41 @@ fun CallLogCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Center Information (2 clean rows, exactly identical geometry to SmsScreen)
+                // Center Information (3 structured lines: Line 1 Name+Date, Line 2 Badges+SIM+Number, Line 3 Status/Duration)
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Row 1: Display Name + Tag Badge + Date
+                    // Line 1: Full Display Name / Number + Date
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = item.displayName,
-                                fontSize = 15.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (item.isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                        Text(
+                            text = item.displayName,
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (item.isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (item.isContact) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.Star,
+                                contentDescription = "Contacto",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
                             )
-
-                            if (item.isContact) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Star,
-                                    contentDescription = "Contacto",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            } else if (item.telecomMeta.isVerifiedOfficialService) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Verified,
-                                    contentDescription = "Oficial",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-
-                            CallTagBadge(
-                                tag = item.tag,
-                                isBlocked = item.isBlocked,
-                                telecomMeta = item.telecomMeta,
-                                onClick = { onTagClick(item.tag) }
+                        } else if (item.telecomMeta.isVerifiedOfficialService) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.Verified,
+                                contentDescription = "Oficial",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
                             )
                         }
 
@@ -745,12 +762,51 @@ fun CallLogCard(
                         )
                     }
 
-                    // Row 2: Direction Icon + Status / Subtitle across full row
+                    // Line 2: Tag Badge + SIM slot + Raw formatted phone number (if contact name was used)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        CallTagBadge(
+                            tag = item.tag,
+                            isBlocked = item.isBlocked,
+                            telecomMeta = item.telecomMeta,
+                            onClick = { onTagClick(item.tag) }
+                        )
+
+                        // Dual SIM indicator badge [1] or [2]
+                        if (item.simSlot != null) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Text(
+                                    text = "SIM ${item.simSlot}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        if (item.isContact && item.formattedNumber.isNotBlank() && item.displayName != item.formattedNumber) {
+                            Text(
+                                text = item.formattedNumber,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Line 3: Direction Icon + Status / Duration across full row
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Direction icon (small 13dp indicator)
                         val directionIcon: ImageVector = when {
                             item.isBlocked -> Icons.Rounded.Block
                             item.isMissed -> Icons.AutoMirrored.Rounded.CallMissed
@@ -770,29 +826,11 @@ fun CallLogCard(
                             modifier = Modifier.size(13.dp)
                         )
 
-                        // Dual SIM indicator badge [1] or [2] (Truecaller standard)
-                        if (item.simSlot != null) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(3.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
-                                modifier = Modifier.height(14.dp)
-                            ) {
-                                Text(
-                                    text = "${item.simSlot}",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 3.dp)
-                                )
-                            }
-                        }
-
                         Spacer(modifier = Modifier.width(4.dp))
 
                         Text(
                             text = item.subtitleText,
-                            fontSize = 13.sp,
+                            fontSize = 12.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -946,6 +984,7 @@ fun CallAvatar(
     Surface(
         shape = CircleShape,
         color = containerColor,
+        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.35f)),
         modifier = modifier.size(42.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -1055,7 +1094,7 @@ fun CallTagBadge(
     when (tag) {
         "Spam" -> {
             tagBg = MaterialTheme.colorScheme.errorContainer
-            tagTextColor = MaterialTheme.colorScheme.error
+            tagTextColor = MaterialTheme.colorScheme.onErrorContainer
             tagIcon = Icons.Rounded.Block
         }
         "Comercial" -> {
@@ -1064,38 +1103,38 @@ fun CallTagBadge(
             tagIcon = Icons.Rounded.Campaign
         }
         "Fantasma" -> {
-            tagBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-            tagTextColor = MaterialTheme.colorScheme.error
+            tagBg = MaterialTheme.colorScheme.errorContainer
+            tagTextColor = MaterialTheme.colorScheme.onErrorContainer
             tagIcon = Icons.Rounded.HourglassBottom
         }
         "Emergencia" -> {
-            tagBg = MaterialTheme.colorScheme.secondaryContainer
-            tagTextColor = MaterialTheme.colorScheme.onSecondaryContainer
+            tagBg = MaterialTheme.colorScheme.errorContainer
+            tagTextColor = MaterialTheme.colorScheme.onErrorContainer
             tagIcon = Icons.Rounded.LocalPolice
         }
         "Municipal" -> {
-            tagBg = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
-            tagTextColor = MaterialTheme.colorScheme.onSecondaryContainer
+            tagBg = MaterialTheme.colorScheme.tertiaryContainer
+            tagTextColor = MaterialTheme.colorScheme.onTertiaryContainer
             tagIcon = Icons.Rounded.Security
         }
         "Oficial" -> {
-            tagBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-            tagTextColor = MaterialTheme.colorScheme.primary
+            tagBg = MaterialTheme.colorScheme.primaryContainer
+            tagTextColor = MaterialTheme.colorScheme.onPrimaryContainer
             tagIcon = Icons.Rounded.Verified
         }
         "Contacto" -> {
-            tagBg = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+            tagBg = MaterialTheme.colorScheme.secondaryContainer
             tagTextColor = MaterialTheme.colorScheme.onSecondaryContainer
             tagIcon = Icons.Rounded.Person
         }
         "Fijo" -> {
-            tagBg = MaterialTheme.colorScheme.surfaceContainerHigh
+            tagBg = MaterialTheme.colorScheme.surfaceVariant
             tagTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             tagIcon = Icons.Rounded.Phone
         }
         else -> {
             // "Móvil" / "Llamada"
-            tagBg = MaterialTheme.colorScheme.surfaceContainerHigh
+            tagBg = MaterialTheme.colorScheme.surfaceVariant
             tagTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             tagIcon = Icons.Rounded.PhoneAndroid
         }
@@ -1142,6 +1181,8 @@ fun CallCategoriesBottomSheet(
     incomingCount: Int,
     outgoingCount: Int,
     onSelectFilter: (CallLogTabFilter) -> Unit,
+    onOpenTrash: () -> Unit = {},
+    onExportCsv: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     data class CallCategoryOption(
@@ -1344,7 +1385,7 @@ fun CallCategoriesBottomSheet(
             OutlinedButton(
                 onClick = {
                     prefs.edit().putString("default_call_tab", currentFilter.name).apply()
-                    Toast.makeText(context, "Categoría inicial guardada como predeterminada", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Pestaña predeterminada actualizada", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -1356,7 +1397,47 @@ fun CallCategoriesBottomSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Fijar categoría actual como inicial al abrir",
+                    text = "Usar como pestaña predeterminada al abrir",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onOpenTrash,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Papelera de reciclaje de llamadas",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onExportCsv,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.FileDownload,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Exportar historial a CSV",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -1604,6 +1685,7 @@ fun CallTagDictionaryBottomSheet(
 fun CallDetailsBottomSheet(
     item: ClassifiedCall,
     onDismiss: () -> Unit,
+    onMoveToTrash: () -> Unit = {},
     onBlockWithAlias: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1727,6 +1809,28 @@ fun CallDetailsBottomSheet(
                         putExtra(ContactsContract.Intents.Insert.PHONE, item.log.number)
                     }
                     context.startActivity(intent)
+                }
+            )
+
+            // Action: Mover a la Papelera
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = "Mover a la papelera",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                supportingContent = {
+                    Text(
+                        "Se conservará en la papelera donde podrás restaurarla",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                leadingContent = { Icon(Icons.Rounded.DeleteOutline, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                colors = listItemColors,
+                modifier = Modifier.clickable {
+                    onDismiss()
+                    onMoveToTrash()
                 }
             )
 

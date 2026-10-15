@@ -49,6 +49,42 @@ CREATE TABLE CommunityReport (
     syncState TEXT NOT NULL DEFAULT 'PENDING' -- "PENDING" | "SYNCED" | "FAILED"
 );
 
+CREATE TABLE SpamKeyword (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL DEFAULT 'GENERAL', -- 'BANCO', 'PRESTAMO', 'ESTAFA', 'GENERAL'
+    isActive INTEGER AS Boolean DEFAULT 1,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE ArchivedConversation (
+    threadId INTEGER NOT NULL PRIMARY KEY,
+    address TEXT NOT NULL,
+    archivedAt INTEGER NOT NULL
+);
+
+CREATE TABLE TrashItem (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    itemType TEXT NOT NULL, -- 'CALL' or 'SMS'
+    originalId TEXT NOT NULL,
+    senderOrNumber TEXT NOT NULL,
+    contentPreview TEXT,
+    deletedAt INTEGER NOT NULL
+);
+
+CREATE TABLE ContactGroup (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    iconName TEXT NOT NULL DEFAULT 'Group',
+    colorHex TEXT NOT NULL DEFAULT '#1976D2'
+);
+
+CREATE TABLE ContactGroupMember (
+    contactId TEXT NOT NULL,
+    groupId INTEGER NOT NULL,
+    PRIMARY KEY (contactId, groupId)
+);
+
 -- Indexes: cover the queries that scan by timestamp DESC (call/SMS logs)
 -- and the pending-reports sweep that filters by syncState. These turn
 -- the three most expensive reads into cheap index lookups without
@@ -58,6 +94,8 @@ CREATE INDEX idx_call_log_timestamp ON CallLogEntry(timestamp DESC);
 CREATE INDEX idx_blocked_sms_timestamp ON BlockedSms(timestamp DESC);
 CREATE INDEX idx_sms_log_timestamp ON SmsLogEntry(timestamp DESC);
 CREATE INDEX idx_community_report_sync ON CommunityReport(syncState, createdAt);
+CREATE INDEX idx_spam_keyword_active ON SpamKeyword(isActive);
+CREATE INDEX idx_trash_deleted_at ON TrashItem(deletedAt DESC);
 
 -- Initial schema setup complete. Subtel rules might be injected by domain logic or migrations.
 
@@ -108,4 +146,76 @@ SELECT * FROM CommunityReport WHERE syncState = 'PENDING' ORDER BY createdAt ASC
 
 updateCommunityReportSyncState:
 UPDATE CommunityReport SET syncState = ? WHERE id = ?;
+
+-- Spam Keywords
+getSpamKeywords:
+SELECT * FROM SpamKeyword ORDER BY createdAt DESC;
+
+getActiveSpamKeywords:
+SELECT * FROM SpamKeyword WHERE isActive = 1;
+
+insertSpamKeyword:
+INSERT OR REPLACE INTO SpamKeyword(keyword, category, isActive, createdAt) VALUES (?, ?, ?, ?);
+
+deleteSpamKeyword:
+DELETE FROM SpamKeyword WHERE id = ?;
+
+toggleSpamKeyword:
+UPDATE SpamKeyword SET isActive = ? WHERE id = ?;
+
+-- Archived Conversations
+getArchivedConversations:
+SELECT * FROM ArchivedConversation ORDER BY archivedAt DESC;
+
+isConversationArchived:
+SELECT COUNT(*) FROM ArchivedConversation WHERE threadId = ?;
+
+archiveConversation:
+INSERT OR REPLACE INTO ArchivedConversation(threadId, address, archivedAt) VALUES (?, ?, ?);
+
+unarchiveConversation:
+DELETE FROM ArchivedConversation WHERE threadId = ?;
+
+-- Papelera (Trash items)
+getTrashItems:
+SELECT * FROM TrashItem ORDER BY deletedAt DESC;
+
+getTrashItemsByType:
+SELECT * FROM TrashItem WHERE itemType = ? ORDER BY deletedAt DESC;
+
+insertTrashItem:
+INSERT INTO TrashItem(itemType, originalId, senderOrNumber, contentPreview, deletedAt) VALUES (?, ?, ?, ?, ?);
+
+deleteTrashItem:
+DELETE FROM TrashItem WHERE id = ?;
+
+clearTrash:
+DELETE FROM TrashItem;
+
+clearTrashByType:
+DELETE FROM TrashItem WHERE itemType = ?;
+
+-- Contact Groups
+getContactGroups:
+SELECT * FROM ContactGroup ORDER BY name ASC;
+
+insertContactGroup:
+INSERT OR REPLACE INTO ContactGroup(name, iconName, colorHex) VALUES (?, ?, ?);
+
+deleteContactGroup:
+DELETE FROM ContactGroup WHERE id = ?;
+
+getGroupMembers:
+SELECT contactId FROM ContactGroupMember WHERE groupId = ?;
+
+addContactToGroup:
+INSERT OR IGNORE INTO ContactGroupMember(contactId, groupId) VALUES (?, ?);
+
+removeContactFromGroup:
+DELETE FROM ContactGroupMember WHERE contactId = ? AND groupId = ?;
+
+getContactGroupsForContact:
+SELECT g.* FROM ContactGroup g
+INNER JOIN ContactGroupMember m ON g.id = m.groupId
+WHERE m.contactId = ?;
 

@@ -48,8 +48,10 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.corta.app.ui.designsystem.CortaCategoryExploreButton
 import com.corta.app.ui.designsystem.CortaFloatingActionButton
 import com.corta.app.ui.designsystem.StitchFilterChip
+import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
 import com.corta.app.ui.theme.LocalDetailedMode
+import com.corta.app.ui.trash.TrashBottomSheet
 import com.corta.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,7 +71,8 @@ enum class SmsTabFilter(
     SPAM("Spam", "Estafas, cuentos del tío y telemarketing", true),
     ALL("Todos", "Todo el historial de mensajes", true),
     BANKS_OTP("Bancos y claves", "Códigos de verificación y bancos oficiales", false),
-    PERSONAL("Personales", "Contactos guardados y conocidos", false);
+    PERSONAL("Personales", "Contactos guardados y conocidos", false),
+    ARCHIVED("Archivados", "Conversaciones archivadas", false);
 }
 
 /**
@@ -129,7 +132,14 @@ fun SmsScreen(
     }
     var showCategorySheet by remember { mutableStateOf(false) }
     var showTagDictionarySheet by remember { mutableStateOf(false) }
+    var showSpamKeywordsSheet by remember { mutableStateOf(false) }
+    var showTrashSheet by remember { mutableStateOf(false) }
     var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
+
+    val archivedConversations by cortaRepository.observeArchivedConversations().collectAsState(initial = emptyList())
+    val archivedThreadIds = remember(archivedConversations) {
+        archivedConversations.map { it.threadId.toString() }.toSet()
+    }
 
     val inboxSms = viewModel.inboxSms.collectAsLazyPagingItems()
     val blockedSms = viewModel.blockedSms.collectAsLazyPagingItems()
@@ -157,36 +167,47 @@ fun SmsScreen(
         classifiedBlocked.distinctBy { it.first.message.threadId.ifBlank { it.first.message.id } }
     }
 
-    // Dynamic counts for chips
-    val entradaCount = remember(allInboxConversations) {
-        allInboxConversations.count { it.first.message.type != 2 && it.second.category != ChileanSmsCategory.SPAM_SMISHING }
+    // Dynamic counts for chips (excluding archived from active inbox)
+    val activeInbox = remember(allInboxConversations, archivedThreadIds) {
+        allInboxConversations.filter { it.first.message.threadId !in archivedThreadIds }
     }
-    val salidaCount = remember(allInboxConversations) {
-        allInboxConversations.count { it.first.message.type == 2 }
+    val activeBlocked = remember(allBlockedConversations, archivedThreadIds) {
+        allBlockedConversations.filter { it.first.message.threadId !in archivedThreadIds }
     }
-    val spamCount = remember(allInboxConversations, allBlockedConversations) {
-        allInboxConversations.count { it.second.category == ChileanSmsCategory.SPAM_SMISHING } + allBlockedConversations.size
+
+    val entradaCount = remember(activeInbox) {
+        activeInbox.count { it.first.message.type != 2 && it.second.category != ChileanSmsCategory.SPAM_SMISHING }
     }
-    val todosCount = allInboxConversations.size
-    val bancosCount = remember(allInboxConversations) {
-        allInboxConversations.count { it.second.category == ChileanSmsCategory.BANKS_OTP }
+    val salidaCount = remember(activeInbox) {
+        activeInbox.count { it.first.message.type == 2 }
     }
-    val personalesCount = remember(allInboxConversations) {
-        allInboxConversations.count { it.second.category == ChileanSmsCategory.PERSONAL }
+    val spamCount = remember(activeInbox, activeBlocked) {
+        activeInbox.count { it.second.category == ChileanSmsCategory.SPAM_SMISHING } + activeBlocked.size
+    }
+    val todosCount = activeInbox.size
+    val bancosCount = remember(activeInbox) {
+        activeInbox.count { it.second.category == ChileanSmsCategory.BANKS_OTP }
+    }
+    val personalesCount = remember(activeInbox) {
+        activeInbox.count { it.second.category == ChileanSmsCategory.PERSONAL }
+    }
+    val archivadosCount = remember(allInboxConversations, archivedThreadIds) {
+        allInboxConversations.count { it.first.message.threadId in archivedThreadIds }
     }
 
     // Filtered items list for current active tab (Guarantees zero ghost items, zero spacing bugs, zero duplicate keys)
-    val displayList = remember(allInboxConversations, allBlockedConversations, currentFilter, searchQuery) {
+    val displayList = remember(activeInbox, activeBlocked, allInboxConversations, currentFilter, searchQuery, archivedThreadIds) {
         val baseList = when (currentFilter) {
-            SmsTabFilter.INBOX -> allInboxConversations.filter { it.first.message.type != 2 && it.second.category != ChileanSmsCategory.SPAM_SMISHING }
-            SmsTabFilter.OUTBOX -> allInboxConversations.filter { it.first.message.type == 2 }
+            SmsTabFilter.INBOX -> activeInbox.filter { it.first.message.type != 2 && it.second.category != ChileanSmsCategory.SPAM_SMISHING }
+            SmsTabFilter.OUTBOX -> activeInbox.filter { it.first.message.type == 2 }
             SmsTabFilter.SPAM -> {
-                (allInboxConversations.filter { it.second.category == ChileanSmsCategory.SPAM_SMISHING } + allBlockedConversations)
+                (activeInbox.filter { it.second.category == ChileanSmsCategory.SPAM_SMISHING } + activeBlocked)
                     .distinctBy { it.first.message.threadId.ifBlank { it.first.message.id } }
             }
-            SmsTabFilter.ALL -> allInboxConversations
-            SmsTabFilter.BANKS_OTP -> allInboxConversations.filter { it.second.category == ChileanSmsCategory.BANKS_OTP }
-            SmsTabFilter.PERSONAL -> allInboxConversations.filter { it.second.category == ChileanSmsCategory.PERSONAL }
+            SmsTabFilter.ALL -> activeInbox
+            SmsTabFilter.BANKS_OTP -> activeInbox.filter { it.second.category == ChileanSmsCategory.BANKS_OTP }
+            SmsTabFilter.PERSONAL -> activeInbox.filter { it.second.category == ChileanSmsCategory.PERSONAL }
+            SmsTabFilter.ARCHIVED -> allInboxConversations.filter { it.first.message.threadId in archivedThreadIds }
         }
 
         if (searchQuery.isBlank()) {
@@ -271,13 +292,22 @@ fun SmsScreen(
                         iconTint = MaterialTheme.colorScheme.secondary,
                         count = if (personalesCount > 0) personalesCount else null
                     )
+                } else if (currentFilter == SmsTabFilter.ARCHIVED) {
+                    StitchFilterChip(
+                        selected = true,
+                        onClick = { currentFilter = SmsTabFilter.ARCHIVED },
+                        label = "Archivados",
+                        icon = Icons.Rounded.Archive,
+                        iconTint = MaterialTheme.colorScheme.tertiary,
+                        count = if (archivadosCount > 0) archivadosCount else null
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.width(6.dp))
 
             // 6. Botón (+) PINNED: SIEMPRE VISIBLE EN PANTALLA sin importar el scroll
-            val isSecondarySmsActive = currentFilter == SmsTabFilter.BANKS_OTP || currentFilter == SmsTabFilter.PERSONAL
+            val isSecondarySmsActive = currentFilter == SmsTabFilter.BANKS_OTP || currentFilter == SmsTabFilter.PERSONAL || currentFilter == SmsTabFilter.ARCHIVED
             CortaCategoryExploreButton(
                 onClick = { showCategorySheet = true },
                 isActive = isSecondarySmsActive,
@@ -300,7 +330,11 @@ fun SmsScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = if (currentFilter == SmsTabFilter.SPAM) Icons.Rounded.Shield else Icons.Rounded.MarkEmailRead,
+                                imageVector = when (currentFilter) {
+                                    SmsTabFilter.SPAM -> Icons.Rounded.Shield
+                                    SmsTabFilter.ARCHIVED -> Icons.Rounded.Archive
+                                    else -> Icons.Rounded.MarkEmailRead
+                                },
                                 contentDescription = null,
                                 modifier = Modifier.size(36.dp),
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
@@ -315,6 +349,7 @@ fun SmsScreen(
                         SmsTabFilter.ALL -> "No hay mensajes en tu historial"
                         SmsTabFilter.BANKS_OTP -> "No tienes claves dinámicas ni avisos de bancos"
                         SmsTabFilter.PERSONAL -> "No tienes mensajes de tus contactos guardados"
+                        SmsTabFilter.ARCHIVED -> "No tienes conversaciones archivadas"
                     }
                     Text(
                         text = emptyMessage,
@@ -378,8 +413,25 @@ fun SmsScreen(
                     allCount = todosCount,
                     banksCount = bancosCount,
                     personalCount = personalesCount,
+                    archivedCount = archivadosCount,
                     onSelectFilter = { selected ->
                         currentFilter = selected
+                    },
+                    onOpenKeywords = {
+                        showCategorySheet = false
+                        showSpamKeywordsSheet = true
+                    },
+                    onOpenTrash = {
+                        showCategorySheet = false
+                        showTrashSheet = true
+                    },
+                    onExportCsv = {
+                        showCategorySheet = false
+                        CortaExportImportHelper.exportSmsToCsv(context, loadedInbox.map { it.message })
+                    },
+                    onExportJson = {
+                        showCategorySheet = false
+                        CortaExportImportHelper.exportSmsToJson(context, loadedInbox.map { it.message })
                     },
                     onDismiss = { showCategorySheet = false }
                 )
@@ -392,10 +444,26 @@ fun SmsScreen(
                 )
             }
 
+            if (showSpamKeywordsSheet) {
+                SpamKeywordsSheet(
+                    repository = cortaRepository,
+                    onDismiss = { showSpamKeywordsSheet = false }
+                )
+            }
+
+            if (showTrashSheet) {
+                TrashBottomSheet(
+                    repository = cortaRepository,
+                    onDismiss = { showTrashSheet = false }
+                )
+            }
+
             if (selectedSmsForMenu != null) {
+                val isArchived = selectedSmsForMenu!!.threadId in archivedThreadIds
                 SmsOptionsSheet(
                     message = selectedSmsForMenu!!,
                     displayName = selectedDisplayNameForMenu,
+                    isArchived = isArchived,
                     onDismiss = { selectedSmsForMenu = null },
                     onOpenThread = {
                         val threadId = selectedSmsForMenu!!.threadId
@@ -447,23 +515,23 @@ fun SmsAvatar(
     val isCommercial = smsMeta.isCommercial809 || kind == ChileanSenderKind.COMMERCIAL
 
     val containerColor = when {
-        isSmishing -> MaterialTheme.colorScheme.errorContainer
-        isCommercial -> MaterialTheme.colorScheme.tertiaryContainer
-        kind == ChileanSenderKind.CARRIER -> MaterialTheme.colorScheme.secondaryContainer
-        kind == ChileanSenderKind.BANK -> MaterialTheme.colorScheme.primaryContainer
-        kind == ChileanSenderKind.DELIVERY -> MaterialTheme.colorScheme.tertiaryContainer
-        kind == ChileanSenderKind.GOVERNMENT -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+        isSmishing -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+        isCommercial -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
+        kind == ChileanSenderKind.CARRIER -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+        kind == ChileanSenderKind.BANK -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+        kind == ChileanSenderKind.DELIVERY -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
+        kind == ChileanSenderKind.GOVERNMENT -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
         kind == ChileanSenderKind.CONTACT -> MaterialTheme.colorScheme.surfaceContainerHighest
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val iconTint = when {
-        isSmishing -> MaterialTheme.colorScheme.onErrorContainer
-        isCommercial -> MaterialTheme.colorScheme.onTertiaryContainer
-        kind == ChileanSenderKind.CARRIER -> MaterialTheme.colorScheme.onSecondaryContainer
-        kind == ChileanSenderKind.BANK -> MaterialTheme.colorScheme.onPrimaryContainer
-        kind == ChileanSenderKind.DELIVERY -> MaterialTheme.colorScheme.onTertiaryContainer
-        kind == ChileanSenderKind.GOVERNMENT -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSmishing -> MaterialTheme.colorScheme.error
+        isCommercial -> MaterialTheme.colorScheme.tertiary
+        kind == ChileanSenderKind.CARRIER -> MaterialTheme.colorScheme.secondary
+        kind == ChileanSenderKind.BANK -> MaterialTheme.colorScheme.primary
+        kind == ChileanSenderKind.DELIVERY -> MaterialTheme.colorScheme.tertiary
+        kind == ChileanSenderKind.GOVERNMENT -> MaterialTheme.colorScheme.primary
         kind == ChileanSenderKind.CONTACT -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -471,6 +539,7 @@ fun SmsAvatar(
     Surface(
         shape = CircleShape,
         color = containerColor,
+        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.35f)),
         modifier = modifier.size(42.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -578,7 +647,7 @@ fun SmsTagBadge(
         isSmishing -> {
             tagLabel = "Estafa"
             tagBg = MaterialTheme.colorScheme.errorContainer
-            tagTextColor = MaterialTheme.colorScheme.error
+            tagTextColor = MaterialTheme.colorScheme.onErrorContainer
             tagIcon = Icons.Rounded.Block
         }
         isCommercial809 -> {
@@ -590,7 +659,7 @@ fun SmsTagBadge(
         isOfficial -> {
             tagLabel = "Oficial"
             tagBg = MaterialTheme.colorScheme.primaryContainer
-            tagTextColor = MaterialTheme.colorScheme.primary
+            tagTextColor = MaterialTheme.colorScheme.onPrimaryContainer
             tagIcon = Icons.Rounded.Verified
         }
         isPersonal -> {
@@ -601,26 +670,20 @@ fun SmsTagBadge(
         }
         else -> {
             tagLabel = "Móvil"
-            tagBg = MaterialTheme.colorScheme.surfaceContainerHigh
-            tagTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            tagBg = MaterialTheme.colorScheme.surfaceContainerHighest
+            tagTextColor = MaterialTheme.colorScheme.onSurface
             tagIcon = Icons.Rounded.PhoneAndroid
         }
     }
 
-    Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(tagBg)
-            .pointerInput(tagLabel) {
-                detectTapGestures(
-                    onTap = {
-                        onClick(tagLabel)
-                    }
-                )
-            }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+    Surface(
+        shape = CircleShape,
+        color = tagBg,
+        border = BorderStroke(1.dp, tagTextColor.copy(alpha = 0.25f)),
+        modifier = Modifier.clickable { onClick(tagLabel) }
     ) {
         Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
@@ -658,7 +721,7 @@ fun SmsBodyPreview(
             fontStyle = FontStyle.Italic,
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.error,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = modifier.fillMaxWidth(),
             lineHeight = 18.sp
@@ -679,7 +742,7 @@ fun SmsBodyPreview(
                 text = annotated,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = modifier.fillMaxWidth(),
                 lineHeight = 18.sp
@@ -689,7 +752,7 @@ fun SmsBodyPreview(
                 text = body,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = modifier.fillMaxWidth(),
                 lineHeight = 18.sp
@@ -700,7 +763,7 @@ fun SmsBodyPreview(
             text = message.body.trim(),
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = modifier.fillMaxWidth(),
             lineHeight = 18.sp
@@ -760,35 +823,42 @@ fun ConversationItem(
                     smsMeta = smsMeta
                 )
 
-                // 2. Text Column: 2 Balanced Rows
+                // 2. Text Column: 3 Structured Lines (Line 1 Sender+Date, Line 2 Tag+Number, Line 3 Message Preview)
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Row 1: Sender Name + Tag Badge + Date
+                    // Line 1: Sender Name / Address + Date
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            val formattedName = PhoneNumberUtils.formatDisplayNumber(displayName)
-                            Text(
-                                text = formattedName,
-                                fontSize = 15.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
+                        val formattedName = PhoneNumberUtils.formatDisplayNumber(displayName)
+                        Text(
+                            text = formattedName,
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
 
-                            SmsTagBadge(
-                                smsMeta = smsMeta,
-                                onClick = onTagClick
+                        if (smsMeta.senderKind == ChileanSenderKind.CONTACT) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.Star,
+                                contentDescription = "Contacto",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        } else if (smsMeta.isVerifiedBankOrService) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.Verified,
+                                contentDescription = "Oficial",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
                             )
                         }
 
@@ -801,7 +871,29 @@ fun ConversationItem(
                         )
                     }
 
-                    // Row 2: Message preview (BELOW the tag & sender across full width)
+                    // Line 2: Tag Badge + Phone number (if sender name was an alias/contact)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SmsTagBadge(
+                            smsMeta = smsMeta,
+                            onClick = onTagClick
+                        )
+
+                        if (displayName != message.address && message.address.isNotBlank()) {
+                            Text(
+                                text = PhoneNumberUtils.formatDisplayNumber(message.address),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Line 3: Message preview across full width
                     SmsBodyPreview(
                         message = message,
                         smsMeta = smsMeta
@@ -873,6 +965,7 @@ fun ConversationItem(
 fun SmsOptionsSheet(
     message: SmsMessage,
     displayName: String,
+    isArchived: Boolean = false,
     onDismiss: () -> Unit,
     onOpenThread: () -> Unit,
     cortaRepository: CortaRepository,
@@ -928,6 +1021,42 @@ fun SmsOptionsSheet(
                     onDismiss()
                     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${message.address}"))
                     context.startActivity(intent)
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text(if (isArchived) "Desarchivar conversación" else "Archivar conversación", fontWeight = FontWeight.SemiBold) },
+                leadingContent = { Icon(if (isArchived) Icons.Rounded.Unarchive else Icons.Rounded.Archive, null, tint = MaterialTheme.colorScheme.primary) },
+                modifier = Modifier.clickable {
+                    onDismiss()
+                    screenScope.launch(Dispatchers.IO) {
+                        val tid = message.threadId.toLongOrNull() ?: 0L
+                        if (isArchived) {
+                            cortaRepository.unarchiveConversation(tid)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Conversación desarchivada", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            cortaRepository.archiveConversation(tid, message.address)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Conversación archivada", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Mover mensaje a la papelera", fontWeight = FontWeight.SemiBold) },
+                leadingContent = { Icon(Icons.Rounded.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
+                modifier = Modifier.clickable {
+                    onDismiss()
+                    screenScope.launch(Dispatchers.IO) {
+                        cortaRepository.moveToTrash("SMS", message.id, message.address, message.body)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Mensaje movido a la papelera", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             )
 
@@ -1007,7 +1136,12 @@ fun CategoriesBottomSheet(
     allCount: Int,
     banksCount: Int,
     personalCount: Int,
+    archivedCount: Int = 0,
     onSelectFilter: (SmsTabFilter) -> Unit,
+    onOpenKeywords: () -> Unit = {},
+    onOpenTrash: () -> Unit = {},
+    onExportCsv: () -> Unit = {},
+    onExportJson: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1023,6 +1157,7 @@ fun CategoriesBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
         ) {
@@ -1096,6 +1231,15 @@ fun CategoriesBottomSheet(
                     iconBg = MaterialTheme.colorScheme.tertiaryContainer,
                     iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
                     count = personalCount
+                ),
+                CategoryOption(
+                    filter = SmsTabFilter.ARCHIVED,
+                    title = "Archivados",
+                    subtitle = "Conversaciones guardadas y archivadas",
+                    icon = Icons.Rounded.Archive,
+                    iconBg = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    count = archivedCount
                 )
             )
 
@@ -1196,27 +1340,64 @@ fun CategoriesBottomSheet(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
-                onClick = {
-                    prefs.edit().putString("default_sms_tab", currentFilter.name).apply()
-                    Toast.makeText(context, "Categoría inicial de Mensajes guardada", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+            // Herramientas y Gestión
+            Text(
+                text = "Herramientas de Mensajería",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            ListItem(
+                headlineContent = { Text("Gestionar palabras clave bloqueadas", fontWeight = FontWeight.SemiBold) },
+                supportingContent = { Text("Configura términos de smishing y fraude bancario", style = MaterialTheme.typography.bodySmall) },
+                leadingContent = { Icon(Icons.Rounded.FilterList, null, tint = MaterialTheme.colorScheme.primary) },
+                modifier = Modifier.clickable {
+                    onDismiss()
+                    onOpenKeywords()
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Papelera de reciclaje", fontWeight = FontWeight.SemiBold) },
+                supportingContent = { Text("Revisa o restaura mensajes eliminados", style = MaterialTheme.typography.bodySmall) },
+                leadingContent = { Icon(Icons.Rounded.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
+                modifier = Modifier.clickable {
+                    onDismiss()
+                    onOpenTrash()
+                }
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Fijar categoría actual como inicial al abrir Mensajes",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                OutlinedButton(
+                    onClick = onExportCsv,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.FileDownload, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Exportar CSV", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                OutlinedButton(
+                    onClick = onExportJson,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Rounded.Code, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Exportar JSON", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

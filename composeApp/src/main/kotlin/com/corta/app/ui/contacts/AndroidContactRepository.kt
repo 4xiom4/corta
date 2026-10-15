@@ -24,7 +24,9 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
             ContactsContract.CommonDataKinds.Phone.PHOTO_URI,
-            ContactsContract.CommonDataKinds.Phone.STARRED
+            ContactsContract.CommonDataKinds.Phone.STARRED,
+            ContactsContract.RawContacts.ACCOUNT_TYPE,
+            ContactsContract.RawContacts.ACCOUNT_NAME
         )
         
         val cursor = context.contentResolver.query(
@@ -41,6 +43,8 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
             val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
             val photoUriIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
             val starredIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.STARRED)
+            val accTypeIndex = it.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE)
+            val accNameIndex = it.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME)
             
             while (it.moveToNext()) {
                 val id = it.getString(idIndex)
@@ -48,6 +52,16 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
                 val number = it.getString(numberIndex) ?: ""
                 val photoUri = it.getString(photoUriIndex)
                 val isFavorite = if (starredIndex != -1) it.getInt(starredIndex) == 1 else false
+                val rawAccType = if (accTypeIndex != -1) it.getString(accTypeIndex) else null
+                val accName = if (accNameIndex != -1) it.getString(accNameIndex) else null
+
+                val source = when {
+                    rawAccType == null -> "DEVICE"
+                    rawAccType.contains("google", ignoreCase = true) -> "GOOGLE"
+                    rawAccType.contains("whatsapp", ignoreCase = true) -> "WHATSAPP"
+                    rawAccType.contains("sim", ignoreCase = true) -> "SIM"
+                    else -> "DEVICE"
+                }
 
                 val existing = contactsById[id]
                 if (existing == null) {
@@ -57,7 +71,9 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
                         phoneNumber = number,
                         phoneNumbers = listOf(number).filter { value -> value.isNotBlank() },
                         photoUri = photoUri,
-                        isFavorite = isFavorite
+                        isFavorite = isFavorite,
+                        source = source,
+                        accountName = accName
                     )
                 } else {
                     val updatedNumbers = if (number.isNotBlank() && !existing.phoneNumbers.contains(number)) {
@@ -68,7 +84,9 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
                     contactsById[id] = existing.copy(
                         phoneNumber = updatedNumbers.firstOrNull() ?: existing.phoneNumber,
                         phoneNumbers = updatedNumbers,
-                        isFavorite = existing.isFavorite || isFavorite
+                        isFavorite = existing.isFavorite || isFavorite,
+                        source = if (existing.source == "DEVICE") source else existing.source,
+                        accountName = existing.accountName ?: accName
                     )
                 }
             }
@@ -92,5 +110,10 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
         val uri = android.net.Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contactId)
         val rowsUpdated = context.contentResolver.update(uri, values, null, null)
         rowsUpdated > 0
+    }
+
+    override fun invalidateCache() {
+        cachedContacts = null
+        lastLoadedAt = 0L
     }
 }

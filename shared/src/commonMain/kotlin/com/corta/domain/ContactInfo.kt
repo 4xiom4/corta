@@ -6,5 +6,7 @@ data class ContactInfo(
     val phoneNumber: String,
     val phoneNumbers: List<String> = emptyList(),
     val photoUri: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val source: String = "DEVICE",
+    val accountName: String? = null
 )

@@ -84,6 +84,11 @@ class ContactsViewModel(
         }
     }
 
+    fun refresh() {
+        repository.invalidateCache()
+        loadContacts()
+    }
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }

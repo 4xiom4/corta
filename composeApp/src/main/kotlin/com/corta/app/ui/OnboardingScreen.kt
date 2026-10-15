@@ -80,7 +80,6 @@ fun OnboardingScreen(
         Manifest.permission.WRITE_CONTACTS,
         Manifest.permission.CALL_PHONE,
         Manifest.permission.ANSWER_PHONE_CALLS,
-        Manifest.permission.RECORD_AUDIO,
         Manifest.permission.RECEIVE_MMS,
         Manifest.permission.RECEIVE_WAP_PUSH
     ).apply {
@@ -482,10 +481,6 @@ fun OnboardingDialogs(
                             append(strings.onboarding.permissionsReasoningDescPart2)
                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                                 append(strings.onboarding.permissionsReasoningDescBold2)
-                            }
-                            append(". ")
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("También necesitamos permiso de Micrófono y Almacenamiento para la grabación de llamadas locales.")
                             }
                         }
                     )

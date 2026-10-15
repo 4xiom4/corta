@@ -9,6 +9,10 @@ import com.corta.db.BlockedSms
 import com.corta.db.CortaDatabase
 import com.corta.db.FilterRule
 import com.corta.db.SmsLogEntry
+import com.corta.db.SpamKeyword
+import com.corta.db.ArchivedConversation
+import com.corta.db.TrashItem
+import com.corta.db.ContactGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
@@ -30,6 +34,10 @@ class CortaRepository(
     private var cachedRules: List<FilterRule>? = null
     private var lastCacheUpdate = 0L
     private val cacheTimeoutMs = 60000L // 60 segundos
+
+    // Cache en memoria para palabras clave de spam (< 2ms latencia en SMS)
+    private var cachedActiveSpamKeywords: List<SpamKeyword>? = null
+    private var lastSpamKeywordsUpdate = 0L
 
     private class PrefixTrie {
         private val root = Node()
@@ -71,6 +79,45 @@ class CortaRepository(
                 queries.insertRule("+56600", FilterAction.WARN.name, false, "SUBTEL Servicios (+56600)", "SUBTEL")
             }
             invalidateCache()
+        }
+
+        // Sembrar palabras clave de smishing/fraude bancario en Chile si está vacío
+        val existingKeywords = queries.getSpamKeywords().executeAsList()
+        if (existingKeywords.isEmpty()) {
+            queries.transaction {
+                val now = System.currentTimeMillis()
+                val defaults = listOf(
+                    "bancoestado" to "SMISHING",
+                    "banco estado" to "SMISHING",
+                    "clave unica" to "SMISHING",
+                    "clave única" to "SMISHING",
+                    "santander" to "SMISHING",
+                    "banco de chile" to "SMISHING",
+                    "cuenta suspendida" to "SMISHING",
+                    "actualiza tus datos" to "SMISHING",
+                    "paquete retenido" to "FRAUD",
+                    "devolucion impuestos" to "FRAUD",
+                    "ganaste" to "MARKETING",
+                    "premio" to "MARKETING",
+                    "sorteo" to "MARKETING",
+                    "ultimo dia" to "MARKETING"
+                )
+                defaults.forEach { (kw, cat) ->
+                    queries.insertSpamKeyword(kw, cat, true, now)
+                }
+            }
+            cachedActiveSpamKeywords = null
+        }
+
+        // Sembrar grupos de contacto predeterminados si está vacío
+        val existingGroups = queries.getContactGroups().executeAsList()
+        if (existingGroups.isEmpty()) {
+            queries.transaction {
+                queries.insertContactGroup("Familia", "family_restroom", "#10B981")
+                queries.insertContactGroup("Trabajo", "work", "#3B82F6")
+                queries.insertContactGroup("Amigos", "people", "#F59E0B")
+                queries.insertContactGroup("Emergencias", "local_hospital", "#EF4444")
+            }
         }
     }
 
@@ -267,6 +314,12 @@ class CortaRepository(
             .mapToList(Dispatchers.IO)
     }
 
+    fun getCallLogs(): List<CallLogEntry> = queries.getCallLogs().executeAsList()
+
+    fun getSmsLogs(): List<SmsLogEntry> = queries.getSmsLogs().executeAsList()
+
+    fun getBlockedSms(): List<BlockedSms> = queries.getBlockedSms().executeAsList()
+
     fun observeCallLogs(): Flow<List<CallLogEntry>> {
         return queries.getCallLogs()
             .asFlow()
@@ -309,6 +362,7 @@ class CortaRepository(
     
     private fun invalidateCache() {
         cachedRules = null
+        cachedActiveSpamKeywords = null
         regexCache.clear()
     }
 
@@ -395,4 +449,111 @@ class CortaRepository(
             }
         }
     }
+
+    // --- Palabras Clave de Spam (SMISHING / FRAUD / MARKETING) ---
+    fun getSpamKeywords(): List<SpamKeyword> = queries.getSpamKeywords().executeAsList()
+    
+    fun observeSpamKeywords(): Flow<List<SpamKeyword>> =
+        queries.getSpamKeywords().asFlow().mapToList(Dispatchers.IO)
+
+    fun getActiveSpamKeywords(): List<SpamKeyword> {
+        val now = System.currentTimeMillis()
+        val cached = cachedActiveSpamKeywords
+        if (cached != null && (now - lastSpamKeywordsUpdate) < cacheTimeoutMs) {
+            return cached
+        }
+        val list = queries.getActiveSpamKeywords().executeAsList()
+        cachedActiveSpamKeywords = list
+        lastSpamKeywordsUpdate = now
+        return list
+    }
+
+    fun addSpamKeyword(keyword: String, category: String = "SMISHING") {
+        val trimmed = keyword.trim().lowercase()
+        if (trimmed.isEmpty()) return
+        queries.insertSpamKeyword(trimmed, category, true, System.currentTimeMillis())
+        cachedActiveSpamKeywords = null
+    }
+
+    fun deleteSpamKeyword(id: Long) {
+        queries.deleteSpamKeyword(id)
+        cachedActiveSpamKeywords = null
+    }
+
+    fun toggleSpamKeyword(id: Long, isActive: Boolean) {
+        queries.toggleSpamKeyword(isActive, id)
+        cachedActiveSpamKeywords = null
+    }
+
+    // --- Conversaciones Archivadas (SMS) ---
+    fun getArchivedConversations(): List<ArchivedConversation> =
+        queries.getArchivedConversations().executeAsList()
+
+    fun observeArchivedConversations(): Flow<List<ArchivedConversation>> =
+        queries.getArchivedConversations().asFlow().mapToList(Dispatchers.IO)
+
+    fun isConversationArchived(threadId: Long): Boolean =
+        queries.isConversationArchived(threadId).executeAsOne() > 0
+
+    fun archiveConversation(threadId: Long, address: String) {
+        queries.archiveConversation(threadId, address, System.currentTimeMillis())
+    }
+
+    fun unarchiveConversation(threadId: Long) {
+        queries.unarchiveConversation(threadId)
+    }
+
+    // --- Papelera de Reciclaje (SMS y Llamadas) ---
+    fun getTrashItems(): List<TrashItem> = queries.getTrashItems().executeAsList()
+
+    fun getTrashItemsByType(itemType: String): List<TrashItem> =
+        queries.getTrashItemsByType(itemType).executeAsList()
+
+    fun observeTrashItems(): Flow<List<TrashItem>> =
+        queries.getTrashItems().asFlow().mapToList(Dispatchers.IO)
+
+    fun moveToTrash(itemType: String, originalId: String, senderOrNumber: String, contentPreview: String?) {
+        queries.insertTrashItem(itemType, originalId, senderOrNumber, contentPreview, System.currentTimeMillis())
+    }
+
+    fun deleteTrashItem(id: Long) {
+        queries.deleteTrashItem(id)
+    }
+
+    fun clearTrash() {
+        queries.clearTrash()
+    }
+
+    fun clearTrashByType(itemType: String) {
+        queries.clearTrashByType(itemType)
+    }
+
+    // --- Grupos de Contactos ---
+    fun getContactGroups(): List<ContactGroup> = queries.getContactGroups().executeAsList()
+
+    fun observeContactGroups(): Flow<List<ContactGroup>> =
+        queries.getContactGroups().asFlow().mapToList(Dispatchers.IO)
+
+    fun addContactGroup(name: String, iconName: String = "group", colorHex: String = "#3B82F6") {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        queries.insertContactGroup(trimmed, iconName, colorHex)
+    }
+
+    fun deleteContactGroup(id: Long) {
+        queries.deleteContactGroup(id)
+    }
+
+    fun getGroupMembers(groupId: Long): List<String> = queries.getGroupMembers(groupId).executeAsList()
+
+    fun addContactToGroup(contactId: String, groupId: Long) {
+        queries.addContactToGroup(contactId, groupId)
+    }
+
+    fun removeContactFromGroup(contactId: String, groupId: Long) {
+        queries.removeContactFromGroup(contactId, groupId)
+    }
+
+    fun getContactGroupsForContact(contactId: String): List<ContactGroup> =
+        queries.getContactGroupsForContact(contactId).executeAsList()
 }

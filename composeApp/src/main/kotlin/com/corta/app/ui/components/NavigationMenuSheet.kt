@@ -274,7 +274,7 @@ fun NavigationMenuSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Corta v1.0.0 • On-Device <2ms",
+                    text = "Corta v1.2 • On-Device <2ms",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )

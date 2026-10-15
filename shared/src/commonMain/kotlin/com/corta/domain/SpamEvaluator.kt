@@ -141,9 +141,22 @@ class SpamEvaluator(private val repository: CortaRepository) {
     }
     
     private fun evaluateSmsContent(body: String): FilterAction {
-        // Heurísticas basadas en contenido del mensaje
-        
-        // Palabras clave de spam
+        val lowerBody = body.lowercase()
+
+        // 1. Evaluar palabras clave de alto riesgo (SMISHING / FRAUD / ESTAFA) -> Bloqueo directo
+        val activeDbKeywords = repository.getActiveSpamKeywords()
+        var hasMarketingKeyword = false
+        for (kw in activeDbKeywords) {
+            val word = kw.keyword.trim().lowercase()
+            if (word.isNotEmpty() && lowerBody.contains(word)) {
+                when (kw.category.uppercase()) {
+                    "SMISHING", "FRAUD", "ESTAFA" -> return FilterAction.BLOCK
+                    "MARKETING", "PROMO" -> hasMarketingKeyword = true
+                }
+            }
+        }
+
+        // 2. Heurísticas basadas en contenido del mensaje
         val spamKeywords = listOf(
             "ganaste", "premio", "sorteo", "lotería", "oferta", "descuento",
             "urgente", "último día", "click aquí", "visita", "promo", "gratis",
@@ -151,7 +164,6 @@ class SpamEvaluator(private val repository: CortaRepository) {
             "http://", "https://", "www.", ".com", "link", "enlace"
         )
         
-        val lowerBody = body.lowercase()
         val spamKeywordCount = spamKeywords.count { keyword -> keyword in lowerBody }
         
         // Detectar URLs sospechosas
@@ -164,6 +176,7 @@ class SpamEvaluator(private val repository: CortaRepository) {
         
         return when {
             spamKeywordCount >= 3 || urlCount >= 2 -> FilterAction.BLOCK
+            hasMarketingKeyword -> FilterAction.MUTE
             spamKeywordCount >= 1 || urlCount >= 1 || excessiveCaps || suspiciousCharCount >= 3 -> FilterAction.WARN
             else -> FilterAction.ALLOW
         }
