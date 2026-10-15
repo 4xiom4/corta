@@ -6,15 +6,15 @@ import android.telecom.CallAudioState
 import android.telecom.InCallService
 import android.telecom.TelecomManager
 import android.telecom.VideoProfile
-import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 
 object CallManager {
-    private const val TAG = "CallManager"
+    private const val TAG = "Corta.CallManager"
     private var inCallService: InCallService? = null
-    
+
     var currentCall: Call? = null
         private set
 
@@ -26,28 +26,29 @@ object CallManager {
 
     private val _isSpeakerphoneOn = MutableStateFlow(false)
     val isSpeakerphoneOn: StateFlow<Boolean> = _isSpeakerphoneOn.asStateFlow()
-    
+
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
     private val _callDetailsUpdated = MutableStateFlow(0L)
     val callDetailsUpdated: StateFlow<Long> = _callDetailsUpdated.asStateFlow()
 
+    @Suppress("DEPRECATION")
     private val callCallback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
-            Log.d(TAG, "Call state changed: $state")
+            Timber.tag(TAG).d("Call state changed: %d", state)
             _callState.value = state
-            
+
             if (state == Call.STATE_SELECT_PHONE_ACCOUNT) {
                 autoSelectPhoneAccount(call)
             }
-            
+
             if (state == Call.STATE_DISCONNECTED) {
                 clearCall()
             }
         }
-        
+
         override fun onDetailsChanged(call: Call, details: Call.Details) {
             super.onDetailsChanged(call, details)
             _callDetailsUpdated.value = System.currentTimeMillis()
@@ -60,10 +61,10 @@ object CallManager {
             val accounts = telecomManager?.callCapablePhoneAccounts
             if (!accounts.isNullOrEmpty()) {
                 call.phoneAccountSelected(accounts[0], false)
-                Log.d(TAG, "Auto-selected phone account: ${accounts[0].id}")
+                Timber.tag(TAG).d("Auto-selected phone account: %s", accounts[0].id)
             }
         } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to auto-select phone account", e)
+            Timber.tag(TAG).e(e, "Failed to auto-select phone account")
         }
     }
 
@@ -73,13 +74,13 @@ object CallManager {
 
     fun updateCall(call: Call) {
         if (currentCall == call) return
-        
+
         currentCall?.unregisterCallback(callCallback)
         currentCall = call
         if (call.state != Call.STATE_DISCONNECTED) {
             call.registerCallback(callCallback)
             _callState.value = call.state
-            
+
             if (call.state == Call.STATE_SELECT_PHONE_ACCOUNT) {
                 autoSelectPhoneAccount(call)
             }
@@ -94,7 +95,7 @@ object CallManager {
         _callState.value = Call.STATE_DISCONNECTED
         _isRecording.value = false
     }
-    
+
     fun onAudioStateChanged(audioState: CallAudioState?) {
         if (audioState != null) {
             _isMuted.value = audioState.isMuted
@@ -103,39 +104,39 @@ object CallManager {
     }
 
     fun answer() {
-        Log.d(TAG, "Answering call")
+        Timber.tag(TAG).d("Answering call")
         currentCall?.answer(VideoProfile.STATE_AUDIO_ONLY)
     }
 
     fun reject() {
-        Log.d(TAG, "Rejecting call")
+        Timber.tag(TAG).d("Rejecting call")
         currentCall?.reject(false, null)
     }
 
     fun disconnect() {
-        Log.d(TAG, "Disconnecting call")
+        Timber.tag(TAG).d("Disconnecting call")
         currentCall?.disconnect()
     }
 
     fun hold() {
         val state = currentCall?.state
         if (state == Call.STATE_ACTIVE) {
-            Log.d(TAG, "Holding call")
+            Timber.tag(TAG).d("Holding call")
             currentCall?.hold()
         } else if (state == Call.STATE_HOLDING) {
-            Log.d(TAG, "Unholding call")
+            Timber.tag(TAG).d("Unholding call")
             currentCall?.unhold()
         }
     }
 
     fun setMute(muted: Boolean) {
-        Log.d(TAG, "Setting mute: $muted")
+        Timber.tag(TAG).d("Setting mute: %s", muted)
         inCallService?.setMuted(muted)
         _isMuted.value = muted
     }
 
     fun setSpeakerphoneOn(on: Boolean) {
-        Log.d(TAG, "Setting speakerphone: $on")
+        Timber.tag(TAG).d("Setting speakerphone: %s", on)
         val route = if (on) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_EARPIECE
         inCallService?.setAudioRoute(route)
         _isSpeakerphoneOn.value = on
@@ -146,12 +147,13 @@ object CallManager {
     }
 
     fun playDtmfTone(digit: Char) {
-        Log.d(TAG, "Playing DTMF tone: $digit")
+        Timber.tag(TAG).d("Playing DTMF tone: %s", digit)
         currentCall?.playDtmfTone(digit)
     }
 
     fun stopDtmfTone() {
-        Log.d(TAG, "Stopping DTMF tone")
+        Timber.tag(TAG).d("Stopping DTMF tone")
         currentCall?.stopDtmfTone()
     }
 }
+

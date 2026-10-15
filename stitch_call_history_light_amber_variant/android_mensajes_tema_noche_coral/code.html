@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-dim": "#0052a1",
+                        "surface-dim": "#1a1c1e",
+                        "secondary-fixed-dim": "#cfd4e5",
+                        "tertiary-fixed": "#fae0a8",
+                        "inverse-primary": "#5f9efb",
+                        "on-primary-fixed-variant": "#002956",
+                        "on-primary": "#f8f8ff",
+                        "on-primary-container": "#002045",
+                        "surface-container-highest": "#33353a",
+                        "surface-container-lowest": "#0d0e10",
+                        "secondary-fixed": "#dde2f3",
+                        "tertiary-fixed-dim": "#ebd29b",
+                        "primary-fixed": "#5f9efb",
+                        "on-error-container": "#6e0a12",
+                        "secondary-dim": "#4d5361",
+                        "on-secondary-fixed": "#393f4c",
+                        "surface-variant": "#44474e",
+                        "surface-container-high": "#282a2f",
+                        "secondary": "#595f6d",
+                        "on-tertiary-container": "#614f25",
+                        "surface-container": "#1e2025",
+                        "secondary-container": "#dde2f3",
+                        "on-background": "#e2e2e6",
+                        "surface-tint": "#005eb6",
+                        "surface-bright": "#38393e",
+                        "on-tertiary-fixed-variant": "#6c592e",
+                        "on-secondary-container": "#4c525f",
+                        "inverse-surface": "#e2e2e6",
+                        "primary-container": "#004786",
+                        "on-tertiary-fixed": "#4e3d14",
+                        "tertiary-dim": "#635126",
+                        "on-tertiary": "#fff8f0",
+                        "outline": "#8e9199",
+                        "primary-fixed-dim": "#5191ed",
+                        "background": "#0d0e10",
+                        "outline-variant": "#44474e",
+                        "on-secondary": "#f8f8ff",
+                        "error-dim": "#67040d",
+                        "inverse-on-surface": "#2f3033",
+                        "surface": "#1a1c1e",
+                        "on-surface-variant": "#c4c6cf",
+                        "on-primary-fixed": "#000000",
+                        "surface-container-low": "#1a1c1e",
+                        "on-surface": "#e2e2e6",
+                        "error-container": "#fa746f",
+                        "on-error": "#fff7f6",
+                        "tertiary-container": "#fae0a8",
+                        "on-secondary-fixed-variant": "#555b69",
+                        "error": "#ffb4ab",
+                        "tertiary": "#705d31",
+                        "primary": "#d0e4ff",
+                        /* Custom Dark Coral Accents for Night Theme */
+                        "coral-accent": "#ff8a80",
+                        "on-coral": "#3d0000"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .coral-gradient {
+            background: linear-gradient(135deg, #ff8a80 0%, #d32f2f 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body select-none">
+<!-- TopAppBar from JSON -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-slate-50/85 dark:bg-slate-950/85 backdrop-blur-2xl">
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Inter'] font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-50 text-xl">Mensajes</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50" data-icon="search">search</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-coral-accent/20">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="portrait of a professional man with glasses and a friendly smile in soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChTWm9YQVK7Zy0jsGSBXt6gi_Z7_RtjNYk4kVNth0w7mY2Rz_ng9AbvuklUZWYXBClYfuGa7pKuyw1N7DYus09QgzjUE7KEWBqd1zQ78RgrZlTtU-JxAr6zuSznb_v-IwaaATnHu5xD0dJsU8jE8SUq7LFpzC_xl1ph-2SXEwq3Fwg_bUVB_cetAWhr62Acek1lYAtrp11QIdHoeCy_36N2zi6Z7fpkpzOYj42U74j8keuG9YTqzjArPrMCggxiJScwhkkuiXlkLwj"/>
+</div>
+</div>
+</header>
+<main class="px-4 pt-4 pb-32 max-w-3xl mx-auto">
+<!-- Search/Filter Chips -->
+<div class="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar">
+<span class="px-5 py-2.5 rounded-xl bg-coral-accent text-on-coral font-semibold text-sm">Todo</span>
+<span class="px-5 py-2.5 rounded-xl bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-surface-container-highest transition-colors">No leídos</span>
+<span class="px-5 py-2.5 rounded-xl bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-surface-container-highest transition-colors">Personal</span>
+<span class="px-5 py-2.5 rounded-xl bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-surface-container-highest transition-colors">Trabajo</span>
+</div>
+<!-- Conversation List (Tonal Architecture, No Borders) -->
+<div class="space-y-1">
+<!-- Item 1: Unread -->
+<div class="group relative flex items-center p-4 rounded-3xl bg-surface-container-low hover:bg-surface-container transition-all cursor-pointer">
+<div class="relative">
+<img class="w-14 h-14 rounded-full border-2 border-background object-cover" data-alt="profile photo of a young woman with curly hair smiling in a sunlit outdoor garden" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXXeLrnHQfuHBFcCeabZwWaDWPz-1PcyollJltzPRhY-7l23y8remONASNAP1O2sormhZq2jO6L9m2bTKky6D4wcy9MfR_xLSh1lyrIColjeLG6XZQ-oRSo_RizlAqWQMqo3nym2vk8vtFFU8KjLtv1t8Dk_IxHPw0n6ELJfLe9tdOlTH1e9HpZyLIxuc3Kne9OM11UzcBm11Rbqouzv0QC9sKplZxgZI5YwlCx1Atmy_EwOHMbCPMsoGnhK9rY_czxPH_uAftoqG5"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-coral-accent rounded-full border-2 border-background"></div>
+</div>
+<div class="ml-4 flex-1">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface tracking-tight">Elena Rodríguez</h3>
+<span class="text-xs font-bold text-coral-accent uppercase tracking-wider">Hace 2 min</span>
+</div>
+<p class="text-on-surface font-semibold line-clamp-1 mt-0.5">¿Viste el nuevo diseño que envié? Me encanta el color coral...</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="group flex items-center p-4 rounded-3xl hover:bg-surface-container transition-all cursor-pointer">
+<div class="relative">
+<img class="w-14 h-14 rounded-full border-2 border-background object-cover" data-alt="portrait of a man with a short beard and stylish haircut against a dark minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDkDuUgnUOePmJrY3Kr5bzB-fZKSEJi67yyehFBWsPEsFs4rufYAhYKUMiJl1eV6Xmoj4Dda86bC9ERwulFlz8_JxeKAk3WoFzdFN6cJfqxTv_hGxnZfQzQBFKL6RAmmxxjgoPIdpgqiPY4DLIVJffYUYP350P8hRc2DSZ5ecoqZGcdMDSjmXAdBmcFYfu8haNZL0SATV8PHyFMigtxFwW31-olW7RINPs6dKS5Vn30tEtLMtVY0ca07Ishq6KPlmfsx3pd-5j21vm"/>
+</div>
+<div class="ml-4 flex-1">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface tracking-tight">Marcos Silva</h3>
+<span class="text-xs font-medium text-on-surface-variant">14:20</span>
+</div>
+<p class="text-on-surface-variant line-clamp-1 mt-0.5">Confirmado para la reunión de mañana a las 10.</p>
+</div>
+</div>
+<!-- Item 3: Group -->
+<div class="group flex items-center p-4 rounded-3xl hover:bg-surface-container transition-all cursor-pointer">
+<div class="w-14 h-14 rounded-full bg-surface-container-highest flex items-center justify-center relative overflow-hidden">
+<div class="grid grid-cols-2 gap-0.5 w-full h-full">
+<img class="w-full h-full object-cover" data-alt="abstract close up of a woman face for avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJWx8mX0nqZyuLp5EwqiWApKHUo3VcwmdiG3ThDEquGGigMjEfeVfBbE7CRX5NJ6KYF-Rtq6hVH5ygINaDtNGscKNii8cumCzUXk5zpIH95RzagmPmlZB_zuc08KyHowiC-JQ56d8ZGgBxK2eOSIIMx4rTHOuuRSO80rbA85qp8hX88dUdD5NHMFHptdh317Y74jWHz6m-z0LbEobMjIlVNWnOJZs0vpgRuP5IJTIn4v5V1LZ1ZjLY9HrHR2hRGUQmKbesXAfhb9rB"/>
+<img class="w-full h-full object-cover" data-alt="abstract close up of a man face for avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXPH1l6MENS7OaSPXFXUnRwgl7MU7h7tllvI-Y4BICRb1Ne0GQO6A2aZogHx9mMDjrt9vOLqcf28B7fDycZP5aD7FILEVupSEDYcxBNOGFaXKz6ov2f1EenkDj6TOm9hyFCGgc_KfgGDsHj7WVAYwZ-jomztid-KO7BaI1HQ1cTEOg-Jm6a-1iPhOQC34uujpgRf8gdRI96yKsbBJ9VmVpBOjoqL0pz_4PVqxuqv9mc91CyCQ93swx25ZMhYjCMYDptoeCl_KMbqkj"/>
+</div>
+</div>
+<div class="ml-4 flex-1">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface tracking-tight">Equipo de Diseño 🎨</h3>
+<span class="text-xs font-medium text-on-surface-variant">Ayer</span>
+</div>
+<p class="text-on-surface-variant line-clamp-1 mt-0.5"><span class="font-bold">Ana:</span> El gradiente oscuro se ve increíble con coral.</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="group flex items-center p-4 rounded-3xl hover:bg-surface-container transition-all cursor-pointer">
+<div class="relative">
+<img class="w-14 h-14 rounded-full border-2 border-background object-cover" data-alt="close-up portrait of a woman with a professional look and soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxewdW5ftDUNj2sLaPxhDNEJNTM6P-qlDn1RrYByNVlKdbs4k2RXKXLpRxlQb1VjaasGBdyDt03uAvThabAoeDpM9ywkOjhlRw-goMCJQi38uGNooAVt4UdrQrQO_JkbFr4Ky52Zsr60GIL__8Qg4RaYRN_6v2E5tNx_UgIApzv6gj1ykJCHGIe8HEb0YRUUAte3L7DQTfjaQ-XDVnJ9IkxR5YSmvgqAvSjnPH6HdmN0vV2wMgKEKhs88GGjAiWaa5xRpXnMxqVo9y"/>
+</div>
+<div class="ml-4 flex-1">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface tracking-tight">Laura García</h3>
+<span class="text-xs font-medium text-on-surface-variant">Ayer</span>
+</div>
+<p class="text-on-surface-variant line-clamp-1 mt-0.5">¡Feliz cumpleaños! Pásala genial hoy.</p>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="group flex items-center p-4 rounded-3xl hover:bg-surface-container transition-all cursor-pointer">
+<div class="relative">
+<div class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-container text-2xl" data-icon="store">store</span>
+</div>
+</div>
+<div class="ml-4 flex-1">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface tracking-tight">Google Store</h3>
+<span class="text-xs font-medium text-on-surface-variant">Lunes</span>
+</div>
+<p class="text-on-surface-variant line-clamp-1 mt-0.5">Tu pedido ha sido enviado. Haz clic para rastrear.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-24 right-6 w-16 h-16 coral-gradient rounded-3xl shadow-2xl flex items-center justify-center text-on-coral transition-transform active:scale-90 z-40">
+<span class="material-symbols-outlined text-3xl font-bold" data-icon="edit">edit</span>
+</button>
+<!-- BottomNavBar from JSON -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-slate-100/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+<!-- Active Tab: MENSAJES -->
+<a class="flex flex-col items-center justify-center text-blue-800 dark:text-blue-300 after:content-['\u2022'] after:text-[8px] after:mt-0.5 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">MENSAJES</span>
+</a>
+<!-- Inactive Tab: LLAMADAS -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">LLAMADAS</span>
+</a>
+<!-- Inactive Tab: CONTACTOS -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="contacts">contacts</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">CONTACTOS</span>
+</a>
+</nav>
+<!-- Subtle texture overlay for premium dark mode feel -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+</body></html>

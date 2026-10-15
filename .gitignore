@@ -33,3 +33,8 @@ composeApp/build/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Detekt / ktlint / spotless (check generated artefacts only - keep config in repo)
+**/detekt/baseline.xml
+
+*.hprof

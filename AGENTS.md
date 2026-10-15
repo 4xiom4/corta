@@ -1,0 +1,33 @@
+# AGENTS.md v1.2 (Octubre 2026)
+
+- **Módulos y Build**: Proyecto Kotlin Multiplatform (KMP) con `:composeApp` (Android + Jetpack Compose + servicios del SO) y `:shared` (dominio, datos, SQLDelight, Ktor, Koin). Sin `gradlew` de sistema previo; usa el wrapper `./gradlew` generado en la raíz (Gradle 9.5.0, Java 17 toolchain). Enlaces en `settings.gradle.kts` y catálogo en `gradle/libs.versions.toml`.
+- **Inicio y DI**: `composeApp/.../CortaApplication.kt` carga SQLCipher en memoria de forma atómica, arranca Koin (`appModule`) y agenda la sincronización diferencial en segundo plano. DI en `composeApp/.../di/AppModule.kt` provee `CortaDatabase`, `CortaRepository`, `SpamEvaluator`, `CallValidator` y factories de drivers.
+- **Flujo Anti-Spam (Llamadas)**: `CallScreeningService` -> `CallValidator` -> `SpamEvaluator` -> `CortaRepository` -> SQLDelight. 
+  - *Regla Crítica de Latencia:* La evaluación debe completarse en memoria local en **< 2 milisegundos**. **Queda estrictamente prohibida cualquier petición de red durante la llamada entrante**.
+  - Si una regla es `BLOCK`, `CortaCallScreeningService` debe ejecutar `setDisallowCall(true)`, `setRejectCall(true)`, `setSkipCallLog(false)`, registrar en `CallLogEntry` y notificar alerta silenciosa.
+- **Flujo SMS**: `SmsReceiver` recibe `SMS_DELIVER_ACTION`, agrupa mensajes multipart, evalúa el remitente y cuerpo con `SpamEvaluator`/`CortaRepository` (heurística de smishing y palabras clave de fraude), y decide bloqueo, silenciado o inserción en la bandeja correspondiente.
+- **Normalización Simétrica Chilena (+56)**: 
+  - En Chile las llamadas entran tanto en formato local (`809XXXXXX`, `9XXXXXXXX`) como internacional (`+56809XXXXXX`, `+569XXXXXXXX`).
+  - Todo matching de reglas (Trie exacto, prefijo o regex) y toda inserción en base de datos debe normalizarse de forma simétrica usando `PhoneNumberUtils.normalize()`.
+  - Las reglas de la SUBTEL (`809` para bloqueo de telemarketing masivo no solicitado y `600` para aviso de servicios contratados) deben estar **pre-sembradas localmente en la base de datos** desde el primer arranque, sin depender de que se complete una sincronización de red.
+- **Lista Blanca Crítica Inmutable (Chile)**:
+  - Nunca bloquear servicios de emergencia: 130, 131, 132, 133, 134, 137, 147, 149.
+  - Nunca bloquear líneas 14xx de Seguridad Municipal (1402, 1403, 1406, 1414, 1416, 1417, 1418, 1419, 1445, 1468, etc.).
+  - Nunca bloquear servicios esenciales de salud y utilidad pública (600 360 7777 Salud Responde, Registro Civil, bancos públicos, servicios básicos).
+  - La verificación de whitelist en `CortaRepository.isWhitelistedNumber()` se evalúa antes que cualquier regla de usuario, SUBTEL o comunidad.
+- **Paginación Segura en Android 15 (`ContentResolver`)**:
+  - **Prohibido:** Concatenar strings como `"${CallLog.Calls.DATE} DESC LIMIT 30 OFFSET 0"` en el argumento `sortOrder` de `ContentResolver.query()`. Android 10+ y Android 15 lanzan `IllegalArgumentException` por inyección de cláusulas SQL no autorizadas.
+  - **Obligatorio:** Utilizar `Bundle` con `ContentResolver.QUERY_ARG_LIMIT` y `ContentResolver.QUERY_ARG_OFFSET` en API 26+ (o navegación por posición de cursor como fallback seguro).
+- **Estabilidad de Paging y ViewModels**:
+  - No reconstruir instancias de `Pager` repetidamente mediante `flatMapLatest` sobre flows de SQLite en `CallLogViewModel` o `SmsViewModel`.
+  - Mantener las operaciones de I/O y consultas pesadas en `Dispatchers.IO` dentro de `viewModelScope`.
+  - Prohibido incluir retardos artificiales (`delay(1000)`) o simulaciones de carga en pantallas de producción.
+- **UI y Navegación (Material Design 3)**:
+  - **Tres destinos esenciales en NavigationBar:** **Mensajes** (`SmsScreen`), **Llamadas** (`CallLogScreen`) y **Contactos** (`ContactsScreen`).
+  - Ajustes, reglas y diagnóstico accesibles desde la `TopAppBar` o el menú lateral `NavigationMenuSheet`.
+  - Paleta armónica siguiendo la regla **60-30-10** y soporte completo para temas dinámicos Monet y las 4 variantes Stitch (`STITCH_AMBER`, `STITCH_PURPLE`, `STITCH_CORAL`, `STITCH_SAGE`).
+  - Objetivos táctiles mínimos de **48x48 dp** y soporte para `WindowInsets.safeDrawing` para cumplir la norma Edge-to-Edge de Android 15.
+- **Comandos del Proyecto**:
+  - Compilar APK debug: `./gradlew :composeApp:assembleDebug`
+  - Ejecutar pruebas: `./gradlew testDebugUnitTest`
+  - Instalar en dispositivo físico o emulador vía ADB: `adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk`

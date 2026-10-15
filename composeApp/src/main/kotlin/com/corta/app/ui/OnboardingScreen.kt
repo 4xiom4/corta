@@ -27,15 +27,43 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import android.content.pm.ApplicationInfo
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.ColumnScope
 
 @Composable
 fun OnboardingScreen(
     roleManager: RoleManager,
-    onPermissionsGranted: () -> Unit
+    permissionsState: OnboardingPermissionsState,
+    rolesState: OnboardingRolesState,
+    onPermissionsGranted: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     val context = LocalContext.current
+    val strings = Strings
     val lifecycleOwner = LocalLifecycleOwner.current
-    
+    val prefs = context.getSharedPreferences("corta_prefs", android.content.Context.MODE_PRIVATE)
+    val isDebugMode = prefs.getBoolean("debug_mode", false)
+    val isDebugBuild = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    val isDebugBypassEnabled = isDebugBuild && isDebugMode
+
+    val hasCriticalPermissions = permissionsState.hasCriticalPermissions
+    val hasAllStandardPermissions = permissionsState.hasAllStandardPermissions
+    val hasSpecialPermissions = permissionsState.hasSpecialPermissions
+
+    val hasDialerRole = rolesState.hasDialerRole
+    val hasCallScreeningRole = rolesState.hasCallScreeningRole
+    val hasSmsRole = rolesState.hasSmsRole
+
     // Permisos críticos sin los cuales la app no puede funcionar
     val criticalPermissions = listOf(
         Manifest.permission.READ_PHONE_STATE,
@@ -67,45 +95,8 @@ fun OnboardingScreen(
 
     val allStandardPermissions = (criticalPermissions.toList() + optionalPermissions.toList()).toTypedArray()
 
-    var hasCriticalPermissions by remember {
-        mutableStateOf(criticalPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        })
-    }
-
-    var hasAllStandardPermissions by remember {
-        mutableStateOf(allStandardPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        })
-    }
-
-    var hasSpecialPermissions by remember {
-        mutableStateOf(Settings.canDrawOverlays(context))
-    }
-
-    var hasDialerRole by remember { mutableStateOf(!roleManager.isRoleAvailable(RoleManager.ROLE_DIALER) || roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) }
-    var hasCallScreeningRole by remember { mutableStateOf(!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) || roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) }
-    var hasSmsRole by remember { 
-        mutableStateOf(
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !roleManager.isRoleAvailable(RoleManager.ROLE_SMS) || roleManager.isRoleHeld(RoleManager.ROLE_SMS)
-        ) 
-    }
-
     fun refreshState() {
-        hasCriticalPermissions = criticalPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        }
-        hasAllStandardPermissions = allStandardPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        }
-        hasSpecialPermissions = Settings.canDrawOverlays(context)
-        hasDialerRole = !roleManager.isRoleAvailable(RoleManager.ROLE_DIALER) || roleManager.isRoleHeld(RoleManager.ROLE_DIALER)
-        hasCallScreeningRole = !roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) || roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
-        hasSmsRole = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !roleManager.isRoleAvailable(RoleManager.ROLE_SMS) || roleManager.isRoleHeld(RoleManager.ROLE_SMS)
-        
-        if (hasCriticalPermissions && hasSpecialPermissions && hasDialerRole && hasCallScreeningRole && hasSmsRole) {
-            onPermissionsGranted()
-        }
+        onRefresh()
     }
 
     // Refrescar al volver del sistema
@@ -155,213 +146,342 @@ fun OnboardingScreen(
         refreshState()
     }
 
+    val grantedCount = listOf(
+        hasCriticalPermissions,
+        hasCallScreeningRole,
+        hasDialerRole,
+        hasSmsRole,
+        hasSpecialPermissions
+    ).count { it }
+    val totalSteps = 5
+    val progressFraction = grantedCount.toFloat() / totalSteps.toFloat()
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(WindowInsets.safeDrawing.asPaddingValues())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
-            Text(
-                text = Strings.onboardingTitle,
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(Strings.onboardingDescBold)
-                    }
-                    append(Strings.onboardingDescRest)
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Button(
-                onClick = { showExplanationDialog = true },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = !hasAllStandardPermissions
-            ) {
-                Text(if (hasAllStandardPermissions) "✅ Permisos Concedidos" else "📋 Solicitar Permisos Esenciales")
-            }
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Mostrar estado de permisos individuales
-            if (!hasCriticalPermissions) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            "⚠️ Permisos Faltantes",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Text(
-                            "La app necesita los siguientes permisos para funcionar correctamente:",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        // Mostrar permisos críticos que faltan
-                        criticalPermissions.filter { 
-                            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED 
-                        }.forEach { permission ->
-                            val description = when (permission) {
-                                Manifest.permission.READ_PHONE_STATE -> "• Leer estado del teléfono (para identificar llamadas)"
-                                Manifest.permission.READ_CALL_LOG -> "• Leer registro de llamadas"
-                                Manifest.permission.WRITE_CALL_LOG -> "• Modificar registro de llamadas"
-                                Manifest.permission.RECEIVE_SMS -> "• Recibir SMS (para filtrar spam)"
-                                Manifest.permission.SEND_SMS -> "• Enviar SMS (respuestas automáticas)"
-                                Manifest.permission.READ_SMS -> "• Leer SMS (para analizar contenido)"
-                                else -> "• $permission"
-                            }
-                            Text(
-                                description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        
-                        // Mostrar permisos especiales faltantes
-                        if (!hasSpecialPermissions) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "⚠️ Permisos Especiales Requeridos:",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                "• Ventanas del sistema (para mostrar alertas)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+            Surface(
+                modifier = Modifier.size(72.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Security,
+                        contentDescription = null,
+                        modifier = Modifier.size(38.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Activa tu Escudo Corta",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Configura los permisos para interceptar telemarketing 809 y proteger tus comunicaciones",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones para permisos especiales si faltan
-            val missingSpecialPermissions = if (!Settings.canDrawOverlays(context)) {
-                listOf(Manifest.permission.SYSTEM_ALERT_WINDOW)
-            } else emptyList()
-            
-            if (missingSpecialPermissions.contains(Manifest.permission.SYSTEM_ALERT_WINDOW)) {
-                Button(
+            // Progress Header
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Estado de protección",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$grantedCount de $totalSteps activadas",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { progressFraction },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Step cards list
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OnboardingStepCard(
+                    title = "1. Permisos Esenciales de Telefonía",
+                    description = "Consultar números entrantes y contrastarlos con la base local SUBTEL en <2ms.",
+                    icon = Icons.Rounded.PhoneInTalk,
+                    tag = if (hasCriticalPermissions) "Activo ✓" else "Requerido",
+                    isGranted = hasCriticalPermissions,
+                    enabled = true,
+                    onClick = { showExplanationDialog = true }
+                )
+
+                OnboardingStepCard(
+                    title = "2. Filtrado de Llamadas (Call Screening)",
+                    description = "Motor nativo que rechaza llamadas 809 antes de que suenen en el teléfono.",
+                    icon = Icons.Rounded.Shield,
+                    tag = if (hasCallScreeningRole) "Activo ✓" else "Recomendado",
+                    isGranted = hasCallScreeningRole,
+                    enabled = hasCriticalPermissions,
                     onClick = {
-                        val intent = Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+                                screeningLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+                            }
+                        }
+                    }
+                )
+
+                OnboardingStepCard(
+                    title = "3. Teléfono Predeterminado (Dialer)",
+                    description = "Gestiona llamadas entrantes, marcador DTMF y grabación local con Corta.",
+                    icon = Icons.Rounded.Dialpad,
+                    tag = if (hasDialerRole) "Activo ✓" else "Opcional",
+                    isGranted = hasDialerRole,
+                    enabled = hasCriticalPermissions,
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            if (roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                                dialerLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER))
+                            }
+                        }
+                    }
+                )
+
+                OnboardingStepCard(
+                    title = "4. Mensajes SMS y Smishing",
+                    description = "Filtro contra suplantación bancaria y enlaces sospechosos en mensajes.",
+                    icon = Icons.AutoMirrored.Rounded.Message,
+                    tag = if (hasSmsRole) "Activo ✓" else "Opcional",
+                    isGranted = hasSmsRole,
+                    enabled = hasCriticalPermissions,
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            if (roleManager.isRoleAvailable(RoleManager.ROLE_SMS)) {
+                                smsLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS))
+                            }
+                        }
+                    }
+                )
+
+                OnboardingStepCard(
+                    title = "5. Alertas Flotantes en Pantalla",
+                    description = "Muestra la ficha del llamante y alertas de spam mientras usas otras apps.",
+                    icon = Icons.Rounded.Layers,
+                    tag = if (hasSpecialPermissions) "Activo ✓" else "Opcional",
+                    isGranted = hasSpecialPermissions,
+                    enabled = true,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                             data = Uri.parse("package:" + context.packageName)
                         }
                         alertWindowLauncher.launch(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                ) {
-                    Text("🔓 Solicitar Permiso de Ventanas del Sistema", style = MaterialTheme.typography.labelSmall)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) && !hasCallScreeningRole) {
-                        screeningLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
                     }
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = !hasCallScreeningRole && hasCriticalPermissions
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (hasCallScreeningRole) "✅ Screening Disponible" else "🛡️ Activar Screening", style = MaterialTheme.typography.labelMedium)
-                    Text(if (hasCallScreeningRole) "Llamadas serán filtradas automáticamente" else "Permite bloquear spam antes de que suene", style = MaterialTheme.typography.bodySmall)
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (roleManager.isRoleAvailable(RoleManager.ROLE_DIALER) && !hasDialerRole) {
-                        dialerLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER))
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = !hasDialerRole && hasCallScreeningRole
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (hasDialerRole) "✅ App Telefónica por Defecto" else "📞 Establecer como Telefónica por Defecto", style = MaterialTheme.typography.labelMedium)
-                    Text(if (hasDialerRole) "Corta manejará todas las llamadas" else "Reemplaza tu app actual de llamadas", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {
-                        if (roleManager.isRoleAvailable(RoleManager.ROLE_SMS) && !hasSmsRole) {
-                            smsLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = !hasSmsRole && hasDialerRole
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (hasSmsRole) "✅ App SMS por Defecto" else "📱 Establecer como App SMS por Defecto", style = MaterialTheme.typography.labelMedium)
-                        Text(if (hasSmsRole) "Corta filtrará todos los mensajes" else "Reemplaza tu app actual de SMS", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-
-            if (hasCriticalPermissions && hasDialerRole && hasCallScreeningRole && hasSmsRole) {
-                Spacer(modifier = Modifier.height(32.dp))
+            if (hasCriticalPermissions) {
                 Button(
                     onClick = onPermissionsGranted,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = MaterialTheme.shapes.large
                 ) {
-                    Text("Continuar a la aplicación")
+                    Text(
+                        text = if (hasCallScreeningRole) "Comenzar a Proteger" else "Continuar con Protección Básica",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             } else {
-                // Opción de forzar continuar si está bloqueado pero tiene lo mínimo
-                Spacer(modifier = Modifier.height(32.dp))
-                OutlinedButton(
-                    onClick = onPermissionsGranted,
-                    modifier = Modifier.fillMaxWidth()
+                Button(
+                    onClick = { showExplanationDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = MaterialTheme.shapes.large
                 ) {
-                    Text("⚠️ Forzar entrada (Depuración/Atascado)")
+                    Text(
+                        text = "Configurar Permisos Requeridos",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
     }
 
+    OnboardingDialogs(
+        showExplanationDialog = showExplanationDialog,
+        onShowExplanationDialogChange = { showExplanationDialog = it },
+        showPrivacyDialog = showPrivacyDialog,
+        onShowPrivacyDialogChange = { showPrivacyDialog = it },
+        hasAllStandardPermissions = hasAllStandardPermissions,
+        permissionsLauncher = permissionsLauncher,
+        allStandardPermissions = allStandardPermissions
+    )
+}
+
+@Composable
+fun OnboardingStepCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    tag: String,
+    isGranted: Boolean,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = if (!isGranted && enabled) onClick else ({}),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isGranted) MaterialTheme.colorScheme.surfaceContainerLowest
+                else if (!enabled) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                else MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(
+            1.dp,
+            if (isGranted) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        ),
+        enabled = !isGranted && enabled
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isGranted) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isGranted) Icons.Rounded.Check else icon,
+                        contentDescription = null,
+                        tint = if (isGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = when {
+                            isGranted -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                            tag == "Requerido" -> MaterialTheme.colorScheme.errorContainer
+                            else -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                        }
+                    ) {
+                        Text(
+                            text = tag,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                isGranted -> MaterialTheme.colorScheme.primary
+                                tag == "Requerido" -> MaterialTheme.colorScheme.onErrorContainer
+                                else -> MaterialTheme.colorScheme.onSecondaryContainer
+                            },
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight
+                )
+            }
+
+            if (!isGranted && enabled) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun OnboardingDialogs(
+    showExplanationDialog: Boolean,
+    onShowExplanationDialogChange: (Boolean) -> Unit,
+    showPrivacyDialog: Boolean,
+    onShowPrivacyDialogChange: (Boolean) -> Unit,
+    hasAllStandardPermissions: Boolean,
+    permissionsLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
+    allStandardPermissions: Array<String>
+) {
+    val strings = Strings
     if (showExplanationDialog) {
         AlertDialog(
-            onDismissRequest = { showExplanationDialog = false },
-            title = { Text(Strings.permissionsReasoningTitle) },
-            text = { 
+            onDismissRequest = { onShowExplanationDialogChange(false) },
+            title = { Text(strings.onboarding.permissionsReasoningTitle) },
+            text = {
                 Column {
                     Text(
                         buildAnnotatedString {
-                            append(Strings.permissionsReasoningDescPart1)
+                            append(strings.onboarding.permissionsReasoningDescPart1)
                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(Strings.permissionsReasoningDescBold1)
+                                append(strings.onboarding.permissionsReasoningDescBold1)
                             }
-                            append(Strings.permissionsReasoningDescPart2)
+                            append(strings.onboarding.permissionsReasoningDescPart2)
                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(Strings.permissionsReasoningDescBold2)
+                                append(strings.onboarding.permissionsReasoningDescBold2)
                             }
                             append(". ")
                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
@@ -371,21 +491,21 @@ fun OnboardingScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(
-                        onClick = { showPrivacyDialog = true },
+                        onClick = { onShowPrivacyDialogChange(true) },
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text(Strings.privacyDetailsTitle, textDecoration = TextDecoration.Underline)
+                        Text(strings.onboarding.privacyDetailsTitle, textDecoration = TextDecoration.Underline)
                     }
                 }
             },
             confirmButton = {
                 Button(onClick = {
-                    showExplanationDialog = false
+                    onShowExplanationDialogChange(false)
                     if (!hasAllStandardPermissions) {
                         permissionsLauncher.launch(allStandardPermissions)
                     }
                 }) {
-                    Text(Strings.understood)
+                    Text(strings.common.understood)
                 }
             }
         )
@@ -393,12 +513,12 @@ fun OnboardingScreen(
 
     if (showPrivacyDialog) {
         AlertDialog(
-            onDismissRequest = { showPrivacyDialog = false },
-            title = { Text(Strings.privacyDetailsTitle) },
-            text = { Text(Strings.privacyDetailsDesc) },
+            onDismissRequest = { onShowPrivacyDialogChange(false) },
+            title = { Text(strings.onboarding.privacyDetailsTitle) },
+            text = { Text(strings.onboarding.privacyDetailsDesc) },
             confirmButton = {
-                Button(onClick = { showPrivacyDialog = false }) {
-                    Text(Strings.understood)
+                Button(onClick = { onShowPrivacyDialogChange(false) }) {
+                    Text(strings.common.understood)
                 }
             }
         )

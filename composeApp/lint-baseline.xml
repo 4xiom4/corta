@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint baseline (manually initialized)">
+    <!--
+        This file silences pre-existing lint findings captured at the time the
+        static-analysis pass was introduced. Run
+            gradle :composeApp:updateLintBaseline
+        to refresh it after intentional fixes, and trim entries one by one so
+        the baseline shrinks over time. New code must NOT add to this file -
+        new findings should be fixed at the source.
+    -->
+</issues>

@@ -3,16 +3,20 @@ package com.corta.app.services
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.corta.app.R
+import timber.log.Timber
 
 object SmsSpamNotifier {
+    private const val TAG = "Corta.SmsNotifier"
     private const val CHANNEL_SPAM_ALERTS = "sms_spam_alerts"
     private const val CHANNEL_GENERAL = "sms_general"
 
@@ -20,8 +24,8 @@ object SmsSpamNotifier {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        // Evitar recrear canales innecesariamente si ya existen con la misma configuración
+
+        // Avoid recreating channels unnecessarily if they already exist
         if (manager.getNotificationChannel(CHANNEL_SPAM_ALERTS) != null) return
 
         val prefs = context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE)
@@ -30,10 +34,10 @@ object SmsSpamNotifier {
 
         val spamChannel = NotificationChannel(
             CHANNEL_SPAM_ALERTS,
-            "Alertas SMS Spam",
+            context.getString(R.string.channel_spam_alerts),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Alertas de mensajes sospechosos o bloqueados"
+            description = context.getString(R.string.channel_spam_alerts_desc)
             enableVibration(vibrateEnabled)
             if (soundEnabled) {
                 setSound(
@@ -49,10 +53,10 @@ object SmsSpamNotifier {
 
         val generalChannel = NotificationChannel(
             CHANNEL_GENERAL,
-            "Mensajes SMS",
+            context.getString(R.string.channel_sms_general),
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Notificaciones de mensajes"
+            description = context.getString(R.string.channel_sms_general_desc)
         }
 
         manager.createNotificationChannel(spamChannel)
@@ -61,46 +65,68 @@ object SmsSpamNotifier {
 
     fun notifySpamBlocked(context: Context, sender: String) {
         if (!canNotify(context)) {
-            Log.d("SmsSpamNotifier", "Cannot notify: disabled or no permission")
+            Timber.tag(TAG).d("Cannot notify: disabled or no permission")
             return
         }
         ensureChannels(context)
-        
+
         try {
+            val openAppIntent = Intent(context, com.corta.app.MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                sender.hashCode(),
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val notification = NotificationCompat.Builder(context, CHANNEL_SPAM_ALERTS)
                 .setSmallIcon(android.R.drawable.stat_notify_error)
-                .setContentTitle("SMS bloqueado")
-                .setContentText("Se bloqueó un mensaje de $sender")
+                .setContentTitle(context.getString(R.string.sms_blocked_title))
+                .setContentText(context.getString(R.string.sms_blocked_desc, sender))
+                .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(true)
                 .build()
-            
+
             NotificationManagerCompat.from(context).notify(sender.hashCode(), notification)
-            Log.d("SmsSpamNotifier", "Sent notification for blocked SMS from $sender")
+            Timber.tag(TAG).d("Sent notification for blocked SMS from %s", sender)
         } catch (e: SecurityException) {
-            Log.e("SmsSpamNotifier", "Missing permission for notification", e)
+            Timber.tag(TAG).e(e, "Missing permission for notification")
         }
     }
 
     fun notifySpamWarn(context: Context, sender: String) {
         if (!canNotify(context)) return
         ensureChannels(context)
-        
+
         try {
+            val openAppIntent = Intent(context, com.corta.app.MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                sender.hashCode() + 1,
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val notification = NotificationCompat.Builder(context, CHANNEL_SPAM_ALERTS)
                 .setSmallIcon(android.R.drawable.stat_notify_error)
-                .setContentTitle("Posible spam por SMS")
-                .setContentText("Se detectó un mensaje sospechoso de $sender")
+                .setContentTitle(context.getString(R.string.sms_spam_warn_title))
+                .setContentText(context.getString(R.string.sms_spam_warn_desc, sender))
+                .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(true)
                 .build()
-            
+
             NotificationManagerCompat.from(context).notify(sender.hashCode() + 1, notification)
-            Log.d("SmsSpamNotifier", "Sent notification for suspicious SMS from $sender")
+            Timber.tag(TAG).d("Sent notification for suspicious SMS from %s", sender)
         } catch (e: SecurityException) {
-            Log.e("SmsSpamNotifier", "Missing permission for notification", e)
+            Timber.tag(TAG).e(e, "Missing permission for notification")
         }
     }
 
@@ -108,10 +134,11 @@ object SmsSpamNotifier {
         val enabled = context
             .getSharedPreferences("corta_prefs", Context.MODE_PRIVATE)
             .getBoolean("sms_spam_notifications_enabled", true)
-        
+
         if (!enabled) return false
 
-        // En Android 13+ (Tiramisu), el permiso POST_NOTIFICATIONS es obligatorio para mostrar notificaciones.
+        // On Android 13+ (Tiramisu), the POST_NOTIFICATIONS permission is
+        // mandatory to display notifications.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = ContextCompat.checkSelfPermission(
                 context,
@@ -119,7 +146,8 @@ object SmsSpamNotifier {
             )
             return permission == PackageManager.PERMISSION_GRANTED
         }
-        
+
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 }
+

@@ -40,6 +40,25 @@ CREATE TABLE SmsLogEntry (
     bodyPreview TEXT NOT NULL
 );
 
+CREATE TABLE CommunityReport (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    phoneNumber TEXT NOT NULL,
+    channel TEXT NOT NULL, -- "CALL" | "SMS"
+    reason TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    syncState TEXT NOT NULL DEFAULT 'PENDING' -- "PENDING" | "SYNCED" | "FAILED"
+);
+
+-- Indexes: cover the queries that scan by timestamp DESC (call/SMS logs)
+-- and the pending-reports sweep that filters by syncState. These turn
+-- the three most expensive reads into cheap index lookups without
+-- changing the .sq queries themselves.
+
+CREATE INDEX idx_call_log_timestamp ON CallLogEntry(timestamp DESC);
+CREATE INDEX idx_blocked_sms_timestamp ON BlockedSms(timestamp DESC);
+CREATE INDEX idx_sms_log_timestamp ON SmsLogEntry(timestamp DESC);
+CREATE INDEX idx_community_report_sync ON CommunityReport(syncState, createdAt);
+
 -- Initial schema setup complete. Subtel rules might be injected by domain logic or migrations.
 
 getContacts:
@@ -80,3 +99,13 @@ SELECT * FROM SmsLogEntry ORDER BY timestamp DESC;
 
 insertSmsLog:
 INSERT INTO SmsLogEntry(sender, timestamp, actionTaken, bodyPreview) VALUES (?, ?, ?, ?);
+
+insertCommunityReport:
+INSERT INTO CommunityReport(phoneNumber, channel, reason, createdAt, syncState) VALUES (?, ?, ?, ?, ?);
+
+getPendingCommunityReports:
+SELECT * FROM CommunityReport WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+updateCommunityReportSyncState:
+UPDATE CommunityReport SET syncState = ? WHERE id = ?;
+

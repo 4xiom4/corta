@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.corta.app.ui.i18n.Strings
 
 class ComposeSmsActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -35,16 +36,17 @@ class ComposeSmsActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
+            val strings = Strings
             var toNumber by remember { mutableStateOf(initialNumber) }
             var message by remember { mutableStateOf("") }
 
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text("Nuevo SMS") },
+                        title = { Text(strings.sms.newMessageTitle) },
                         navigationIcon = {
                             IconButton(onClick = { finish() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.diagnostics.dsBackCd)
                             }
                         },
                         actions = {
@@ -53,7 +55,7 @@ class ComposeSmsActivity : ComponentActivity() {
                                     if (toNumber.isBlank() || message.isBlank()) {
                                         Toast.makeText(
                                             context,
-                                            "Número y mensaje son requeridos",
+                                            strings.sms.composeRequiredToast,
                                             Toast.LENGTH_SHORT
                                         ).show()
                                         return@IconButton
@@ -62,18 +64,18 @@ class ComposeSmsActivity : ComponentActivity() {
                                     try {
                                         val smsManager = context.getSystemService(SmsManager::class.java)
                                         smsManager.sendTextMessage(toNumber, null, message, null, null)
-                                        Toast.makeText(context, "SMS enviado", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, strings.sms.composeSentToast, Toast.LENGTH_SHORT).show()
                                         finish()
                                     } catch (e: Exception) {
                                         Toast.makeText(
                                             context,
-                                            "No se pudo enviar: ${e.message}",
+                                            context.getString(R.string.compose_send_error, e.message.orEmpty()),
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
                                 }
                             ) {
-                                Icon(Icons.Rounded.Send, contentDescription = "Send")
+                                Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = strings.sms.sendCd)
                             }
                         }
                     )
@@ -88,13 +90,13 @@ class ComposeSmsActivity : ComponentActivity() {
                     OutlinedTextField(
                         value = toNumber,
                         onValueChange = { toNumber = it },
-                        label = { Text("Para") },
+                        label = { Text(strings.sms.composeToLabel) },
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     OutlinedTextField(
                         value = message,
                         onValueChange = { message = it },
-                        label = { Text("Mensaje") },
+                        label = { Text(strings.sms.composeMessageLabel) },
                         modifier = Modifier.fillMaxSize()
                     )
                 }

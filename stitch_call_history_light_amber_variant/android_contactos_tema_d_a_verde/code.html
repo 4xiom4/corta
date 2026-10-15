@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-dim": "#0052a1",
+              "surface-dim": "#d8dae0",
+              "secondary-fixed-dim": "#cfd4e5",
+              "tertiary-fixed": "#fae0a8",
+              "inverse-primary": "#5f9efb",
+              "on-primary-fixed-variant": "#002956",
+              "on-primary": "#f8f8ff",
+              "on-primary-container": "#002045",
+              "surface-container-highest": "#e0e2e8",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#dde2f3",
+              "tertiary-fixed-dim": "#ebd29b",
+              "primary-fixed": "#5f9efb",
+              "on-error-container": "#6e0a12",
+              "secondary-dim": "#4d5361",
+              "on-secondary-fixed": "#393f4c",
+              "surface-variant": "#e0e2e8",
+              "surface-container-high": "#e7e8ed",
+              "secondary": "#595f6d",
+              "on-tertiary-container": "#614f25",
+              "surface-container": "#edeef2",
+              "secondary-container": "#dde2f3",
+              "on-background": "#2f3337",
+              "surface-tint": "#005eb6",
+              "surface-bright": "#faf9fc",
+              "on-tertiary-fixed-variant": "#6c592e",
+              "on-secondary-container": "#4c525f",
+              "inverse-surface": "#0d0e10",
+              "primary-container": "#5f9efb",
+              "on-tertiary-fixed": "#4e3d14",
+              "tertiary-dim": "#635126",
+              "on-tertiary": "#fff8f0",
+              "outline": "#787b80",
+              "primary-fixed-dim": "#5191ed",
+              "background": "#faf9fc",
+              "outline-variant": "#afb2b8",
+              "on-secondary": "#f8f8ff",
+              "error-dim": "#67040d",
+              "inverse-on-surface": "#9c9d9f",
+              "surface": "#faf9fc",
+              "on-surface-variant": "#5c5f64",
+              "on-primary-fixed": "#000000",
+              "surface-container-low": "#f3f3f7",
+              "on-surface": "#2f3337",
+              "error-container": "#fa746f",
+              "on-error": "#fff7f6",
+              "tertiary-container": "#fae0a8",
+              "on-secondary-fixed-variant": "#555b69",
+              "error": "#a83836",
+              "tertiary": "#705d31",
+              "primary": "#005eb6"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Sage Green Custom Palette Overrides for this screen */
+        .sage-bg { background-color: #f1f4f0; }
+        .sage-container { background-color: #e2e9e1; }
+        .sage-accent { color: #4a634e; }
+        .sage-chip { background-color: #d1dbcf; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-slate-50/85 dark:bg-slate-950/85 backdrop-blur-2xl no-border tonal-shift-only flat no-shadows">
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Inter'] font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-50 text-xl">CONTACTOS</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<main class="max-w-2xl mx-auto px-6 pt-4">
+<!-- Editorial Header Section -->
+<section class="mb-10">
+<div class="flex items-end justify-between mb-6">
+<div>
+<span class="text-xs font-bold tracking-[0.1em] text-outline uppercase">Tu Directorio</span>
+<h2 class="text-4xl font-extrabold tracking-tighter text-on-surface mt-1">Contactos</h2>
+</div>
+<div class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-background ring-offset-2 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="portrait of a professional woman with a friendly expression in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAskKMbKJUmcACfu651YRSzWglbCwFaUWrPlyism9H7K4TZYbMo2t-C2hSkdOVcjRGlth5gh_D8ZjXnNjcCkbCca7AOgqHFNPiZq4THqJD3n0hPpfbCGPO-1-TmvcCTEJ6fwYFHJJLsydTTInLS7PRPv3oUZSvxgpunhXYjS9dT4dgsEyUMJIKdkjfTnWoG0Bf6w65cm8-oWelZDppUrW3z4YuTFYStB0m0o_jgS3uT7GB2XY69aoJWGh3JK7_7UZpsa7k_wZ9iOg4F"/>
+</div>
+</div>
+<!-- Soft Search Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:ring-0 focus:border-primary transition-all" placeholder="Buscar 248 contactos..." type="text"/>
+<div class="absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300"></div>
+</div>
+</section>
+<!-- Alphabetical Quick Scroll & List -->
+<div class="flex gap-6 relative">
+<!-- Main Content Area -->
+<div class="flex-1 space-y-8">
+<!-- Section A -->
+<div>
+<div class="sticky top-20 bg-surface/90 backdrop-blur-sm py-2 mb-4 z-10 flex items-center gap-4">
+<span class="text-2xl font-black text-primary/30">A</span>
+<div class="h-[1px] flex-1 bg-surface-container-high"></div>
+</div>
+<div class="space-y-4">
+<!-- Contact Card 1 -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-lg ring-2 ring-background ring-offset-1">
+                                    AM
+                                </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Adriana Morales</h3>
+<p class="text-sm text-on-surface-variant">+34 612 345 678</p>
+</div>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+<!-- Contact Card 2 -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background ring-offset-1">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a smiling man with a beard and glasses in soft natural daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAwhbWhq9CNGU3W-aFX97zKDhoy0cOS-Yo1D4AHsg2KAQbpS6yvk5bwSO816E_5sDQaT4ykn1SLRPilgqWpNLAzwTFocb6ayu4BdwQBDu3-Bi_Whyx5yy-1mYmp0BOdRjOVS6_enp_kUGuPSxykgmJcKOGGXwvfs371udCLjNlm2U8CbXJhpGNkxzBtoeoE2KR69DL4UJfu_hOMANAgVWkO3wLoagvSveboXvqkhgHSChC_MlwNPGYZj-BrQ7pykiN5cHv-FJxF4OI"/>
+</div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Alejandro Ruiz</h3>
+<p class="text-sm text-on-surface-variant">Móvil • Hace 2 horas</p>
+</div>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section B -->
+<div>
+<div class="sticky top-20 bg-surface/90 backdrop-blur-sm py-2 mb-4 z-10 flex items-center gap-4">
+<span class="text-2xl font-black text-primary/30">B</span>
+<div class="h-[1px] flex-1 bg-surface-container-high"></div>
+</div>
+<div class="space-y-4">
+<!-- Contact Card 3 -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-lg ring-2 ring-background ring-offset-1">
+                                    BR
+                                </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Beatriz Ramos</h3>
+<p class="text-sm text-on-surface-variant">+34 655 890 123</p>
+</div>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section C -->
+<div>
+<div class="sticky top-20 bg-surface/90 backdrop-blur-sm py-2 mb-4 z-10 flex items-center gap-4">
+<span class="text-2xl font-black text-primary/30">C</span>
+<div class="h-[1px] flex-1 bg-surface-container-high"></div>
+</div>
+<div class="space-y-4">
+<!-- Contact Card 4 -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background ring-offset-1">
+<img class="w-full h-full object-cover" data-alt="portrait of a young woman with freckles and red hair looking directly at the camera" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4iLb366rR3SEn_yH1_XIwOKhU83wF_X-S96Ko38bMekdjo4qZOng11DwqqlkdG-RX9EHgyg85Trn6T1omOBOo8KfktU0ghMtDNjyJ9KIDVDX8Xs8DmKQ8fttv_ILgP7Q2-0_MIeqxolYSVb1glng-X9Q09E5CmOyjh0Fq47zrY0Hrzd6OXsAnVndOr3HluKt4ypa4Jh7wXY8vrmwZkxaO4qWcqJA55if9_VxzhbjJb9w6Wwwg1G-uy-EdRnPK81eyGWOOM0H8y6Mv"/>
+</div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Carla Jiménez</h3>
+<p class="text-sm text-on-surface-variant">Trabajo • Móvil</p>
+</div>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+<!-- Contact Card 5 -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-lg ring-2 ring-background ring-offset-1">
+                                    CL
+                                </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Carlos Lopez</h3>
+<p class="text-sm text-on-surface-variant">+34 600 111 222</p>
+</div>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-dim hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Alphabetical Sidebar -->
+<aside class="hidden md:flex flex-col items-center justify-start py-4 sticky top-24 h-[calc(100vh-160px)] overflow-y-auto hide-scrollbar w-8">
+<nav class="flex flex-col items-center gap-1 text-[10px] font-black text-on-surface-variant">
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">#</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-on-primary" href="#">A</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">B</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">C</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">D</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">E</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">F</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">G</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">H</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">I</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">J</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">K</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">L</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">M</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">N</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">O</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">P</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">Q</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">R</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">S</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">T</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">U</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">V</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">W</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">X</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">Y</a>
+<a class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors" href="#">Z</a>
+</nav>
+</aside>
+</div>
+</main>
+<!-- Floating Action Button - Only for Main Contacts Screen -->
+<button class="fixed bottom-24 right-6 w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-xl flex items-center justify-center active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="person_add">person_add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-slate-100/85 dark:bg-slate-900/85 backdrop-blur-2xl no-border tonal-architecture shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+<!-- Tab 1: Mensajes -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat">chat</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase">MENSAJES</span>
+</a>
+<!-- Tab 2: Llamadas -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="call">call</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase">LLAMADAS</span>
+</a>
+<!-- Tab 3: Contactos (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-blue-800 dark:text-blue-300 after:content-['\2022'] after:text-[8px] after:mt-0.5 hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="contacts" style="font-variation-settings: 'FILL' 1;">contacts</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase">CONTACTOS</span>
+</a>
+</nav>
+</body></html>

@@ -3,18 +3,18 @@ package com.corta.app.services
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Environment
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.corta.app.services.CallManager
+import com.corta.app.R
+import timber.log.Timber
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.*
 
 class RecordingService : Service() {
@@ -26,6 +26,7 @@ class RecordingService : Service() {
         const val ACTION_STOP = "ACTION_STOP"
         const val EXTRA_PHONE_NUMBER = "EXTRA_PHONE_NUMBER"
         const val EXTRA_LANGUAGE = "EXTRA_LANGUAGE"
+        private const val TAG = "Corta.Recording"
         private const val CHANNEL_ID = "recording_service_channel"
         private const val NOTIFICATION_ID = 200
     }
@@ -35,7 +36,7 @@ class RecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                val phoneNumber = intent.getStringExtra(EXTRA_PHONE_NUMBER) ?: "Unknown"
+                val phoneNumber = intent.getStringExtra(EXTRA_PHONE_NUMBER) ?: getString(R.string.unknown_number)
                 val language = intent.getStringExtra(EXTRA_LANGUAGE) ?: "es"
                 startRecording(phoneNumber, language)
             }
@@ -47,11 +48,11 @@ class RecordingService : Service() {
     private fun startRecording(phoneNumber: String, language: String) {
         serviceScope.launch {
             try {
-                val folder = File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), "Recordings")
+                val folder = File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), getString(R.string.recording_folder))
                 if (!folder.exists()) folder.mkdirs()
 
                 val timeStamp = SimpleDateFormat("dd_MM_yy_HH_mm", Locale.getDefault()).format(Date())
-                val prefix = if (language == "es") "llamada" else "call"
+                val prefix = if (language == "es") getString(R.string.recording_filename_prefix_es) else getString(R.string.recording_filename_prefix_en)
                 val fileName = "${prefix}_${phoneNumber}_${timeStamp}.mp3"
                 val outputFile = File(folder, fileName)
 
@@ -72,8 +73,8 @@ class RecordingService : Service() {
                     CallManager.setIsRecording(true)
                     showNotification(phoneNumber)
                 }
-            } catch (e: Exception) {
-                Log.e("RecordingService", "Failed to start recording", e)
+            } catch (e: Throwable) {
+                Timber.tag(TAG).e(e, "Failed to start recording")
                 withContext(Dispatchers.Main) {
                     CallManager.setIsRecording(false)
                 }
@@ -90,13 +91,13 @@ class RecordingService : Service() {
                     reset()
                     release()
                 }
-            } catch (e: Exception) {
-                Log.e("RecordingService", "Error stopping recorder", e)
+            } catch (e: Throwable) {
+                Timber.tag(TAG).e(e, "Error stopping recorder")
             } finally {
                 mediaRecorder = null
                 withContext(Dispatchers.Main) {
                     CallManager.setIsRecording(false)
-                    stopForeground(true)
+                    stopForeground(Service.STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }
             }
@@ -106,8 +107,8 @@ class RecordingService : Service() {
     private fun showNotification(phoneNumber: String) {
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Grabando llamada")
-            .setContentText("Grabando conversación con $phoneNumber")
+            .setContentTitle(getString(R.string.recording_notification_title))
+            .setContentText(getString(R.string.recording_notification_text, phoneNumber))
             .setSmallIcon(android.R.drawable.ic_menu_save)
             .setOngoing(true)
             .build()
@@ -118,7 +119,7 @@ class RecordingService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Grabación de Llamadas",
+                getString(R.string.recording_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
@@ -131,3 +132,4 @@ class RecordingService : Service() {
         serviceScope.cancel()
     }
 }
+

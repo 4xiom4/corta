@@ -1,12 +1,9 @@
 package com.corta.data.network
 
-import io.ktor.client.*
-import io.ktor.client.engine.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class SubtelRuleDto(
@@ -17,12 +14,9 @@ data class SubtelRuleDto(
 
 expect fun provideHttpClientEngine(): HttpClientEngine
 
-class SubtelApiClient {
-    private val client = HttpClient(provideHttpClientEngine()) {
-        install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
-        }
-    }
+class SubtelApiClient(
+    private val httpClient: HttpClient = HttpClient(provideHttpClientEngine()) { }
+) {
     
     /**
      * Representación simplificada de la lista SUBTEL basada en la norma de prefijos:
@@ -36,17 +30,16 @@ class SubtelApiClient {
      * que comience con esos prefijos, tal como exige la normativa.
      */
     suspend fun fetchLatestSpamList(): List<SubtelRuleDto> {
-        delay(1500) // Simula latencia de red
         return listOf(
             // Prefijo 809: llamadas no deseadas -> bloquear
             SubtelRuleDto(
-                pattern = "^809.*",
+                pattern = "^(\\+?56)?809.*",
                 action = "BLOCK",
                 isRegex = true
             ),
             // Prefijo 600: llamadas comerciales/masivas potencialmente deseadas -> avisar
             SubtelRuleDto(
-                pattern = "^600.*",
+                pattern = "^(\\+?56)?600.*",
                 action = "WARN",
                 isRegex = true
             )

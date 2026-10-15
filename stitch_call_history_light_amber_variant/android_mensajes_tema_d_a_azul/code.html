@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mensajes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-dim": "#0052a1",
+              "surface-dim": "#d8dae0",
+              "secondary-fixed-dim": "#cfd4e5",
+              "tertiary-fixed": "#fae0a8",
+              "inverse-primary": "#5f9efb",
+              "on-primary-fixed-variant": "#002956",
+              "on-primary": "#f8f8ff",
+              "on-primary-container": "#002045",
+              "surface-container-highest": "#e0e2e8",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#dde2f3",
+              "tertiary-fixed-dim": "#ebd29b",
+              "primary-fixed": "#5f9efb",
+              "on-error-container": "#6e0a12",
+              "secondary-dim": "#4d5361",
+              "on-secondary-fixed": "#393f4c",
+              "surface-variant": "#e0e2e8",
+              "surface-container-high": "#e7e8ed",
+              "secondary": "#595f6d",
+              "on-tertiary-container": "#614f25",
+              "surface-container": "#edeef2",
+              "secondary-container": "#dde2f3",
+              "on-background": "#2f3337",
+              "surface-tint": "#005eb6",
+              "surface-bright": "#faf9fc",
+              "on-tertiary-fixed-variant": "#6c592e",
+              "on-secondary-container": "#4c525f",
+              "inverse-surface": "#0d0e10",
+              "primary-container": "#5f9efb",
+              "on-tertiary-fixed": "#4e3d14",
+              "tertiary-dim": "#635126",
+              "on-tertiary": "#fff8f0",
+              "outline": "#787b80",
+              "primary-fixed-dim": "#5191ed",
+              "background": "#faf9fc",
+              "outline-variant": "#afb2b8",
+              "on-secondary": "#f8f8ff",
+              "error-dim": "#67040d",
+              "inverse-on-surface": "#9c9d9f",
+              "surface": "#faf9fc",
+              "on-surface-variant": "#5c5f64",
+              "on-primary-fixed": "#000000",
+              "surface-container-low": "#f3f3f7",
+              "on-surface": "#2f3337",
+              "error-container": "#fa746f",
+              "on-error": "#fff7f6",
+              "tertiary-container": "#fae0a8",
+              "on-secondary-fixed-variant": "#555b69",
+              "error": "#a83836",
+              "tertiary": "#705d31",
+              "primary": "#005eb6"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar Section -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-slate-50/85 backdrop-blur-2xl transition-colors">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Inter'] font-bold tracking-[-0.02em] text-slate-900 text-xl">Mensajes</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-900" data-icon="search">search</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-surface border-2 border-primary/10">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional man with a friendly smile, soft natural office lighting, high-end photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1o2-eDAadNa8wtZ10BZY0UAyei4i2tr7AD8xHhvEtBFgEnxi2sxskQ_8r4FO-mbZGbXg9jKIUW8qnp1SFJ32GXkrObWfxj2zP6VJfBUqgdJE1yms7uxK2bdfkycGpP5AmYkKw2BPsBcyON-ugEbUEA7cCnDHayEQW_YYkaEEZgVTSuwHpcjEy32qu49UsgCdDnNRInxnAfOLe3Dwww0FTkTJ7C5EqumPEsbV1fmQuKGosvnOu4wETM1VU2WLiKpo-w_e6SQaHg2lg"/>
+</div>
+</div>
+</header>
+<!-- Main Content: Message Feed -->
+<main class="flex-1 px-4 sm:px-8 pb-32">
+<!-- Search Input Suggestion (Soft Field) -->
+<div class="mb-8 mt-2">
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-4 focus:ring-0 text-on-surface placeholder-on-surface-variant transition-all" placeholder="Buscar conversaciones" type="text"/>
+<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 group-focus-within:scale-x-100 transition-transform origin-center"></div>
+</div>
+</div>
+<!-- Conversation List (Tonal Architecture) -->
+<div class="space-y-4">
+<!-- Conversation Item 1: Unread -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-lowest transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="relative">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background">
+<img alt="Elena R." class="w-full h-full object-cover" data-alt="Portrait of a young woman with warm lighting and a soft bokeh background, focused and professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDshGVVMG7eY-0_Gr1zQ-KtNJsLiqIPmUIT3J7aik9hqyAkAtXoMYiuJCtynbH2mp11PsqEx7UYTUmTZpO15uawn98k3Pm385SotAmxeQL6ELZWQm4ZlUML7Zi6UdmlWwdE2Xiiw8u2yT6EL_lSIth-XwkUx7vNfxfeOI0nFQXN-s0tX-rL7Ov2Kbw6B5lg1FlNeAuvHn1e2MJrAbVt_BFg24tnHo5rF1qSNlttd7897mVLXKMnrx3UtvxKlHOl17F3Dv3_Hno1uCP8"/>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Elena Rodríguez</h3>
+<span class="text-xs font-bold text-primary">14:20</span>
+</div>
+<div class="flex justify-between items-center gap-2">
+<p class="text-sm font-bold text-on-surface truncate">¿Confirmamos la reunión para las 16:00?</p>
+<div class="min-w-[20px] h-5 bg-primary rounded-full flex items-center justify-center px-1.5">
+<span class="text-[10px] text-on-primary font-bold">2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Conversation Item 2 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background">
+<img alt="Carlos M." class="w-full h-full object-cover" data-alt="Headshot of a smiling man with spectacles in a bright studio environment, modern clean aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBujPKY4Saj22xMUh8diOkoZVdM9JUjEwiif_08JsqhIgtYcvDmj5e7IuU1WrJuaEA_Z6yRLgmvMk5W2FmvbaOUScwgs3T1F4yd452iQ5-osSdKtHpvOfd13cV8IUd6XRe21g2lReJjeo-0B8ILRwLYOiYOc3ZQhRAVL6MInJI5MQEs2JcaVvHKVcfOaGm2P9ye1h-tEEQW2X30r8Exgf-bJZENLoej7OejskEVPyVIBwybdeGiIclHa8l9kH_4-tLkPZyYATRuMIT4"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Carlos Méndez</h3>
+<span class="text-xs text-on-surface-variant">12:45</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate">Te envié los archivos por correo hace un momento.</p>
+</div>
+</div>
+<!-- Conversation Item 3 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-xl">
+                    S
+                </div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Sara Villalobos</h3>
+<span class="text-xs text-on-surface-variant">Ayer</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-on-surface-variant" data-icon="done_all">done_all</span>
+<p class="text-sm text-on-surface-variant truncate">¡Perfecto, nos vemos entonces!</p>
+</div>
+</div>
+</div>
+<!-- Conversation Item 4 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background">
+<img alt="Juan P." class="w-full h-full object-cover" data-alt="Middle-aged man laughing, outdoor natural light with soft urban background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWZaFzKV1YmqOKH3t07G4CdhLXMUblfeQ5O2EAFABeOWt6EZ-r6gk5nvpRwIFbLlmxFlNwTqtXCk61fOkOUndAZSx6ZWX433J--x66nKUSy1s_p0OHzpxFz_ZdIzj50XVXMaKujT_0ywJy2gJPQOlwrJa8oZaJADqlCLeMvOfjPH3ReuT2y1gUGLx_LMQXIST1JT1URTzHx-itPccuA4Of_3AL672fosYRjlggT3N2FzYO4YIdz6UanSXm_4H3F6Km4c736St-Xkh2"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Juan Pérez</h3>
+<span class="text-xs text-on-surface-variant">Mar</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate">¿Viste el partido anoche? Fue increíble.</p>
+</div>
+</div>
+<!-- Conversation Item 5 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-xl">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Equipo de Diseño</h3>
+<span class="text-xs text-on-surface-variant">Lun</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate"><span class="font-semibold text-on-surface">Marcos:</span> He subido los nuevos assets al Drive.</p>
+</div>
+</div>
+<!-- Conversation Item 6 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high cursor-pointer">
+<div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-background">
+<img alt="Lucía T." class="w-full h-full object-cover" data-alt="Young woman looking thoughtfully, artistic high-contrast lighting, clean minimalist portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjE7vHMGKaS6wsyBeKNx-kUmTKGhc5rSQxm9qPsRkNG4VCHz2wPWDEtdj8RQlwpYoHIIs4J1sE4n2Z0bXGljb7psxyMtOfgUEPo7DrT2u3IhOx6CbVz4awmVvhRMmwHDPP3fIXuyOHMh-d4qxRqiZREMc1kEZdyB5hQ1MI0H9CszX22QSpfRoUkBQISoOqxKxbgLKU6IOYwHzYnbofuXnx5L3KujckU1XAx30cahRdgYlspqwaGEg9-E36i9lSt3EY8gVZyC4SHfd7"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-bold text-on-surface truncate">Lucía Torres</h3>
+<span class="text-xs text-on-surface-variant">Dom</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate">Gracias por la recomendación del libro.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-24 w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="edit_square">edit_square</span>
+</button>
+<!-- BottomNavBar Section -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-slate-100/85 backdrop-blur-2xl transition-all shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+<!-- Tab: Mensajes (Active) -->
+<a class="flex flex-col items-center justify-center text-blue-800 after:content-['\u2022'] after:text-[8px] after:mt-0.5 hover:bg-slate-200/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">MENSAJES</span>
+</a>
+<!-- Tab: Llamadas -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:bg-slate-200/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">LLAMADAS</span>
+</a>
+<!-- Tab: Contactos -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:bg-slate-200/30 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="contacts">contacts</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-[0.05em] uppercase mt-1">CONTACTOS</span>
+</a>
+</nav>
+</body></html>

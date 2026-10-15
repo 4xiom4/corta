@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) data extraction rules.
+
+  - `<cloud-backup>` controls what Auto Backup sends to Google Drive.
+    Corta stores an encrypted SQLCipher database in app-private storage;
+    we exclude it from cloud backup because the key is device-bound.
+  - `<device-transfer>` controls what is included when the user moves
+    to a new device via Google's device-to-device transfer. We
+    intentionally exclude the database; settings (SharedPreferences)
+    are safe to transfer and let the device appear "as before".
+  - Both sections share the same include / exclude lists through the
+    `<include>` / `<exclude>` references below.
+-->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <exclude domain="database" />
+        <exclude domain="sharedpref" path="corta_db_passphrase.xml" />
+        <exclude domain="file" path="recordings/" />
+        <exclude domain="external" />
+    </cloud-backup>
+
+    <device-transfer>
+        <include domain="sharedpref" path="." />
+        <include domain="file" path="cache/" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" path="corta_db_passphrase.xml" />
+    </device-transfer>
+</data-extraction-rules>

@@ -7,7 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import com.corta.app.ui.auth.LoginScreen
 import com.corta.app.ui.i18n.CortaTheme
+import com.corta.app.ui.i18n.Strings
+import com.corta.app.ui.theme.*
 import org.koin.compose.KoinContext
+import org.koin.androidx.compose.koinViewModel
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -15,70 +18,57 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
-import com.corta.app.ui.theme.AppTheme
-import com.corta.app.ui.theme.ThemeMode
 import com.corta.app.ui.theme.AccentColor
+import com.corta.app.ui.theme.Handedness
+import com.corta.app.ui.theme.ThemeMode
+import com.corta.app.ui.theme.AppTheme
 
 enum class LaunchState { LOGIN, ONBOARDING, DASHBOARD }
 
 @Composable
 fun CortaApp(roleManager: RoleManager, language: String = "en") {
+    val viewModel: CortaAppViewModel = koinViewModel()
+
+    LaunchedEffect(roleManager) {
+        viewModel.refresh(roleManager)
+    }
+
+    val launchState by viewModel.launchState.collectAsState()
+    val permissionsState by viewModel.permissionsState.collectAsState()
+    val rolesState by viewModel.rolesState.collectAsState()
+    val currentLanguage by viewModel.language.collectAsState()
+
     KoinContext {
-        CortaTheme(language = language) {
-            val context = LocalContext.current
-            val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-            
-            var currentThemeMode by remember { mutableStateOf(ThemeMode.valueOf(prefs.getString("theme_mode", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name)) }
-            var currentAccentColor by remember { mutableStateOf(AccentColor.valueOf(prefs.getString("accent_color", AccentColor.DYNAMIC.name) ?: AccentColor.DYNAMIC.name)) }
+        CortaTheme(language = currentLanguage) {
+            val strings = Strings.common
+            val currentThemeMode by viewModel.themeMode.collectAsState()
+            val currentAccentColor by viewModel.accentColor.collectAsState()
+            val currentUiScale by viewModel.uiScale.collectAsState()
+            val currentHandedness by viewModel.handedness.collectAsState()
+            val currentDetailedMode by viewModel.detailedMode.collectAsState()
 
-            DisposableEffect(prefs) {
-                val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-                    when(key) {
-                        "theme_mode" -> currentThemeMode = ThemeMode.valueOf(sharedPreferences?.getString(key, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name)
-                        "accent_color" -> currentAccentColor = AccentColor.valueOf(sharedPreferences?.getString(key, AccentColor.DYNAMIC.name) ?: AccentColor.DYNAMIC.name)
-                    }
-                }
-                prefs.registerOnSharedPreferenceChangeListener(listener)
-                onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-            }
-
-            AppTheme(themeMode = currentThemeMode, accentColor = currentAccentColor) {
-                var isFirstLaunch by remember { mutableStateOf(prefs.getBoolean("is_first_launch", true)) }
-
-                var corePermissionsGranted by remember { mutableStateOf(hasAllRequiredPermissions(context)) }
-                var rolesGranted by remember {
-                    mutableStateOf(
-                        roleManager.isRoleHeld(RoleManager.ROLE_DIALER) &&
-                        roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) &&
-                        (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || roleManager.isRoleHeld(RoleManager.ROLE_SMS))
-                    )
-                }
-
-                var launchState by remember {
-                    mutableStateOf(
-                        when {
-                            isFirstLaunch -> LaunchState.LOGIN
-                            !corePermissionsGranted -> LaunchState.ONBOARDING
-                            !rolesGranted -> LaunchState.ONBOARDING
-                            else -> LaunchState.DASHBOARD
-                        }
-                    )
-                }
-
+            AppTheme(
+                themeMode = currentThemeMode,
+                accentColor = currentAccentColor,
+                uiScale = currentUiScale,
+                handedness = currentHandedness,
+                detailedMode = currentDetailedMode
+            ) {
                 when (launchState) {
                     LaunchState.LOGIN -> {
-                        LoginScreen(onLoginSuccess = { 
-                            prefs.edit().putBoolean("is_first_launch", false).apply()
-                            launchState = LaunchState.ONBOARDING 
+                        LoginScreen(onLoginSuccess = {
+                            viewModel.setFirstLaunchDone()
                         })
                     }
                     LaunchState.ONBOARDING -> {
                         OnboardingScreen(
                             roleManager = roleManager,
-                            onPermissionsGranted = { 
-                                prefs.edit().putBoolean("is_first_launch", false).apply()
-                                launchState = LaunchState.DASHBOARD 
-                            }
+                            permissionsState = permissionsState,
+                            rolesState = rolesState,
+                            onPermissionsGranted = {
+                                viewModel.setFirstLaunchDone()
+                            },
+                            onRefresh = { viewModel.refresh(roleManager) }
                         )
                     }
                     LaunchState.DASHBOARD -> {

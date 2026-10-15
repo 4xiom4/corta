@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.provider.Telephony
-import android.util.Log
 import com.corta.domain.CortaRepository
 import com.corta.domain.FilterAction
 import com.corta.domain.SpamEvaluator
@@ -17,6 +16,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import timber.log.Timber
 
 class SmsReceiver : BroadcastReceiver(), KoinComponent {
 
@@ -26,6 +26,7 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Telephony.Sms.Intents.SMS_DELIVER_ACTION) {
+            RuntimeStatusLogger.logSnapshot(context, "SmsReceiver")
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (messages.isEmpty()) return
             val pendingResult = goAsync()
@@ -45,14 +46,15 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
                         val timestamp = parts.maxOfOrNull { it.timestampMillis } ?: System.currentTimeMillis()
 
                         val action = evaluator.evaluateSms(sender, body)
-                        Log.d("SmsReceiver", "Received SMS from $sender. Action: $action")
+                        Timber.tag(TAG).d("Received SMS from %s. Action: %s", sender, action)
 
                         when (action) {
                             FilterAction.BLOCK -> {
                                 repository.logBlockedSms(sender, body, timestamp)
                                 repository.logSmsAction(sender, timestamp, action, body)
+                                repository.queueSpamReport(sender, "SMS", "AUTO_BLOCK")
                                 SmsSpamNotifier.notifySpamBlocked(context, sender)
-                                Log.w("SmsReceiver", "Blocked SMS from $sender")
+                                Timber.tag(TAG).w("Blocked SMS from %s", sender)
                             }
 
                             FilterAction.MUTE -> {
@@ -64,7 +66,8 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
                                     markRead = true
                                 )
                                 repository.logSmsAction(sender, timestamp, action, body)
-                                Log.d("SmsReceiver", "Muted SMS inserted as read for $sender")
+                                repository.queueSpamReport(sender, "SMS", "AUTO_MUTE")
+                                Timber.tag(TAG).d("Muted SMS inserted as read for %s", sender)
                             }
 
                             FilterAction.WARN -> {
@@ -76,8 +79,9 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
                                     markRead = false
                                 )
                                 repository.logSmsAction(sender, timestamp, action, body)
+                                repository.queueSpamReport(sender, "SMS", "AUTO_WARN")
                                 SmsSpamNotifier.notifySpamWarn(context, sender)
-                                Log.d("SmsReceiver", "Warn SMS inserted for $sender")
+                                Timber.tag(TAG).d("Warn SMS inserted for %s", sender)
                             }
 
                             FilterAction.ALLOW -> {
@@ -89,12 +93,12 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
                                     markRead = false
                                 )
                                 repository.logSmsAction(sender, timestamp, action, body)
-                                Log.d("SmsReceiver", "Allowed SMS inserted for $sender")
+                                Timber.tag(TAG).d("Allowed SMS inserted for %s", sender)
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e("SmsReceiver", "Error processing SMS", e)
+                } catch (e: Throwable) {
+                    Timber.tag(TAG).e(e, "Error processing SMS")
                 } finally {
                     pendingResult.finish()
                 }
@@ -118,6 +122,10 @@ class SmsReceiver : BroadcastReceiver(), KoinComponent {
         }
         context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
     }
+
+    private companion object {
+        const val TAG = "Corta.SmsReceiver"
+    }
 }
 
 class MmsReceiver : BroadcastReceiver() {
@@ -129,3 +137,4 @@ class MmsReceiver : BroadcastReceiver() {
 class HeadlessSmsSendService : Service() {
     override fun onBind(intent: Intent): IBinder? = null
 }
+

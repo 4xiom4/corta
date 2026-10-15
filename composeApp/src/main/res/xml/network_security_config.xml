@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security configuration for Corta App.
+
+  - All cleartext (HTTP) traffic is denied by default.
+  - The only outbound endpoints we talk to are the SUBTEL API, the
+    collaborative rules gateway, and the optional donation page.
+    Each one is listed explicitly with HTTPS-only enforcement.
+  - If new endpoints are added in the future, append them here so the
+    allowlist stays the single source of truth for permitted hosts.
+  - The AndroidDebugBridge certificate is trusted only in the `debug`
+    source set (composeApp/src/debug/res/xml/network_security_config.xml)
+    so the QA build keeps working with the MITM proxy.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- SUBTEL number portability + spam list endpoint. The production
+         base URL is provisioned by the SUBTEL team; the staging host
+         is used by QA. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.subtel.cl</domain>
+        <!-- Pin-set commented out until SUBTEL production certificates are provisioned
+        <pin-set expiration="2030-01-01">
+            <pin digest="sha-256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" />
+            <pin digest="sha-256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=" backup="true" />
+        </pin-set>
+        -->
+    </domain-config>
+
+    <!-- Collaborative rules gateway (community reports). -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">community.corta.app</domain>
+    </domain-config>
+
+    <!-- Optional donation landing page. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">donations.corta.app</domain>
+    </domain-config>
+
+    <!-- Telephony fallback domains used by TelephonyManager lookups. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">clients3.google.com</domain>
+        <domain includeSubdomains="true">play.googleapis.com</domain>
+    </domain-config>
+</network-security-config>

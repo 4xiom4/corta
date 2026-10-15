@@ -1,0 +1,9 @@
+-- Initial migration: represents the very first version of the schema as
+-- shipped in v1.x. Future schema changes must be added as new `.sqm` files
+-- in this directory, e.g. `2.sqm`, `3.sqm`, etc. Do NOT edit historical
+-- migrations; only add new ones.
+--
+-- No-op: this migration only captures the baseline. The schema in
+-- `CortaDatabase.sq` is the source of truth for new development, and
+-- `deriveSchemaFromMigrations` will validate that subsequent changes
+-- are properly migrated.

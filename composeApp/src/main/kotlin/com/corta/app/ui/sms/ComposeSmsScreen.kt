@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.corta.app.ui.contacts.AndroidContactRepository
-import com.corta.app.ui.contacts.ContactInfo
+import com.corta.domain.ContactInfo
 import com.corta.app.ui.i18n.Strings
 import com.corta.domain.CortaRepository
 import com.corta.domain.FilterAction
@@ -39,7 +39,7 @@ fun ComposeSmsScreen(onBack: () -> Unit) {
     var contacts by remember { mutableStateOf<List<ContactInfo>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
-    
+
     var selectedContacts by remember { mutableStateOf(setOf<ContactInfo>()) }
     var isComposing by remember { mutableStateOf(false) }
     var messageText by remember { mutableStateOf("") }
@@ -54,29 +54,40 @@ fun ComposeSmsScreen(onBack: () -> Unit) {
         else contacts.filter { it.name.contains(searchQuery, ignoreCase = true) || it.phoneNumber.contains(searchQuery) }
     }
 
+    androidx.activity.compose.BackHandler(enabled = isComposing || selectedContacts.isNotEmpty()) {
+        if (isComposing) {
+            isComposing = false
+        } else if (selectedContacts.isNotEmpty()) {
+            selectedContacts = emptySet()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     if (isComposing) {
-                        Text("Redactar Mensaje")
+                        Text(Strings.sms.composeTitle)
                     } else if (selectedContacts.isNotEmpty()) {
-                        Text("${selectedContacts.size} seleccionados")
+                        Text(Strings.sms.composeSelected.format(selectedContacts.size))
                     } else {
-                        Text("Nuevo Mensaje")
+                        Text(Strings.sms.newMessageTitle)
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { 
-                        if (isComposing) {
-                            isComposing = false
-                        } else if (selectedContacts.isNotEmpty()) {
-                            selectedContacts = emptySet()
-                        } else {
-                            onBack() 
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    IconButton(
+                        onClick = {
+                            if (isComposing) {
+                                isComposing = false
+                            } else if (selectedContacts.isNotEmpty()) {
+                                selectedContacts = emptySet()
+                            } else {
+                                onBack()
+                            }
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = Strings.diagnostics.dsBackCd)
                     }
                 }
             )
@@ -100,13 +111,13 @@ fun ComposeSmsScreen(onBack: () -> Unit) {
                     },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send")
+                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = Strings.sms.sendCd)
                 }
             } else if (selectedContacts.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { isComposing = true },
                     icon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
-                    text = { Text("Redactar") }
+                    text = { Text(Strings.sms.composeAction) }
                 )
             }
         }
@@ -125,7 +136,7 @@ fun ComposeSmsScreen(onBack: () -> Unit) {
                         value = messageText,
                         onValueChange = { messageText = it },
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        placeholder = { Text("Escribe tu mensaje aquí...") },
+                        placeholder = { Text(Strings.sms.composePlaceholder) },
                         maxLines = 10
                     )
                 }
@@ -150,7 +161,7 @@ fun ComposeSmsScreen(onBack: () -> Unit) {
                             singleLine = true,
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
-                                    Text("Buscar contactos", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(Strings.sms.searchContacts, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 innerTextField()
                             }

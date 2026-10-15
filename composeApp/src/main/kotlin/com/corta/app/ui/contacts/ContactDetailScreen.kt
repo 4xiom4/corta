@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
+import com.corta.app.ui.i18n.Strings
+import com.corta.domain.ContactInfo
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,52 +39,55 @@ fun ContactDetailScreen(
             TopAppBar(
                 title = { Text("") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = Strings.contacts.backCd)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { 
-                        // Edit Contact implementation
-                        try {
-                            // Intentar crear URI de lookup para edición
-                            val contactUri = try {
-                                val contactId = contact.id.toLongOrNull()
-                                if (contactId != null) {
+                    IconButton(
+                        onClick = {
+                            // Edit Contact implementation
+                            try {
+                                // Intentar crear URI de lookup para edición
+                                val contactUri = try {
+                                    val contactId = contact.id.toLongOrNull()
+                                    if (contactId != null) {
+                                        Uri.withAppendedPath(
+                                            ContactsContract.Contacts.CONTENT_URI,
+                                            contact.id
+                                        )
+                                    } else {
+                                        // Si no podemos convertir el ID, usar búsqueda por teléfono
+                                        val uri = Uri.withAppendedPath(
+                                            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                                            Uri.encode(contact.phoneNumber)
+                                        )
+                                        uri
+                                    }
+                                } catch (e: Exception) {
+                                    // Último recurso: búsqueda por teléfono
                                     Uri.withAppendedPath(
-                                        ContactsContract.Contacts.CONTENT_URI,
-                                        contact.id
-                                    )
-                                } else {
-                                    // Si no podemos convertir el ID, usar búsqueda por teléfono
-                                    val uri = Uri.withAppendedPath(
                                         ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
                                         Uri.encode(contact.phoneNumber)
                                     )
-                                    uri
                                 }
+
+                                val editIntent = Intent(Intent.ACTION_EDIT, contactUri).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(editIntent)
                             } catch (e: Exception) {
-                                // Último recurso: búsqueda por teléfono
-                                Uri.withAppendedPath(
-                                    ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                                    Uri.encode(contact.phoneNumber)
-                                )
+                                // Si todo falla, abrir la app de contactos
+                                val contactsIntent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = ContactsContract.Contacts.CONTENT_URI
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(contactsIntent)
                             }
-                            
-                            val editIntent = Intent(Intent.ACTION_EDIT, contactUri).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            context.startActivity(editIntent)
-                        } catch (e: Exception) {
-                            // Si todo falla, abrir la app de contactos
-                            val contactsIntent = Intent(Intent.ACTION_VIEW).apply {
-                                data = ContactsContract.Contacts.CONTENT_URI
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            context.startActivity(contactsIntent)
-                        }
-                    }) {
-                        Icon(Icons.Rounded.Edit, contentDescription = "Edit")
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Rounded.Edit, contentDescription = Strings.contacts.editCd)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -113,17 +119,17 @@ fun ContactDetailScreen(
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = contact.name,
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Actions Row
             Row(
                 modifier = Modifier
@@ -133,28 +139,28 @@ fun ContactDetailScreen(
             ) {
                 ContactAction(
                     icon = Icons.Rounded.Call,
-                    label = "Llamar",
+                    label = Strings.contacts.callLabel,
                     onClick = { onCallClick(contact.phoneNumber) }
                 )
                 ContactAction(
                     icon = Icons.AutoMirrored.Filled.Message,
-                    label = "Mensaje",
+                    label = Strings.contacts.messageLabel,
                     onClick = { onMessageClick(contact.phoneNumber) }
                 )
                 ContactAction(
                     icon = Icons.Rounded.Videocam,
-                    label = "Video",
+                    label = Strings.contacts.videoLabel,
                     onClick = { /* Placeholder for future */ }
                 )
                 ContactAction(
                     icon = Icons.Rounded.Email,
-                    label = "Correo",
+                    label = Strings.contacts.emailLabel,
                     onClick = { /* Placeholder for future */ }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Detail Sheet (Card)
             Card(
                 modifier = Modifier
@@ -169,9 +175,9 @@ fun ContactDetailScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text(text = "Información de contacto", style = MaterialTheme.typography.titleMedium)
+                    Text(text = Strings.contacts.infoTitle, style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -180,11 +186,11 @@ fun ContactDetailScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(text = contact.phoneNumber, style = MaterialTheme.typography.bodyLarge)
-                            Text(text = "Móvil", style = MaterialTheme.typography.labelMedium)
+                            Text(text = Strings.contacts.mobileLabel, style = MaterialTheme.typography.labelMedium)
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         IconButton(onClick = { onMessageClick(contact.phoneNumber) }) {
-                            Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "Message", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.Message, contentDescription = Strings.contacts.messageCd, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

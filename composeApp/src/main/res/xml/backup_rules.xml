@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for pre-Android 12 devices (API < 31). Once the
+  targetSdk moves to 31+, Android uses data_extraction_rules.xml
+  exclusively. This file is kept as a safety net for older devices
+  and mirrors the same exclusions.
+-->
+<full-backup-content>
+    <exclude domain="database" />
+    <exclude domain="sharedpref" path="corta_db_passphrase.xml" />
+    <exclude domain="file" path="recordings/" />
+    <exclude domain="external" />
+</full-backup-content>

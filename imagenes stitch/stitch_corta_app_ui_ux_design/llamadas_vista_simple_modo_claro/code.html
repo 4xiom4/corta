@@ -1,0 +1,311 @@
+<!DOCTYPE html><html class="h-full" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CortaApp - Llamadas Recientes</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#0040a1",
+            "surface-bright": "#f8f9fc",
+            "outline-variant": "#c3c6d6",
+            "inverse-surface": "#2e3133",
+            "on-surface": "#191c1e",
+            "surface": "#f8f9fc",
+            "background": "#f8f9fc",
+            "on-primary": "#ffffff",
+            "primary-fixed-dim": "#b2c5ff",
+            "error-container": "#ffdad6",
+            "primary-fixed": "#dae2ff",
+            "secondary-fixed-dim": "#73dc82",
+            "surface-variant": "#e1e2e5",
+            "surface-container-high": "#e7e8eb",
+            "on-primary-container": "#ced9ff",
+            "secondary-container": "#8ffa9b",
+            "surface-tint": "#0856cf",
+            "tertiary-container": "#914d00",
+            "on-primary-fixed": "#001847",
+            "tertiary": "#6f3a00",
+            "secondary": "#006e2a",
+            "on-tertiary-fixed-variant": "#6e3900",
+            "tertiary-fixed": "#ffdcc3",
+            "outline": "#737785",
+            "error": "#ba1a1a",
+            "surface-container-highest": "#e1e2e5",
+            "on-secondary-fixed": "#002108",
+            "tertiary-fixed-dim": "#ffb77d",
+            "on-tertiary": "#ffffff",
+            "on-error": "#ffffff",
+            "surface-container": "#eceef0",
+            "inverse-primary": "#b2c5ff",
+            "inverse-on-surface": "#eff1f3",
+            "surface-container-lowest": "#ffffff",
+            "primary": "#0041a2",
+            "on-surface-variant": "#424654",
+            "on-tertiary-container": "#ffd1ae",
+            "on-secondary-fixed-variant": "#00531e",
+            "secondary-fixed": "#8ffa9b",
+            "surface-dim": "#d8dadd",
+            "on-secondary-container": "#00752d",
+            "on-secondary": "#ffffff",
+            "on-background": "#191c1e",
+            "on-tertiary-fixed": "#2f1500",
+            "primary-container": "#0b57d0",
+            "on-error-container": "#93000a",
+            "surface-container-low": "#f2f4f6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline-lg": ["Manrope", "sans-serif"],
+            "label-lg": ["Manrope", "sans-serif"],
+            "headline-sm": ["Manrope", "sans-serif"],
+            "label-md": ["Manrope", "sans-serif"],
+            "body-lg": ["Manrope", "sans-serif"],
+            "headline-lg-mobile": ["Manrope", "sans-serif"],
+            "body-md": ["Manrope", "sans-serif"],
+            "display-lg": ["Manrope", "sans-serif"],
+            "label-sm": ["Manrope", "sans-serif"],
+            "headline-md": ["Manrope", "sans-serif"],
+            "body-sm": ["Manrope", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface h-full flex flex-col justify-between overflow-x-hidden antialiased select-none">
+<!-- Main Shell Container (Mobile Frame optimized for native system feel) -->
+<div class="relative mx-auto flex h-full min-h-screen w-full max-w-md flex-col bg-surface shadow-sm">
+<!-- Top App Bar (Native Dial Style Header) -->
+<header class="sticky top-0 z-30 bg-surface/95 backdrop-blur-md px-4 pt-4 pb-2 border-b border-surface-container-high/40">
+<div class="flex items-center justify-between h-12">
+<!-- Menu Icon -->
+<button aria-label="Menú principal" class="flex size-10 items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<!-- Brand Title -->
+<h1 class="text-xl font-bold tracking-tight text-on-surface text-center flex-1 px-2 font-headline-md">
+          Corta
+        </h1>
+<!-- Right Action Icons: Search & Profile Avatar -->
+<div class="flex items-center gap-1">
+<button aria-label="Buscar contactos o llamadas" class="flex size-10 items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</button>
+<button aria-label="Perfil de usuario" class="flex size-9 items-center justify-center rounded-full ring-2 ring-surface-variant overflow-hidden ml-1 active:scale-95 transition-all">
+<div class="size-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs">
+              JM
+            </div>
+</button>
+</div>
+</div>
+<!-- Quick Native Filter Chips -->
+<nav aria-label="Filtros rápidos" class="flex gap-2 pt-3 pb-1 overflow-x-auto no-scrollbar scroll-smooth">
+<button class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-primary px-4 text-xs font-semibold text-on-primary shadow-sm hover:opacity-95 transition-all">
+<span class="">Todas</span>
+</button>
+<button class="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full bg-surface-container px-3.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[16px] text-error" style="font-variation-settings: 'FILL' 1;">shield</span>
+<span class="">Spam bloqueado</span>
+<span class="flex h-4 min-w-[18px] items-center justify-center rounded-full bg-error-container px-1 text-[10px] font-bold text-error">14</span>
+</button>
+<button class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface-container px-4 text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-all">
+<span class="">No contestadas</span>
+</button>
+</nav>
+</header>
+<!-- Main Content: Recents Call List -->
+<main class="flex-1 overflow-y-auto px-4 pb-24 pt-2">
+<!-- Section Header -->
+<div class="flex items-center justify-between pt-2 pb-2">
+<h2 class="text-xs font-bold tracking-wider text-outline uppercase font-label-md">
+          RECIENTES · HOY
+        </h2>
+<button class="text-xs font-semibold text-primary hover:text-on-primary-fixed-variant flex items-center gap-0.5">
+<span class="">Filtrar</span>
+<span class="material-symbols-outlined text-[16px]">tune</span>
+</button>
+</div>
+<!-- Call Entries Container -->
+<div class="flex flex-col divide-y divide-surface-container">
+<!-- Entry 1: Spam Blocked Call (+56 9 7821 4402) -->
+<article class="flex items-center justify-between py-3.5 gap-3 group transition-colors">
+<div class="flex items-center gap-3.5 min-w-0 flex-1">
+<div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-error-container text-error">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-base font-bold tracking-tight text-on-surface truncate font-headline-sm">
+                +56 9 7821 4402
+              </span>
+<div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-error-container text-error">
+                  Spam bloqueado
+                </span>
+<span class="text-xs text-on-surface-variant truncate">
+                  Silenciada automáticamente · Hace 15 min
+                </span>
+</div>
+</div>
+</div>
+<button aria-label="Detalles de llamada +56 9 7821 4402" class="flex size-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">info</span>
+</button>
+</article>
+<!-- Entry 2: Telemarketing 809 (+56 809 230 1199) -->
+<article class="flex items-center justify-between py-3.5 gap-3 group transition-colors">
+<div class="flex items-center gap-3.5 min-w-0 flex-1">
+<div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[22px]">call_end</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-base font-bold tracking-tight text-on-surface truncate font-headline-sm">
+                +56 809 230 1199
+              </span>
+<div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-tertiary-fixed text-on-tertiary-fixed-variant">
+                  Telemarketing 809
+                </span>
+<span class="text-xs text-on-surface-variant truncate">
+                  Silenciada automáticamente · 08:44
+                </span>
+</div>
+</div>
+</div>
+<button aria-label="Detalles de llamada +56 809 230 1199" class="flex size-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">info</span>
+</button>
+</article>
+<!-- Entry 3: Friendly Favorite Contact (Mamá) -->
+<article class="flex items-center justify-between py-3.5 gap-3 group transition-colors">
+<div class="flex items-center gap-3.5 min-w-0 flex-1">
+<div class="relative size-11 shrink-0">
+<img class="size-11 rounded-full object-cover border border-surface-container" data-alt="A warm and gentle medium portrait photo of a smiling middle-aged Hispanic mother in soft daylight. The atmosphere is clear and cozy with neutral, high-key clean light-mode tones and delicate depth of field, seamlessly blending into modern Scandinavian-inspired UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPx1dsUpZ57a483EPs43GDe2C2vaoeEF2tL_T5wXMNZlwft8mFkRJOs-bbux3rX6Hj-Nsy6iwL9Ad6rKBE4Ee3xb8cllyGG7i81gn9ZoZf2RSnQw5gcxaMvRda6L0tO13tv40xpVmZa7Ke_HvZgGAWT7EDKtvq-Uz8f3WcS3sFJkj8WE48XunaupnCrdgatouQVLxLSNGkTG3ddgdgVMAvOgzIy2RSjHwQt9tZV9mnIH8MT1NSIdLz">
+<div class="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-[12px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-base font-bold tracking-tight text-on-surface truncate font-headline-sm">
+                  Mamá
+                </span>
+<span class="material-symbols-outlined text-[16px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">call_received</span>
+<span class="text-xs text-on-surface-variant truncate">
+                  Móvil personal · Entrante (2m 14s) · Ayer 19:20
+                </span>
+</div>
+</div>
+</div>
+<button aria-label="Llamar a Mamá" class="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container hover:bg-secondary-fixed-dim transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</article>
+<!-- Entry 4: Emergency Line (133 Carabineros de Chile) -->
+<article class="flex items-center justify-between py-3.5 gap-3 group transition-colors">
+<div class="flex items-center gap-3.5 min-w-0 flex-1">
+<div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">local_police</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-base font-bold tracking-tight text-on-surface truncate font-headline-sm">
+                  133 Carabineros de Chile
+                </span>
+<span class="material-symbols-outlined text-[16px] text-secondary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-secondary/15 text-secondary">
+                  Línea de emergencia oficial (133)
+                </span>
+<span class="text-xs text-on-surface-variant truncate">
+                  Saliente · 12 de oct
+                </span>
+</div>
+</div>
+</div>
+<button aria-label="Llamar a Carabineros 133" class="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-container text-primary hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</article>
+<!-- Entry 5: Institutional Banking Line (BancoEstado 600) -->
+<article class="flex items-center justify-between py-3.5 gap-3 group transition-colors">
+<div class="flex items-center gap-3.5 min-w-0 flex-1">
+<div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[22px]">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-base font-bold tracking-tight text-on-surface truncate font-headline-sm">
+                  BancoEstado 600
+                </span>
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-primary-fixed text-primary">
+                  Verificado SUBTEL 600
+                </span>
+<span class="text-xs text-on-surface-variant truncate">
+                  +56 600 600 3000 · Lunes 11:20
+                </span>
+</div>
+</div>
+</div>
+<button aria-label="Llamar a BancoEstado 600" class="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-container text-primary hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</article>
+</div>
+<!-- Background Protection Status Banner -->
+<div class="mt-6 mb-4 flex items-start gap-3 rounded-xl bg-surface-container-low p-3.5 border border-surface-container">
+<span class="material-symbols-outlined text-[20px] text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">verified</span>
+<div class="flex flex-col">
+<p class="text-xs font-semibold text-on-surface">Protección activa en segundo plano</p>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-0.5">
+            Corta silencia automáticamente el spam sin interrumpirte. Filtros actualizados hoy.
+          </p>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB Dialer) -->
+<div class="fixed bottom-20 right-6 z-40 max-w-md pointer-events-none">
+<button aria-label="Abrir teclado numérico" class="pointer-events-auto flex size-14 items-center justify-center rounded-2xl bg-primary text-on-primary shadow-lg shadow-primary/30 hover:bg-primary-container active:scale-95 transition-all focus:outline-none">
+<span class="material-symbols-outlined text-[26px]">dialpad</span>
+</button>
+</div>
+<!-- Immutable Shared Component: BottomNavBar -->
+<nav class="sticky bottom-0 z-30 flex gap-2 border-t border-[#e7ecf4] bg-[#f8f9fc] px-4 pb-3 pt-2"><a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#49699c] hover:text-on-surface transition-colors" href="#"><div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined text-[24px]">chat</span></div><p class="text-xs font-medium leading-normal tracking-[0.015em]">Mensajes</p></a><a class="just flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-primary" href="#"><div class="flex h-8 w-14 items-center justify-center rounded-full bg-primary/10 text-primary"><span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">call</span></div><p class="text-xs font-bold leading-normal tracking-[0.015em] text-primary">Llamadas</p></a><a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#49699c] hover:text-on-surface transition-colors" href="#"><div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined text-[24px]">contacts</span></div><p class="text-xs font-medium leading-normal tracking-[0.015em]">Contactos</p></a></nav>
+</div>
+
+
+</body></html>

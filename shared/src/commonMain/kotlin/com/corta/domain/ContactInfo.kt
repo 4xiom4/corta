@@ -1,8 +1,5 @@
-package com.corta.app.ui.contacts
+package com.corta.domain
 
-import androidx.compose.runtime.Immutable
-
-@Immutable
 data class ContactInfo(
     val id: String,
     val name: String,

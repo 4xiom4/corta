@@ -2,11 +2,22 @@ package com.corta.app.ui.contacts
 
 import android.content.Context
 import android.provider.ContactsContract
+import com.corta.domain.ContactInfo
+import com.corta.domain.ContactRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AndroidContactRepository(private val context: Context) : ContactRepository {
+    private var cachedContacts: List<ContactInfo>? = null
+    private var lastLoadedAt: Long = 0L
+    private val cacheTtlMs = 5 * 60 * 1000L // 5 minutos para reducir lag por recarga
+
     override suspend fun getContacts(): List<ContactInfo> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        cachedContacts?.let { cached ->
+            if ((now - lastLoadedAt) < cacheTtlMs && cached.isNotEmpty()) return@withContext cached
+        }
+
         val contactsById = linkedMapOf<String, ContactInfo>()
         val projection = arrayOf(
             ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
@@ -63,11 +74,15 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
             }
         }
 
-        contactsById.values
+        val result = contactsById.values
             .asSequence()
             .filter { it.name.isNotBlank() || it.phoneNumber.isNotBlank() }
             .sortedBy { it.name.lowercase() }
             .toList()
+
+        cachedContacts = result
+        lastLoadedAt = now
+        result
     }
 
     override suspend fun toggleFavorite(contactId: String, isFavorite: Boolean): Boolean = withContext(Dispatchers.IO) {

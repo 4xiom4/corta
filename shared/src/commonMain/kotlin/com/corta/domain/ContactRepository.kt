@@ -1,4 +1,4 @@
-package com.corta.app.ui.contacts
+package com.corta.domain
 
 interface ContactRepository {
     suspend fun getContacts(): List<ContactInfo>

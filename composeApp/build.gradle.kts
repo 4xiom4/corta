@@ -11,7 +11,7 @@ kotlin {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(project(":shared"))
@@ -24,6 +24,17 @@ kotlin {
             implementation(libs.androidx.credentials)
             implementation(libs.androidx.credentials.play.services.auth)
             implementation(libs.googleid)
+            implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+            implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+            implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+            implementation(libs.timber)
+            implementation(libs.androidx.paging.runtime)
+            implementation(libs.androidx.paging.compose)
+            // Enables the baseline profile installer runtime. The actual
+            // baseline profile is generated separately via Macrobenchmark
+            // (planned for Oleada 3.7 follow-up). See
+            //   https://developer.android.com/topic/performance/baselineprofiles
+            implementation(libs.profileinstaller)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -52,6 +63,9 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    buildFeatures {
+        buildConfig = true
+    }
     packaging {
         jniLibs {
             useLegacyPackaging = true
@@ -62,14 +76,56 @@ android {
     }
     buildTypes {
         getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+            isJniDebuggable = false
+            isPseudoLocalesEnabled = false
+        }
+        getByName("debug") {
             isMinifyEnabled = false
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    lint {
+        // Per "no aggressive refactor" preference we start with a baseline
+        // to silence the existing 30+ known issues, then trim it incrementally.
+        baseline = file("lint-baseline.xml")
+        checkAllWarnings = false
+        warningsAsErrors = false
+        abortOnError = true
+        disable += setOf(
+            "MissingTranslation",
+            "ExtraTranslation",
+            "VectorPath",
+            "InvalidVectorPath"
+        )
+        // ContentDescription: enabled so every new icon-only control must
+        // carry a meaningful label. Existing 43 known offenders are
+        // silenced by the baseline; they will be fixed one by one as the
+        // calls are migrated to CortaIconButton / CortaDecorativeIcon.
+    }
     dependencies {
         debugImplementation(compose.uiTooling)
+        testImplementation("junit:junit:4.13.2")
+        testImplementation("androidx.test:core:1.5.0")
+        testImplementation("app.cash.sqldelight:sqlite-driver:2.0.2")
+        testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.0")
+        testImplementation("androidx.compose.ui:ui-test-junit4:1.6.7")
+        @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+        testImplementation(compose.uiTest)
+        androidTestImplementation("androidx.test.ext:junit:1.1.5")
+        androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     }
 }

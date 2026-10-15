@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.corta.app.ui.i18n.Strings
 
 data class SimInfo(val subscriptionId: Int, val displayName: String, val number: String)
 
@@ -36,8 +37,9 @@ fun SimSelectionDialog(
         if (hasPermission) {
             val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
             val activeSubscriptionInfoList = subscriptionManager.activeSubscriptionInfoList
-            
+
             val list = mutableListOf<SimInfo>()
+            @Suppress("DEPRECATION")
             activeSubscriptionInfoList?.forEach { info ->
                 list.add(
                     SimInfo(
@@ -53,33 +55,33 @@ fun SimSelectionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Configurar SIM / Número Principal") },
+        title = { Text(Strings.sim.dialogTitle) },
         text = {
             Column {
                 if (simList.isNotEmpty()) {
-                    Text("Selecciona una tarjeta SIM:")
+                    Text(Strings.sim.selectLabel)
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyColumn(modifier = Modifier.heightIn(max = 150.dp)) {
                         items(simList) { sim ->
                             ListItem(
                                 modifier = Modifier.clickable { onSimSelected(sim.number) },
                                 headlineContent = { Text(sim.displayName) },
-                                supportingContent = { Text(sim.number.ifEmpty { "Número no detectado" }) },
+                                supportingContent = { Text(sim.number.ifEmpty { Strings.sim.numberUnavailable }) },
                                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             )
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("O ingresa manualmente:")
+                    Text(Strings.sim.manualLabel)
                 } else {
-                    Text("Ingresa tu número telefónico principal (ej: +569...):")
+                    Text(Strings.sim.enterPrompt)
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = manualNumber,
                     onValueChange = { manualNumber = it },
-                    label = { Text("Número telefónico") },
+                    label = { Text(Strings.sim.phoneNumberLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -93,12 +95,12 @@ fun SimSelectionDialog(
                     }
                 }
             ) {
-                Text("Guardar")
+                Text(Strings.sim.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cerrar")
+                Text(Strings.sim.close)
             }
         }
     )

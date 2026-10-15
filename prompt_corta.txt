@@ -1,0 +1,539 @@
+Mi aplicaion Corta! Es una aplicacion de llamadas y mensajes anti spam, tiene todas las funciones de recivir y enviar llamadas lo mismo con los mensajes de texto, posee un filtro anti spam basado en la ley de antispam de chile de la subtel:
+
+“Desde este miércoles las llamadas comerciales y masivas deberán llevar los prefijos 600 y 809 para su identificación
+
+La o las empresas que incumplan con la normativa, serán sancionadas de acuerdo con la regulación de la Ley General de Telecomunicaciones; lo que podría ser desde una amonestación a multas que van desde las 5 a 5.000 UTM.
+Según datos entregados por la Policía de Investigaciones, durante el 2024 aumentó el número de denuncias por estafas telefónicas. Durante el año se reportaron un total de 4.533 denuncias de este tipo, lo que representa un aumento de un 19% respecto al 2023.
+Santiago, 12 de agosto del 2025.-
+Concurridos los seis meses de plazo que tenían las empresas de telecomunicaciones para la implementación de la numeración especial, este miércoles 13 de agosto, todas las llamadas comerciales y/o masivas, deseadas y no deseadas, deberán llevar los prefijos 600 y 809 para su identificación. Esto, en el marco de las medidas contenidas en la Agenda de Seguridad Digital del Gobierno.
+Cabe recordar que el prefijo 600, corresponde a las llamadas solicitadas por los usuarios o que, eventualmente podrían ser esperadas al tratarse de llamadas provenientes de una empresa o institución con la cual se tiene vínculo; mientras que las llamadas que porten el 809, serán identificadas como no deseadas.
+El subsecretario de Telecomunicaciones, Claudio Araya, señaló que “tenemos una muy buena noticia, que va en la línea de nuestra Agenda de Seguridad Digital, y es que desde este 13 de agosto, empieza a regir la norma que obliga a que todas las llamadas, comerciales y/o masivas, deben venir con este prefijo claramente identificable para la población. Esta medida permite que las personas sepan, que están recibiendo una llamada legítima y por el contrario, si lo llaman de un +569 o un número del extranjero para vender algo, se trata de una estafa. Estos números buscan protegernos, identificar llamadas spam y evitar estafas telefónicas, que esa es la principal función de está normativa”.
+Según un estudio de la empresa Hiya (2024), los chilenos reciben en promedio 28 llamadas spam al mes, la cifra más alta de toda Latinoamérica. Mientras que, según los datos de la PDI, durante el 2024 aumentó en un 19% el número de denuncias por estafas telefónicas respecto al 2023.
+En tanto, la subsecretaria de Prevención del Delito, Carolina Leitao, dijo que “con esta nueva ley y estos nuevos prefijos estamos generando una respuesta concreta y efectiva a quienes se hacen pasar por empresas para cometer estafas. En los últimos años hemos visto un aumento de este delito que afecta a todas las personas y en especial a nuestros adultos mayores, por lo que estos prefijos son un alerta clara para la ciudadanía: si recibo un llamado de un número desconocido, que no empieza con 600 u 809, esa llamada es una estafa”.
+El cumplimiento de la normativa será fiscalizado por Subtel. Sin embargo, desde la Institución hacen el llamado a los usuarios a denunciar y/o reclamar por los canales correspondientes de la Subsecretaría de Telecomunicaciones, si reciben llamados de empresas que no contengan los prefijos establecidos. De igual manera se detalla que, las empresas que no cumplan con la normativa podrían ser sancionadas con una amonestación o multa que podría ir desde las 5 a 5.000 UTM.
+”
+
+entonces filtra los spams de llamadas y mensajes a travez de reglas hechas con la ley mencionada, el usuario puede agregar numeros que el quiera a spam, tambien no solo el numero directo como prefijos de numeros que empiezen con tal combinacion (por ejemplo +5692784 asi bloquearia todos los numeros que empiezen por esta nomenclatura)
+Tambien tiene que tener un sistema de direccionde spam inversa me refiero a que una base de datos de spam se retroalimente con la informacion portada de los usuarios, parecido a lo que hace truecaller, la app se puede ocupar como invitado y como usuario, te puedes registrar con google, con correo y si o si tienes que confirmar tu numero de telefono, solo los “usuarios” puede ocupar el acceso a la base de datos de spam hecha por los usuarios, o a travez de la donacion, que sera la base fundamental de monetizacion, por eso la app tiene que ser muy rapida y eficaz y limpia de interfaz (design.md en la carpeta raiz) y sin errores de codigo, la diseñe en kotlin para ser exportada para android e ios, de momento solo estamos trabajando en que sea funcional en android
+
+tambien como app anti spam chilena :
+
+Los prefijos telefónicos de Chile, también llamados códigos telefónicos o códigos de área local, fueron utilizados hasta 2014 para realizar llamadas telefónicas entre diferentes zonas geográficas (Larga Distancia Nacional o LDN). Estos prefijos fueron definidos siguiendo tanto criterios regionales como provinciales.
+Antiguamente, para llamadas de larga distancia entre zonas distintas, se debía anteponer al número telefónico tanto el carrier —también denominado portador— como el código del área a la que pertenecía el teléfono al que se llamaba. El 9 de agosto de 2014 se puso fin a la larga distancia nacional (LDN) en Chile siendo todas las llamadas nacionales cobradas como llamadas locales. Tras dicha fecha, para llamar a otras áreas del país, se eliminó la necesidad de utilizar tanto el carrier como el código de área local. Para lograr aquello, se realizó un programa para uniformar el largo de los teléfonos de todo el país a nueve cifras, incorporando el código de área respectivo.[1]​
+Para llamadas a telefonía móvil desde teléfonos fijos, se utiliza el código de la zona especial 9 seguido del número correspondiente de ocho dígitos. Para llamadas a telefonía de red fija desde teléfonos móviles, se discan nueve dígitos (Ejemplos: 2-xxxx-xxxx, 32-xxx-xxxx o 65-xxx-xxxx). En tanto, los números de voz sobre Protocolo de Internet (VoIP) tienen siete dígitos más un código de área virtual: 44.
+[2]​Formatos
+Formato telefónico chileno estándar
+El formato estándar telefónico de Chile se ajusta al siguiente patrón: +56 XXX-XXX-XXX.
+Así, en el caso de los teléfonos celulares por ejemplo, los números tienen el formato anterior incluyendo el código respectivo: +56 9 XXXX-XXXX. En tanto, los teléfonos fijos que pertenecían a la zona de la Región Metropolitana antes de 2014, tienen el formato +56 22 X-XXX-XXX (incorporando el antiguo prefijo 2 de la región y un 2 adicional para estandarizar los antiguos teléfonos de siete cifras a nueve). Debido a necesidades de nuevas numeraciones para red fija, actualmente existen también números con el formato +56 23 X-XXX-XXX[cita requerida].
+Dentro de Chile, el llamado desde un teléfono fijo a cualquier número telefónico nacional debe ser realizado omitiendo solo el código del país. En consecuencia, se deben digitar nueve dígitos.
+Hasta 2012, año cuando comenzó el proceso para uniformar los números teléfonos, el formato de teléfonos era el siguiente:
++56 2 XX-XXX-XXX para un teléfono fijo de la Región Metropolitana;
++56 YY X-XXX-XXX para un teléfono fijo de otra región del país.
++56 9 XXXX-XXXX para un teléfono celular.
+Cuando fueron introducidos en la década de 1990, los teléfonos celulares contaban con siete cifras (al igual que los números telefónicos de la Región Metropolitana) y con el código 9 (+56 9 XXX-XXXX). Debido al aumento de las líneas celulares en los años posteriores, se decidió incorporar una cifra adicional al comienzo de todos los números, quedando en ocho cifras; aquellos números antiguos incorporaron un 9 al comienzo (quedando el ejemplo anterior como +56 9 9XXX-XXXX). Con el paso de los años se fueron utilizando otras cifras como 4; 5; 6; 7 u 8.
+Procesos similares se vivieron a lo largo del tiempo en diferentes zonas, a medidas que el número de teléfonos en la región era ampliado. Usualmente, era agregado un número 2 al comienzo de las antiguas numeraciones, a medida que se ampliaba el número de dígitos para cada número de teléfono.
+Teléfonos de emergencia
+Artículo principal:  Anexo:Teléfonos de emergencias
+130: CONAF
+131: SAMU (ambulancia)
+132: Bomberos
+133: Carabineros (emergencias policiales)
+134: Policía de Investigaciones (emergencias policiales)
+135: Fono Drogas (Carabineros)
+136: Cuerpo de Socorro Andino
+137: Búsqueda y Salvamento Marítimo
+138: Rescate Aéreo
+139: Informaciones Policiales
+143: Fono Acción (denuncias Ministerio de Transportes)
+147: Fono Niños (maltrato infantil)
+149: Fono Familia (violencia intrafamiliar)
+911: Central de Carabineros más cercana (solo desde teléfonos móviles)
+1404: Servicio de Rescate Asociación Chilena de Seguridad
+1407: Fono Emergencia Mutual de Seguridad
+1411: Fono Emergencia Metro de Santiago
+1488: Fono Denuncia Metro de Santiago (acoso)
+1412: Fono Drogas (SENDA)
+600 400 0101: Denuncia Seguro
+800 104 008: Fono Ayuda y Orientación SERNAM
+Formatos especiales
+600 "servicios complementarios": número de 10 dígitos para llamadas tarifadas como llamada local
+700 "servicios de entretención": número de 7 dígitos para servicios de entretención tarifados según el proveedor del servicio
+800 "servicios sin cargo": número de 9 dígitos para servicios sin cargo para el que llama
+Otros números
+103, 301 y 107: informaciones y otros servicios (dependiendo del proveedor de servicios de telefonía)
+105: número destinado a reclamos
+Lista de prefijos telefónicos
+Prefijo	Provincia	Región	Zona
+2	Provincias de Santiago, Chacabuco, Cordillera, Maipo, Melipilla y Talagante	Región Metropolitana de Santiago	Centro
+32	Provincias de Valparaíso y Marga Marga (comunas de Quilpué y Villa Alemana) 	Región de Valparaíso
+33	Provincias de Petorca, Quillota y Marga Marga (comunas de Limache y Olmué) 	Región de Valparaíso
+34	Provincias de Los Andes y San Felipe de Aconcagua	Región de Valparaíso
+35	Provincia de San Antonio	Región de Valparaíso
+39	Provincia de Isla de Pascua[3]​ 	Región de Valparaíso
+41	Provincias de Arauco y Concepción	Región del Biobío	Sur
+42	Provincias de Diguillín, Itata y Punilla	Región de Ñuble
+43	Provincia de Biobío	Región del Biobío
+44	Telefonía sobre IP	Nivel nacional	Especial
+45	Provincias de Cautín y Malleco	Región de la Araucanía	Sur
+51	Provincias de Huasco y Elqui	Región de Atacama y Región de Coquimbo	Norte
+52	Provincias de Chañaral y Copiapó	Región de Atacama
+53	Provincias de Choapa y Limarí	Región de Coquimbo
+55	Provincias de Antofagasta, El Loa y Tocopilla	Región de Antofagasta
+57	Provincias de Iquique y Tamarugal	Región de Tarapacá
+58	Provincias de Arica y Parinacota	Región de Arica y Parinacota
+61	Provincias de Antártica Chilena, Magallanes, Tierra del Fuego y Última Esperanza	Región de Magallanes y de la Antártica Chilena	Sur
+63	Provincias de Valdivia y del Ranco (excepto comunas de La Unión y Río Bueno) 	Región de Los Ríos
+64	Provincias del Ranco (comunas de La Unión y Río Bueno) y de Osorno	Región de Los Ríos y Región de Los Lagos
+65	Provincias de Chiloé, Llanquihue y Palena	Región de Los Lagos
+67	Provincias de Aysén, Capitán Prat, Coyhaique y General Carrera	Región de Aysén del General Carlos Ibáñez del Campo
+68	Provincia de Aysén (Puyuhuapi) 	Región de Aysén del General Carlos Ibáñez del Campo
+71	Provincia de Talca	Región del Maule	Centro Sur
+72	Provincias de Cachapoal, Cardenal Caro y Colchagua	Región del Libertador General Bernardo O'Higgins
+73	Provincias de Cauquenes y Linares	Región del Maule
+75	Provincia de Curicó	Región del Maule
+Códigos desusados desde la década de 1990
+Prefijo	Provincia	Región
+46	Provincia de Arauco	Región del Biobío
+56	Provincia de El Loa	Región de Antofagasta (código eliminado en 1994)
+74	Provincia de Colchagua y Cardenal Caro	Región del Libertador General Bernardo O'Higgins
+80	Provincia de Arica y Parinacota	Región de Tarapacá (código 58 desde 1989)
+81	Provincia de Iquique	Región de Tarapacá (código 57 desde 1989)
+82	Provincia de El Loa	Región de Antofagasta (código 56 desde 1989 hasta 1994)
+84	Provincia de Antofagasta y Tocopilla	Región de Antofagasta (código 55 desde 1989)
+
+
+
+Número	Alcance	Descripción
+130	Nacional	CONAF: Incendios forestales.[23]​
+131	Nacional	SAMU 131: Ambulancia.[23]​
+132	Nacional	Bomberos.[23]​
+133	Nacional	Carabineros: Emergencias policiales.[23]​
+134	Nacional	Policía de investigaciones: Emergencias policiales.[23]​
+135	Nacional	Fono Drogas: Emergencias.[23]​
+136	Nacional	Cuerpo de socorro andino.[24]​
+137	Nacional	Búsqueda y salvamento marítimo.[23]​
+138	Nacional	Rescate aéreo.[23]​
+139	Nacional	Informaciones policiales.[23]​
+143	Región metropolitana	Fono acción.[23]​
+147	Nacional	Fono niños: “Permite ingresar denuncias y/u obtener información relacionadas con menores de edad, ya que sea como víctimas de un delito o infractores de la ley.”[25]​
+149	Nacional	Fono familia: Para recibir orientación o realizar denuncias sobre actos de violencia familiar.[26]​[26]​
+1400	Puerto Montt	Botes salvavidas.[27]​
+1402	Las Condes	Seguridad ciudadana.[28]​
+1403	Vitacura	Seguridad ciudadana.[29]​
+1404	Nacional.	Asociación Chilena de Seguridad: Atención de accidentes laborales (incluso en trayecto desde o hacia el trabajo)[30]​
+1405	Lo Barnechea	Seguridad ciudadana.[31]​
+1406	Santiago	Seguridad ciudadana.[32]​
+1407	Nacional	Mutual de Seguridad C.Ch.C..[33]​
+1408	Zapallar	Seguridad ciudadana.[34]​
+1409	Temuco	Seguridad ciudadana.[35]​
+1410	Peñaflor	Seguridad ciudadana.[27]​
+1411	Gran Santiago	Metro de Santiago. Emergencias de la red.[36]​
+1412	Nacional	Fono drogas y alcohol SENDA.[37]​
+1413	Talagante	Seguridad ciudadana.[38]​
+1414	Providencia	Seguridad ciudadana.[39]​
+1415	El Quisco	Seguridad ciudadana.[27]​
+1416	La Florida	Seguridad ciudadana.[40]​
+1417	Huechuraba	Seguridad ciudadana.[41]​
+1418	Maipú	Seguridad ciudadana.[42]​
+1419	La Reina	Seguridad ciudadana.[43]​
+1420	Coquimbo	Seguridad ciudadana.[27]​
+1421	Lampa	Seguridad ciudadana.[27]​
+1423	Viña del Mar	Seguridad ciudadana.[27]​
+1424	Parral	Seguridad ciudadana.[27]​
+1425	Conchalí	Seguridad ciudadana.[27]​
+1426	Buin	Seguridad ciudadana.[27]​
+1427	Castro	Seguridad ciudadana.[27]​
+1428	Dalcahue	Seguridad ciudadana.[27]​
+1429	Vicuña	Seguridad ciudadana.[27]​
+1440	Recoleta	Seguridad ciudadana.[27]​
+1441	La Pintana	Seguridad ciudadana.[27]​
+1442	Nacional	Metrogas. Para emergencias de gas.[27]​
+1443	Machalí	Seguridad ciudadana.[27]​
+1444	Macul	Seguridad ciudadana.[27]​
+1445	Ñuñoa	Seguridad ciudadana.[27]​
+1446	La Granja	Seguridad ciudadana.[27]​
+1447	Santa María	Seguridad ciudadana.[27]​
+1448	Pucón	Seguridad ciudadana.[27]​
+1449	Padre Hurtado	Seguridad ciudadana.[27]​
+1450	Pichilemu	Seguridad ciudadana.[27]​
+1451	Valdivia	Seguridad ciudadana.[27]​
+1452	Melipilla	Seguridad ciudadana.[27]​
+1453	Renca	Seguridad ciudadana.[27]​
+1454	Panguipulli	Seguridad ciudadana.[27]​
+1455	Nacional	Fono orientación y ayuda para la violencia contra la mujer. Para denunciar, solicitar ayuda u orientación en casos de maltrato, físico o sicológico en contra de las mujeres.[27]​
+1456	San Miguel	Seguridad ciudadana.[27]​
+1457	La Serena	Seguridad ciudadana.[27]​
+1458	Santo Domingo	Seguridad ciudadana.[27]​
+1459	Limache	Seguridad ciudadana.[27]​
+1460	Cerro Navia	Seguridad ciudadana.[27]​
+1461	Peñalolén	Seguridad ciudadana.[27]​
+1462	Molina	Seguridad ciudadana.[27]​
+1466	Parque Metropolitano de Santiago	Emergencias dentro del Parque Metropolitano de Santiago.[27]​
+1514	Pudahuel	Asistencia Vecinal
+1488	Gran Santiago	Metro de Santiago. Para denunciar abusos y situaciones deshonestas dentro de la red del Metro de Santiago.[27]​
+777-1448	Región metropolitana	Cruz Roja Chilena.[23]​
+800-202120	Nacional	Fono SIDA: Servicio de orientación, totalmente anónimo y gratuito, del Ministerio de Salud.[23]​
+4141	Nacional	Prevención del suicidio: Para atender emergencias o crisis de salud mental asociadas al suicidio[44]​
+Desde teléfono celular:
+911	Nacional	Comisaría de Carabineros más cercana o redirección al 133.[45]​
+112	Nacional	Redirección al 133 (Carabineros)
+es fundamental que la lógica de bloqueo no sea ciega a los prefijos 600 y 809, ya que, aunque la ley los asigne a comunicaciones masivas, muchas instituciones críticas los utilizan para servicios de salud, emergencias y alertas bancarias.
+Aquí tienes la lista categorizada de números y rangos que no deben bloquearse para evitar fallos críticos en el servicio al usuario:
+1. Números de Emergencia Nacional (Lista Blanca Permanente)
+Estos números nunca portarán prefijos 600 u 809 y son la base de la seguridad en Chile :
+131: SAMU (Ambulancias).
+132: Bomberos.
+133: Carabineros de Chile (Emergencias policiales).
+134: PDI (Policía de Investigaciones).
+137: Rescate Marítimo.
+130: CONAF (Incendios forestales).
+2. Seguridad Ciudadana Municipal (Bloque 14XX)
+Son líneas de patrullaje y emergencia vecinal. Bloquearlas impediría que el usuario reciba ayuda local :
+1402: Las Condes.
+1403: Vitacura.
+1406: Santiago Centro.
+1414: Providencia.
+1416: La Florida.
+1419: La Reina.
+1445: Ñuñoa.
+1468: Colina.
+1418: Maipú.
+1417: Huechuraba.
+3. Red de Salud Pública y Ministerios (Críticos en Prefijo 600)
+El Ministerio de Salud (Minsal) utiliza estos números para gestionar citas y urgencias. Los pacientes a menudo pierden cirugías por no contestar estos números :
+600 360 7777: Salud Responde (Orientación médica 24/7 y gestión de vacunas).
+600 006 1022: Gestión de Listas de Espera (Llamadas oficiales para confirmar cirugías y horas GES).
+600 360 3000: Fonasa (Consultas de seguros públicos) .
+600 370 2000: Registro Civil (Cédulas, pasaportes y certificados) .
+600 600 2626: Ayuda Mineduc (Becas y gratuidad).
+600 4000 444: Tesorería General de la República (TGR) .
+600 712 0001: Diario Oficial de Chile.
+4. Banca y Prevención de Fraude (Prefijo 600)
+Los bancos utilizan la serie 600 para alertar sobre transacciones sospechosas o bloqueos de tarjetas :
+600 200 7000: Banco Estado .
+600 320 3000 / 600 320 3030: Banco Santander .
+600 637 37 37: Banco de Chile / Edwards .
+600 686 0888: Banco Itaú .
+600 6700 500: Scotiabank .
+600 390 6200: Banco Falabella .
+600 390 6000: Bloqueo de Tarjeta CMR .
+600 600 5757: Bloqueo de Tarjeta Presto / Lider .
+5. Servicios Básicos (Emergencias Domiciliarias)
+Empresas de electricidad y agua usan el 600 para reportar cortes o fugas :
+600 696 0000: Enel Distribución (Emergencias eléctricas) .
+600 777 7777: CGE (Emergencias eléctricas) .
+600 600 5000: Chilquinta (Valparaíso) .
+600 337 8000: Metrogas (Fugas de gas) .
+600 331 1000: Esval / Nuevo Sur (Agua potable) .
+600 600 6060: Esval .
+6. Clínicas y Centros Médicos (Confirmación de Horas)
+600 712 0020: Clínica Bupa Santiago (Urgencias y citas).
+600 718 6000: RedSalud (Agendamiento nacional).
+600 600 8432: Vidaintegra.
+600 401 2400: Clínica Andes Salud.
+7. Fundaciones y Ayuda Social (Uso de 600 y 809)
+Tal como mencionaste, fundaciones como el Hogar de Cristo están obligadas por ley a usar estos prefijos para sus campañas de recaudación o servicios funerarios :
++56 600 086 8082: Hogar de Cristo (Llamadas a socios y colaboradores) .
++56 809 035 239: Hogar de Cristo (Campañas de información y captación) .
+600 570 8000: Atención a socios Hogar de Cristo .
+600 626 6500: Funeraria Hogar de Cristo (Servicios urgentes) .
+Nota técnica para tu App: Aunque los prefijos 600 y 809 indican "comunicaciones masivas", la diferencia clave es que el 600 implica un vínculo previo (contrato, ser paciente, ser cliente), mientras que el 809 es para contactos sin relación previa. Las llamadas de estafa suelen provenir de números +56 9 (móviles) o del extranjero que intentan vender servicios, ya que la ley prohíbe el telemarketing desde esos orígenes .
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+América
+América del Norte
++1 -  Canadá
++1 -  Estados Unidos
+Incluye los territorios estadounidenses de:
++1-340 -  Islas Vírgenes de los Estados Unidos
++1-670 -  Islas Marianas del Norte
++1-671 -  Guam
++1-684 -  Samoa Americana
++1-787 y +1-939 -  Puerto Rico
++1-441 -  Bermudas
++299 -  Groenlandia
++508 -  San Pedro y Miquelón
++52 - México
+Islas del Caribe
++1-242 -  Bahamas
++1-246 -  Barbados
++1-264 -  Anguila
++1-268 -  Antigua y Barbuda
++1-284 -  Islas Vírgenes Británicas
++1-345 -  Islas Caimán
++1-473 -  Granada
++1-649 -  Islas Turcas y Caicos
++1-664 -  Montserrat
++1-721 -  San Martín
++1-758 -  Santa Lucía
++1-767 -  Dominica
++1-784 -  San Vicente y las Granadinas
++1-809, +1-829 y +1-849 -  República Dominicana
++1-868 -  Trinidad y Tobago
++1-869 -  San Cristóbal y Nieves
++1-876 y +1-658 -  Jamaica
++297 -  Aruba
++509 -  Haití
++53 -  Cuba
++590 -  Guadalupe,  San Martín y  San Bartolomé
++596 -  Martinica
++599 -  Curazao,  Bonaire,  San Eustaquio y  Saba
+América Central
++501 -  Belice
++502 -  Guatemala
++503 -  El Salvador
++504 -  Honduras
++505 -  Nicaragua
++506 -  Costa Rica
++507 - Panamá
+América del Sur
++500 -  Islas Malvinas e  Islas Georgias del Sur y Sandwich del Sur
++51 - Perú
++54 -  Argentina
++55 -  Brasil
++56 -  Chile
++57 -  Colombia
++58 - Venezuela
++591 -  Bolivia
++592 -  Guyana
++593 -  Ecuador
++594 -  Guayana Francesa
++595 - Paraguay
++597 -  Surinam
++598 - Uruguay
+África
++20 -  Egipto
++211 -  Sudán del Sur
++212 -  Marruecos y  República Árabe Saharaui Democrática
++213 -  Argelia
++216 -  Túnez
++218 -  Libia
++220 -  Gambia
++221 -  Senegal
++222 -  Mauritania
++223 -  Mali
++224 -  Guinea
++225 -  Costa de Marfil
++226 -  Burkina Faso
++227 -  Níger
++228 -  Togo
++229 -  Benín
++230 -  Mauricio
++231 -  Liberia
++232 -  Sierra Leona
++233 -  Ghana
++234 -  Nigeria
++235 -  Chad
++236 -  República Centroafricana
++237 -  Camerún
++238 -  Cabo Verde
++239 -  Santo Tomé y Príncipe
++240 -  Guinea Ecuatorial
++241 -  Gabón
++242 -  República del Congo
++243 -  República Democrática del Congo
++244 -  Angola
++245 -  Guinea-Bisáu
++246 -  Territorio Británico del Océano Índico
++247 -  Isla Ascensión
++248 -  Seychelles
++249 -  Sudán
++250 -  Ruanda
++251 -  Etiopía
++252 -  Somalia
++253 -  Yibuti
++254 -  Kenia
++255 -  Tanzania
++256 -  Uganda
++257 -  Burundi
++258 -  Mozambique
++260 -  Zambia
++261 -  Madagascar
++262 -  Reunión y  Mayotte
++263 -  Zimbabue
++264 -  Namibia
++265 -  Malaui
++266 -  Lesoto
++267 -  Botsuana
++268 -  Suazilandia
++269 -  Comoras
++27 -  Sudáfrica
++290 -  Santa Elena, Ascensión y Tristán de Acuña
++291 -  Eritrea
+Europa
++298 -  Islas Feroe
++30 -  Grecia
++31 -  Países Bajos
++32 -  Bélgica
++33 -  Francia
++34 -  España
++350 -  Gibraltar
++351 -  Portugal
++352 -  Luxemburgo
++353 -  Irlanda
++354 -  Islandia
++355 - Albania
++356 -  Malta
++357 -  Chipre
++358 -  Finlandia
++359 -  Bulgaria
++36 -  Hungría
++370 -  Lituania
++371 -  Letonia
++372 -  Estonia
++373 -  Moldavia
++374 -  Armenia
++375 -  Bielorrusia
++376 -  Andorra
++377 -  Mónaco
++378 -  San Marino
++379 -  Ciudad del Vaticano
++380 - Ucrania
++381 -  Serbia
++382 - Montenegro
++383 -  Kosovo (desde enero de 2015)
++384 - no asignado
++385 -  Croacia
++386 -  Eslovenia
++387 -  Bosnia y Herzegovina
++388 - Espacio Europeo de Numeración Telefónica - European Wide Service Platform (EWSP)
++389 -  Macedonia del Norte
++39 -  Italia
++40 - Rumania
++41 -  Suiza
++420 -  República Checa
++421 - Eslovaquia
++423 -  Liechtenstein
++43 -  Austria
++44 -  Reino Unido
++45 -  Dinamarca
++46 - Suecia
++47 - Noruega
++48 -  Polonia
++49 -  Alemania
++7 - Rusia
+Asia (excepto el Archipiélago malayo)
++7 - Kazajistán
++7-840 y +7-940 -  Abjasia
++7-995 y +7-997 - Osetia del Sur
++81 -  Japón
++82 -  Corea del Sur
++84 -  Vietnam
++850 -  Corea del Norte
++852 -  Hong Kong
++853 -  Macao
++855 -  Camboya
++856 -  Laos
++86 -  China
++880 -  Bangladés
++886 -  Taiwán
++90 -  Turquía y Norte de Chipre
++91 -  India
++92 -  Pakistán
++93 -  Afganistán
++94 -  Sri Lanka
++95 -  Birmania
++960 -  Maldivas
++961 -  Líbano
++962 -  Jordania
++963 -  Siria
++964 -  Irak
++965 -  Kuwait
++966 -  Arabia Saudita
++967 -  Yemen
++968 -  Omán
++970 -  Palestina
++971 - EAU
++972 -  Israel
++973 -  Baréin
++974 -  Catar
++975 -  Bután
++976 -  Mongolia
++977 -  Nepal
++98 -  Irán
++992 -  Tayikistán
++993 -  Turkmenistán
++994 -  Azerbaiyán
++995 -  Georgia
++996 - Kirguistán
++998 -  Uzbekistán
+Archipiélago malayo y Oceanía
++60 -  Malasia
++61 -  Australia
++62 -  Indonesia
++63 -  Filipinas
++64 -  Nueva Zelanda e Islas Pitcairn
++65 -  Singapur
++66 -  Tailandia
++670 -  Timor Oriental
++672 -  Isla Norfolk
++673 -  Brunéi
++674 -  Nauru
++675 -  Papúa Nueva Guinea
++676 -  Tonga
++677 - Islas Salomón
++678 -  Vanuatu
++679 -  Fiyi
++680 -  Palaos
++681 -  Wallis y Futuna
++682 -  Islas Cook
++683 -  Niue
++685 -  Samoa
++686 -  Kiribati
++687 -  Nueva Caledonia
++688 -  Tuvalu
++689 -  Polinesia Francesa
++690 -  Tokelau
++691 -  Micronesia
++692 -  Islas Marshall
+Especiales / Reservados
++800 - Línea gratuita internacional
++808 - Reservado para servicios de costo compartido
++870 - Servicio Inmarsat
++875 - Reservado para servicios marítimos móviles
++876 - Reservado para servicios marítimos móviles
++877 - Reservado para servicios marítimos móviles
++878 - Servicio universal de telecomunicaciones personales.
++879 - Reservado para usos móviles/marítimos nacionales
++881 - Sistema satelital móvil
++882 - International Networks
++882-16 - Thuraya
++883 - Código global internacional creado por la Unión Internacional de Telecomunicaciones
++979 - International Premium Rate Service
++991 - International Telecommunications Public Correspondence Service trial
+
+Entonces la app esta funcional pero sufre de todo lo hablado mas al ser desarrollada por mi que ahora soy novato con android y kotlin tiene muchos errores y quizas no sigue muchas buenas practicas, por que tiene lag y muchas cosas no funcionan bien o ni lo hacen, tambien al no haber existido un design.md desde un principio se siente como una aplicacion frankkenstain

@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tabs / Navigation -->
+    <string name="overview">Resumen</string>
+    <string name="logs">Registros</string>
+    <string name="rules">Reglas</string>
+    <string name="dialpad">Teclado</string>
+    <string name="contacts">Contactos</string>
+    <string name="sms">Mensajes</string>
+    <string name="calls">Llamadas</string>
+    <string name="search">Buscar</string>
+    <string name="menu">Menú</string>
+    <string name="settings">Ajustes</string>
+
+    <!-- Generic actions -->
+    <string name="back">Atrás</string>
+    <string name="close">Cerrar</string>
+    <string name="save">Guardar</string>
+    <string name="configure">Configurar</string>
+    <string name="fix">Corregir</string>
+    <string name="retry">Reintentar</string>
+    <string name="send">Enviar</string>
+    <string name="edit">Editar</string>
+    <string name="share">Compartir</string>
+    <string name="message_action">Mensaje</string>
+    <string name="video">Video</string>
+    <string name="email">Correo</string>
+    <string name="call_action">Llamar</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">¡CORTA!</string>
+    <string name="onboarding_desc_bold">Para protegerte del Spam</string>
+    <string name="onboarding_desc_rest"> necesitamos los siguientes permisos del sistema.</string>
+    <string name="permissions_reasoning_title">Por qué CORTA necesita estos permisos</string>
+    <string name="permissions_reasoning_desc_part1">CORTA requiere acceso total a tus </string>
+    <string name="permissions_reasoning_desc_bold1">Llamadas, Registro de Llamadas, Contactos y mensajes SMS</string>
+    <string name="permissions_reasoning_desc_part2">. Estos permisos fundamentales se utilizan de forma estrictamente local para bloquear números spam de la lista SUBTEL y manejar tus comunicaciones con facilidad. </string>
+    <string name="permissions_reasoning_desc_bold2">Tu privacidad está completamente a salvo.</string>
+    <string name="privacy_details_title">Privacidad y Seguridad</string>
+    <string name="privacy_details_desc">CORTA procesa todos los datos localmente en tu dispositivo. No transmitimos tus llamadas, mensajes ni contactos a servidores externos. Los permisos solicitados son estrictamente necesarios por el sistema operativo Android para bloquear el spam y gestionar tu registro de llamadas según las normativas de la SUBTEL.</string>
+    <string name="understood">Entendido</string>
+    <string name="enable_call_screening">Activar Bloqueo de Spam</string>
+    <string name="call_screening_granted">Bloqueo Concedido</string>
+    <string name="set_default_dialer">Predeterminado Llamadas</string>
+    <string name="default_dialer_granted">Llamadas Concedido</string>
+    <string name="set_default_sms">Predeterminado SMS</string>
+    <string name="default_sms_granted">SMS Concedido</string>
+    <string name="core_permissions">Otorgar Permisos Básicos</string>
+    <string name="core_permissions_granted">Permisos Básicos Concedidos</string>
+    <string name="onboarding_permissions_title">Permisos del sistema</string>
+    <string name="onboarding_smart_blocking_title">Bloqueo inteligente</string>
+    <string name="onboarding_default_dialer_title">App de llamadas</string>
+    <string name="onboarding_default_sms_title">App de mensajes</string>
+    <string name="onboarding_overlay_title">Ventanas emergentes</string>
+    <string name="onboarding_start_protecting">Comenzar a proteger mi teléfono</string>
+
+    <!-- Dialpad -->
+    <string name="dial">Llamar</string>
+    <string name="delete">Borrar</string>
+    <string name="dialpad_hint">Ingresa un número</string>
+
+    <!-- Contacts -->
+    <string name="no_contacts_found">No se encontraron contactos.</string>
+    <string name="favorites_section">Favoritos</string>
+    <string name="add_contact_action">Agregar contacto</string>
+    <string name="contact_call_label">Llamar</string>
+    <string name="contact_message_label">Mensaje</string>
+    <string name="contact_video_label">Video</string>
+    <string name="contact_email_label">Correo</string>
+    <string name="contact_info_title">Información de contacto</string>
+    <string name="contact_mobile_label">Móvil</string>
+    <string name="contact_message_cd">Mensaje</string>
+    <string name="contact_back_cd">Atrás</string>
+    <string name="contact_edit_cd">Editar</string>
+    <string name="contact_remove_favorite">Quitar de favoritos</string>
+    <string name="contact_add_favorite">Añadir a favoritos</string>
+    <string name="contact_block_contact">Bloquear contacto</string>
+    <string name="contact_edit_contact">Editar contacto</string>
+    <string name="contact_copy_number">Copiar número</string>
+    <string name="contact_number_blocked_toast">Número bloqueado</string>
+    <string name="contact_number_copied_toast">Número copiado</string>
+    <string name="contact_clip_label">Teléfono</string>
+
+    <!-- SMS -->
+    <string name="no_sms_found">No se encontraron mensajes.</string>
+    <string name="sms_inbox_tab">Recibidos</string>
+    <string name="sms_blocked_tab">Bloqueados</string>
+    <string name="sms_blocked_empty">Sin mensajes bloqueados</string>
+    <string name="sms_new_message_cd">Nuevo mensaje</string>
+    <string name="sms_block_sender">Bloquear remitente</string>
+    <string name="sms_copy_number">Copiar número</string>
+    <string name="sms_block_rule_alias">Bloqueado desde SMS</string>
+    <string name="sms_blocked_toast">Bloqueado</string>
+    <string name="sms_copied_toast">Copiado</string>
+    <string name="sms_share_contact_cd">Compartir contacto</string>
+    <string name="sms_send_cd">Enviar</string>
+    <string name="sms_no_messages">No se encontraron mensajes</string>
+    <string name="sms_select_contact">Selecciona un contacto para enviar</string>
+    <string name="sms_compose_title">Redactar Mensaje</string>
+    <string name="sms_new_message_title">Nuevo Mensaje</string>
+    <string name="sms_compose_action">Redactar</string>
+    <string name="sms_search_contacts">Buscar contactos</string>
+    <string name="sms_compose_to_label">Para</string>
+    <string name="sms_compose_message_label">Mensaje</string>
+    <string name="sms_compose_required_toast">Número y mensaje son requeridos</string>
+    <string name="sms_compose_sent_toast">SMS enviado</string>
+    <string name="sms_compose_back_cd">Atrás</string>
+
+    <!-- Rules -->
+    <string name="blocked_numbers">Números Bloqueados</string>
+    <string name="no_rules_defined">No hay reglas definidas.</string>
+    <string name="add_rule">Agregar Regla</string>
+    <string name="enter_phone_number">Ingresa el número a bloquear:</string>
+    <string name="phone_number">Número de Teléfono</string>
+    <string name="add">Agregar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="action_blocked">Acción: BLOQUEAR</string>
+    <string name="add_contact">Agregar Contacto</string>
+    <string name="search_contact">Buscar contacto</string>
+    <string name="message">Mensaje</string>
+    <string name="rules_automatic_protection">Protección Automática</string>
+    <string name="rules_subtel_blocked_prefixes">Prefijos bloqueados por SUBTEL</string>
+    <string name="rules_community_locked">Inicia sesión y dona para activar la base comunitaria</string>
+    <string name="rules_source_subtel">SUBTEL</string>
+    <string name="rules_source_curated">CURADA</string>
+    <string name="rules_source_community">COMUNIDAD</string>
+    <string name="rules_source_user">Usuario</string>
+    <string name="rules_add_spam_alias">Añadir apodo a Spam</string>
+    <string name="rules_alias_default">Bloqueado Llamada</string>
+    <string name="rules_add_to_contacts">Añadir a Contactos</string>
+    <string name="rules_block_and_alias">Bloquear y añadir apodo Spam</string>
+    <string name="rules_copy_number">Copiar Número</string>
+    <string name="rules_copied_phone_clip">Número de teléfono copiado</string>
+    <string name="rules_copied_toast">Número copiado</string>
+
+    <!-- Call log -->
+    <string name="call_type_incoming">Entrante</string>
+    <string name="call_type_outgoing">Saliente</string>
+    <string name="call_type_missed">Perdida</string>
+    <string name="call_type_blocked">Bloqueado</string>
+    <string name="call_type_generic">Llamada</string>
+
+    <!-- In-Call -->
+    <string name="incoming_call">Llamada entrante…</string>
+    <string name="dialing">Llamando…</string>
+    <string name="on_hold">En espera</string>
+    <string name="call_ended">Llamada finalizada</string>
+    <string name="connecting">Conectando…</string>
+    <string name="mute">Silenciar</string>
+    <string name="keypad">Teclado</string>
+    <string name="speaker">Altavoz</string>
+    <string name="hold">Retener</string>
+    <string name="record">Grabar</string>
+    <string name="hide_keypad">Ocultar teclado</string>
+    <string name="spam_warning">Atención: posible llamada spam</string>
+    <string name="reject">Rechazar</string>
+    <string name="answer">Contestar</string>
+    <string name="end_call">Finalizar</string>
+    <string name="recording_started">Grabando…</string>
+    <string name="recording_saved">Grabación guardada</string>
+    <string name="recording_error">Dispositivo no compatible con grabación</string>
+    <string name="recording_disabled">Grabación desactivada en ajustes</string>
+    <string name="recording_notification_title">Grabando llamada</string>
+    <string name="recording_channel_name">Grabación de Llamadas</string>
+    <string name="recording_filename_prefix_es">llamada</string>
+    <string name="recording_filename_prefix_en">call</string>
+    <string name="recording_folder">Grabaciones</string>
+    <string name="microphone_permission_required">Permiso de micrófono requerido</string>
+    <string name="unknown_number">Desconocido</string>
+    <string name="incoming_call_notification_title">Llamada entrante</string>
+    <string name="call_actions_channel">Acciones de llamadas</string>
+    <string name="call_actions_channel_desc">Notificaciones de respaldo para llamadas entrantes</string>
+    <string name="call_action_title">Llamada %1$s</string>
+    <string name="call_action_blocked">bloqueada</string>
+    <string name="call_action_muted">silenciada</string>
+    <string name="call_action_warned">marcada como spam</string>
+
+    <!-- Recording service -->
+    <string name="recording_notification_text">Grabando conversación con %1$s</string>
+
+    <!-- Compose / send -->
+    <string name="compose_send_error">No se pudo enviar: %1$s</string>
+    <string name="compose_placeholder">Escribe tu mensaje aquí…</string>
+    <string name="sms_thread_compose_placeholder">Escribir mensaje…</string>
+    <string name="sms_link_dialog_title">¿Abrir enlace externo?</string>
+    <string name="sms_link_dialog_body">Estás a punto de abrir el siguiente enlace desde un SMS. ¿Estás seguro de que confías en el remitente?\n\nDestino:\n%1$s</string>
+    <string name="sms_link_confirm">Sí, abrir</string>
+    <string name="sms_link_cancel">No, cancelar</string>
+
+    <!-- Rules -->
+    <string name="rules_subtel_alias">Reglas Anti-Spam (Subtel)</string>
+    <string name="rules_subtel_subtitle">Bloqueo automático según normativa vigente.</string>
+    <string name="rules_source_label">Fuente: %1$s</string>
+    <string name="rules_alias_label">Apodo corto (Opcional)</string>
+
+    <!-- Stats -->
+    <string name="stats_importing">Importando datos históricos del sistema…</string>
+    <string name="stats_time_saved_caption">Estimación de tiempo que no perdiste contestando spam.</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_search_placeholder">Buscar…</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip_debug">Saltar configuración (Debug)</string>
+
+    <!-- Diagnostics -->
+    <string name="diagnostics_running">Ejecutando…</string>
+
+    <!-- Donor profile -->
+    <string name="donor_profile_toggle_label">Habilitar donador (is_donor)</string>
+
+    <!-- Auth -->
+    <string name="login_configure_client_id">Configura tu Client ID en Google Cloud para la versión de Producción.</string>
+    <string name="sms_send_error">No se pudo enviar: %1$s</string>
+    <string name="sms_compose_selected">%1$d seleccionados</string>
+
+    <!-- Diagnostics buttons -->
+    <string name="diagnostics_continue">✅ Continuar</string>
+    <string name="diagnostics_force_continue">⚠️ Forzar Continuar (Depuración)</string>
+    <string name="diagnostics_run_full">🔍 Ejecutar Diagnóstico Completo</string>
+
+    <!-- Stats -->
+    <string name="stats_connection_attempts">%1$d intentos de conexión</string>
+    <string name="call_alert_channel">Alertas de llamadas</string>
+    <string name="call_alert_channel_desc">Notificaciones de respaldo para llamadas entrantes</string>
+    <string name="call_action_marked_spam">marcada como spam</string>
+
+    <!-- Stats -->
+    <string name="statistics">Estadísticas</string>
+    <string name="blocked_calls">Llamadas Bloqueadas</string>
+    <string name="blocked_sms">SMS Bloqueados</string>
+    <string name="total_spam">Total Spam</string>
+    <string name="top_spammers">Top Spammers</string>
+    <string name="stats_no_data">No hay datos suficientes</string>
+    <string name="stats_import_historical">Importar Datos Históricos</string>
+    <string name="stats_section_calls">Llamadas</string>
+    <string name="stats_blocked_label">Bloqueadas</string>
+    <string name="stats_section_sms">Mensajes</string>
+    <string name="stats_blocked_label_plural">Bloqueados</string>
+    <string name="stats_protection_level">Nivel de Protección</string>
+    <string name="stats_based_on_filtered">Basado en el spam filtrado</string>
+    <string name="stats_time_saved">Tiempo Ahorrado</string>
+    <string name="stats_spam_by_hour">Actividad Spam por Hora</string>
+    <string name="stats_top_spammers">Spammers Principales</string>
+
+    <!-- Notifications -->
+    <string name="sms_blocked_title">SMS bloqueado</string>
+    <string name="sms_blocked_desc">Se bloqueó un mensaje de %1$s</string>
+    <string name="sms_spam_warn_title">Posible spam por SMS</string>
+    <string name="sms_spam_warn_desc">Se detectó un mensaje sospecho de %1$s</string>
+
+    <!-- Diagnostics -->
+    <string name="diagnostics">Diagnóstico</string>
+    <string name="diagnostics_title">Diagnóstico del Sistema</string>
+    <string name="diagnostics_back_cd">Atrás</string>
+    <string name="diagnostics_progress">Progreso de Configuración</string>
+    <string name="diagnostics_critical_requirements">Requisitos críticos</string>
+    <string name="diagnostics_blocked_by_missing">Bloqueado por requisitos faltantes</string>
+    <string name="diagnostics_misc_critical">Permisos Críticos</string>
+    <string name="diagnostics_misc_critical_desc">Permiso crítico para funcionamiento</string>
+    <string name="diagnostics_misc_critical_ok">Todos los permisos críticos configurados</string>
+    <string name="diagnostics_overlay">Permiso de Ventanas</string>
+    <string name="diagnostics_overlay_desc">Necesario para mostrar ventanas emergentes</string>
+    <string name="diagnostics_unlock">Permiso de Desbloqueo</string>
+    <string name="diagnostics_unlock_desc">Necesario para funciones de seguridad</string>
+    <string name="diagnostics_special">Permisos Especiales</string>
+    <string name="diagnostics_special_ok">Todos los permisos especiales configurados</string>
+    <string name="diagnostics_role_dialer">Rol de Telefónico</string>
+    <string name="diagnostics_role_dialer_desc">App como telefónica por defecto</string>
+    <string name="diagnostics_role_screening">Rol de Screening</string>
+    <string name="diagnostics_role_screening_desc">App para identificación de llamadas</string>
+    <string name="diagnostics_role_sms">Rol de SMS</string>
+    <string name="diagnostics_role_sms_desc">App como mensajería por defecto</string>
+    <string name="diagnostics_roles">Roles del Sistema</string>
+    <string name="diagnostics_roles_ok">Todos los roles del sistema configurados</string>
+    <string name="diagnostics_enhanced">Funciones Mejoradas</string>
+    <string name="diagnostics_contacts">Acceso a Contactos</string>
+    <string name="diagnostics_contacts_desc">Permiso para leer y modificar contactos</string>
+    <string name="diagnostics_storage">Acceso a Almacenamiento</string>
+    <string name="diagnostics_storage_desc">Permiso para escribir en almacenamiento externo</string>
+    <string name="diagnostics_notifications">Notificaciones</string>
+    <string name="diagnostics_network">Conexión de Red</string>
+    <string name="diagnostics_network_ok">Conexión a internet disponible</string>
+    <string name="diagnostics_network_offline">Sin conexión a internet</string>
+    <string name="diagnostics_overall">Estado General</string>
+    <string name="diagnostics_missing_critical">permisos críticos</string>
+    <string name="diagnostics_missing_dialer">rol de teléfono</string>
+    <string name="diagnostics_missing_screening">rol de screening</string>
+    <string name="diagnostics_missing_sms">rol de SMS</string>
+    <string name="diagnostics_missing_overlay">permiso de ventanas</string>
+    <string name="diagnostics_missing_notifications">notificaciones</string>
+    <string name="diagnostics_screening_settings_unavailable">No se pudo abrir la configuración de screening</string>
+
+    <!-- Notification channels -->
+    <string name="channel_spam_alerts">Alertas SMS Spam</string>
+    <string name="channel_spam_alerts_desc">Alertas de mensajes sospechosos o bloqueados</string>
+    <string name="channel_sms_general">Mensajes SMS</string>
+    <string name="channel_sms_general_desc">Notificaciones de mensajes</string>
+
+    <!-- Design system -->
+    <string name="ds_back_cd">Volver</string>
+    <string name="ds_search_hint">Buscar</string>
+
+    <!-- Settings screen -->
+    <string name="settings_back_cd">Atrás</string>
+    <string name="settings_section_personalization">Personalización</string>
+    <string name="settings_section_security">Seguridad</string>
+    <string name="settings_section_info">Información</string>
+    <string name="settings_visual_theme">Tema Visual</string>
+    <string name="settings_theme_light">Modo Claro</string>
+    <string name="settings_theme_dark">Modo Oscuro</string>
+    <string name="settings_theme_system">Seguir al sistema</string>
+    <string name="settings_theme_option_light">Claro</string>
+    <string name="settings_theme_option_dark">Oscuro</string>
+    <string name="settings_theme_option_system">Sistema</string>
+    <string name="settings_accent_color">Color de Acento</string>
+    <string name="settings_accent_style1_dark">Púrpura</string>
+    <string name="settings_accent_style1_light">Azul</string>
+    <string name="settings_accent_style2_dark">Coral</string>
+    <string name="settings_accent_style2_light">Verde</string>
+    <string name="settings_accent_style3_dark">Teal</string>
+    <string name="settings_accent_style3_light">Ámbar</string>
+    <string name="settings_accent_style4_dark">Gris</string>
+    <string name="settings_accent_style4_light">Rosa</string>
+    <string name="settings_accent_style5_dark">Índigo</string>
+    <string name="settings_accent_style5_light">Cielo</string>
+    <string name="settings_accent_stitch_amber">Stitch Ámbar</string>
+    <string name="settings_accent_stitch_purple">Stitch Púrpura</string>
+    <string name="settings_accent_stitch_coral">Stitch Coral</string>
+    <string name="settings_accent_stitch_sage">Stitch Sage</string>
+    <string name="settings_accent_dynamic">Dinámico</string>
+    <string name="settings_ui_scale">Tamaño de Interfaz</string>
+    <string name="settings_ui_scale_compact">Compacto</string>
+    <string name="settings_ui_scale_normal">Normal</string>
+    <string name="settings_ui_scale_large">Grande</string>
+    <string name="settings_handedness">Modo de Uso</string>
+    <string name="settings_handedness_left">Mano Izquierda</string>
+    <string name="settings_handedness_right">Mano Derecha</string>
+    <string name="settings_handedness_option_left">Izquierda</string>
+    <string name="settings_handedness_option_right">Derecha</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_es">Español</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_link_protection">Protección de Enlaces</string>
+    <string name="settings_link_protection_subtitle">Confirmar antes de abrir enlaces sospechosos</string>
+    <string name="settings_realtime_filtering">Filtrado en Tiempo Real</string>
+    <string name="settings_realtime_filtering_subtitle">Notificar sobre spam detectado</string>
+    <string name="settings_debug_mode">Modo Depuración</string>
+    <string name="settings_debug_mode_subtitle">Registro extendido para desarrolladores</string>
+    <string name="settings_permissions_management">Gestión de Permisos</string>
+    <string name="settings_permissions_management_subtitle">Configurar accesos del sistema</string>
+    <string name="settings_donate_title">Apoyar al Desarrollador</string>
+
+    <!-- Auth -->
+    <string name="login_with_google">Iniciar sesión con Google</string>
+    <string name="login_continue_without_account">Continuar sin cuenta</string>
+    <string name="login_with_prefix">con </string>
+
+    <!-- Navigation menu sheet -->
+    <string name="menu_options">Opciones</string>
+    <string name="menu_system_diagnostics">Diagnóstico del sistema</string>
+    <string name="menu_donor_profile">Perfil donador</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_select_number">Seleccionar número</string>
+
+    <!-- Donor profile -->
+    <string name="donor_profile_title">Perfil donador</string>
+    <string name="donor_profile_back_cd">Volver</string>
+    <string name="donor_profile_active">Acceso comunitario habilitado</string>
+    <string name="donor_profile_inactive">Solo base curada gratuita</string>
+    <string name="donor_profile_internal_testing">Pruebas internas</string>
+    <string name="donor_profile_available">Disponible para pruebas</string>
+    <string name="donor_profile_enable_debug">Activa Modo Depuración en Ajustes</string>
+
+    <!-- Default app setup -->
+    <string name="default_setup_title">Configuración Inicial</string>
+    <string name="default_setup_subtitle">Configura Corta como tu app por defecto</string>
+    <string name="default_setup_dialer_title">App de Llamadas por Defecto</string>
+    <string name="default_setup_sms_title">App de SMS por Defecto</string>
+    <string name="default_setup_screening_title">Screening de Llamadas</string>
+    <string name="default_setup_ready">Corta está lista para protegerte</string>
+    <string name="default_setup_start">Comenzar a Usar Corta</string>
+    <string name="default_setup_skip">Omitir</string>
+    <string name="default_setup_check">Verificar Estado</string>
+    <string name="default_setup_configured_cd">Configurado</string>
+    <string name="default_setup_configure_cd">Configurar</string>
+    <string name="default_setup_header_desc">Para proteger completamente tus llamadas y mensajes, Corta necesita ser tu aplicación predeterminada.</string>
+    <string name="default_setup_dialer_desc">Permite a Corta manejar todas tus llamadas entrantes y salientes.</string>
+    <string name="default_setup_sms_desc">Permite a Corta filtrar tus mensajes antes de que lleguen a tu bandeja.</string>
+    <string name="default_setup_screening_desc">Permite a Corta evaluar llamadas antes de que suenen.</string>
+    <string name="default_setup_complete">¡Configuración Completa!</string>
+    <string name="default_setup_screening_error">No se pudo abrir la configuración de screening</string>
+
+    <!-- SIM selection dialog -->
+    <string name="sim_number_unavailable">Número no detectado</string>
+    <string name="sim_phone_number_label">Número telefónico</string>
+    <string name="sim_dialog_title">Configurar SIM / Número Principal</string>
+    <string name="sim_select_label">Selecciona una tarjeta SIM:</string>
+    <string name="sim_manual_label">O ingresa manualmente:</string>
+    <string name="sim_enter_prompt">Ingresa tu número telefónico principal (ej: +569…):</string>
+    <string name="sim_save">Guardar</string>
+    <string name="sim_close">Cerrar</string>
+
+    <!-- Overview -->
+    <string name="overview_title">Resumen</string>
+    <string name="overview_calls_blocked">Llamadas bloqueadas</string>
+    <string name="overview_total_rules">Reglas totales</string>
+    <string name="overview_welcome">¡Bienvenido a CORTA! Tus llamadas y SMS están siendo monitoreados contra spam según la lista SUBTEL (Sync pendiente) y reglas personalizadas.</string>
+
+    <!-- Dialpad -->
+    <string name="dialpad_placeholder">Ingresa un número</string>
+
+    <!-- Call log -->
+    <string name="calllog_permission_required">Se necesita permiso para leer el registro de llamadas.</string>
+    <string name="calllog_empty">No hay registro de llamadas reciente.</string>
+    <string name="calllog_type_incoming">Entrante</string>
+    <string name="calllog_type_outgoing">Saliente</string>
+    <string name="calllog_type_missed">Perdida</string>
+    <string name="calllog_type_blocked">Bloqueado</string>
+    <string name="calllog_type_generic">Llamada</string>
+    <string name="calllog_alias_dialog_title">Añadir apodo a Spam</string>
+    <string name="calllog_alias_dialog_body">Ingresa un apodo para identificar este número de spam:</string>
+    <string name="calllog_alias_dialog_placeholder">Ej: Spam Cobranza</string>
+    <string name="calllog_alias_dialog_default">Bloqueado Llamada</string>
+    <string name="calllog_alias_added">%1$s añadido a Spam con apodo: %2$s</string>
+    <string name="calllog_add_to_contacts">Añadir a Contactos</string>
+    <string name="calllog_block_with_alias">Bloquear y añadir apodo Spam</string>
+    <string name="calllog_copy_number">Copiar Número</string>
+    <string name="calllog_number_copied">Número copiado</string>
+    <string name="calllog_clipboard_label">Número copiado</string>
+</resources>

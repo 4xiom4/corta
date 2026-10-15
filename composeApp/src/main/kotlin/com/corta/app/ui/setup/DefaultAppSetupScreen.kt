@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.corta.app.R
 import com.corta.app.ui.i18n.Strings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,31 +38,32 @@ fun DefaultAppSetupScreen(
     onSkip: () -> Unit
 ) {
     val context = LocalContext.current
+    val strings = Strings.setup
     val scrollState = rememberScrollState()
-    
+
     var isDefaultDialer by remember { mutableStateOf(false) }
     var isDefaultSms by remember { mutableStateOf(false) }
     var hasCallScreening by remember { mutableStateOf(false) }
-    
+
     // Verificar estado actual
     LaunchedEffect(Unit) {
         isDefaultDialer = isDefaultDialerApp(context)
         isDefaultSms = isDefaultSmsApp(context)
         hasCallScreening = hasCallScreeningPermission(context)
     }
-    
+
     val allSetupComplete = isDefaultDialer && isDefaultSms && hasCallScreening
-    
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
-                        "Configuración Inicial", 
+                        strings.title,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -90,56 +93,56 @@ fun DefaultAppSetupScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Rounded.SettingsSuggest,
+                        Icons.Rounded.Settings,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Configura Corta como tu app por defecto",
+                        strings.subtitle,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Para proteger completamente tus llamadas y mensajes, Corta necesita ser tu aplicación predeterminada.",
+                        strings.headerDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
-            
+
             // Status Cards
             SetupStatusCard(
-                title = "App de Llamadas por Defecto",
-                description = "Permite a Corta manejar todas tus llamadas entrantes y salientes.",
-                icon = Icons.Rounded.Phone,
+                title = strings.dialerTitle,
+                description = strings.dialerDesc,
+                icon = Icons.Rounded.Call,
                 isConfigured = isDefaultDialer,
                 onClick = { requestDefaultDialer(context) }
             )
-            
+
             SetupStatusCard(
-                title = "App de SMS por Defecto",
-                description = "Permite a Corta filtrar tus mensajes antes de que lleguen a tu bandeja.",
-                icon = Icons.Rounded.Sms,
+                title = strings.smsTitle,
+                description = strings.smsDesc,
+                    icon = Icons.Rounded.Message,
                 isConfigured = isDefaultSms,
                 onClick = { requestDefaultSms(context) }
             )
-            
+
             SetupStatusCard(
-                title = "Screening de Llamadas",
-                description = "Permite a Corta evaluar llamadas antes de que suenen.",
+                title = strings.screeningTitle,
+                description = strings.screeningDesc,
                 icon = Icons.Rounded.Security,
                 isConfigured = hasCallScreening,
-                onClick = { requestCallScreeningPermission(context) }
+                onClick = { requestCallScreeningPermission(context, strings.screeningError) }
             )
-            
+
             // Action Buttons
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             if (allSetupComplete) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -159,30 +162,30 @@ fun DefaultAppSetupScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "¡Configuración Completa!",
+                            strings.complete,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            "Corta está lista para protegerte",
+                            strings.ready,
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Button(
                     onClick = onSetupComplete,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Comenzar a Usar Corta", style = MaterialTheme.typography.titleMedium)
+                    Text(strings.start, style = MaterialTheme.typography.titleMedium)
                 }
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -192,11 +195,11 @@ fun DefaultAppSetupScreen(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Omitir")
+                    Text(strings.skip)
                 }
-                
+
                 Button(
-                    onClick = { 
+                    onClick = {
                         // Re-check status
                         isDefaultDialer = isDefaultDialerApp(context)
                         isDefaultSms = isDefaultSmsApp(context)
@@ -205,7 +208,7 @@ fun DefaultAppSetupScreen(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Verificar Estado")
+                    Text(strings.check)
                 }
             }
         }
@@ -220,15 +223,16 @@ fun SetupStatusCard(
     isConfigured: Boolean,
     onClick: () -> Unit
 ) {
+    val strings = Strings.setup
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isConfigured) 
-                MaterialTheme.colorScheme.primaryContainer 
-            else 
+            containerColor = if (isConfigured)
+                MaterialTheme.colorScheme.primaryContainer
+            else
                 MaterialTheme.colorScheme.surface
         )
     ) {
@@ -240,9 +244,9 @@ fun SetupStatusCard(
         ) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = if (isConfigured) 
-                    MaterialTheme.colorScheme.primary 
-                else 
+                color = if (isConfigured)
+                    MaterialTheme.colorScheme.primary
+                else
                     MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -250,17 +254,17 @@ fun SetupStatusCard(
                     Icon(
                         icon,
                         contentDescription = null,
-                        tint = if (isConfigured) 
-                            MaterialTheme.colorScheme.onPrimary 
-                        else 
+                        tint = if (isConfigured)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title,
@@ -274,18 +278,18 @@ fun SetupStatusCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             if (isConfigured) {
                 Icon(
                     Icons.Rounded.CheckCircle,
-                    contentDescription = "Configurado",
+                    contentDescription = strings.configuredCd,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             } else {
                 Icon(
-                    Icons.Rounded.ChevronRight,
-                    contentDescription = "Configurar",
+                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = strings.configureCd,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
@@ -314,7 +318,7 @@ private fun hasCallScreeningPermission(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
         return false // callScreeningApps not available before API 29
     }
-    
+
     val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
     return try {
         // Use reflection to access callScreeningApps safely
@@ -361,12 +365,12 @@ private fun requestDefaultSms(context: Context) {
     }
 }
 
-private fun requestCallScreeningPermission(context: Context) {
+private fun requestCallScreeningPermission(context: Context, errorMessage: String) {
     try {
         Intent("android.telecom.action.CALL_SCREENING_SETTINGS").apply {
             context.startActivity(this)
         }
     } catch (e: Exception) {
-        Toast.makeText(context, "No se pudo abrir la configuración de screening", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
     }
 }
