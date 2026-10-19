@@ -132,9 +132,13 @@ class SpamEvaluator(private val repository: CortaRepository) {
             return FilterAction.WARN
         }
 
-        // +56 9 (móvil chileno) desconocido: permitir/advertir según contexto
-        if (digitsOnly.startsWith("569") && digitsOnly.length == 11) {
-            return FilterAction.WARN
+        // Números móviles (+56 9) y fijos (+56 2, etc.) legítimos en Chile son llamadas normales:
+        // No deben ser tratadas como sospechosas ni silenciadas por defecto
+        if ((digitsOnly.startsWith("569") && digitsOnly.length == 11) || (digitsOnly.startsWith("9") && digitsOnly.length == 9)) {
+            return FilterAction.ALLOW
+        }
+        if ((digitsOnly.startsWith("562") && digitsOnly.length in 10..11) || (digitsOnly.startsWith("2") && digitsOnly.length in 8..9)) {
+            return FilterAction.ALLOW
         }
         
         return FilterAction.ALLOW
@@ -169,13 +173,21 @@ class SpamEvaluator(private val repository: CortaRepository) {
         // Detectar URLs sospechosas
         val urlCount = Regex("https?://[\\w\\.-]+\\.[a-zA-Z]{2,}").findAll(lowerBody).count()
         
+        // Phishing y fraude chileno común con enlaces (bancos, couriers, multas, clave única)
+        val phishingTriggers = listOf(
+            "ingrese", "bloquead", "suspendid", "renov", "clave", "arancel", "despacho",
+            "paquete", "envio", "envío", "entrega", "multa", "infraccion", "infracción",
+            "verificar", "confirmar", "transferencia", "premio", "sorteo", "ganaste", "urgente"
+        )
+        val hasPhishingUrl = urlCount >= 1 && phishingTriggers.any { it in lowerBody }
+        
         // Detectar caracteres sospechosos o mayúsculas excesivas
         val excessiveCaps = body.count { it.isUpperCase() } > body.length * 0.7
         val suspiciousChars = setOf('$', '€', '£', '¥', '%', '@', '#')
         val suspiciousCharCount = body.count { it in suspiciousChars }
         
         return when {
-            spamKeywordCount >= 3 || urlCount >= 2 -> FilterAction.BLOCK
+            hasPhishingUrl || spamKeywordCount >= 3 || urlCount >= 2 -> FilterAction.BLOCK
             hasMarketingKeyword -> FilterAction.MUTE
             spamKeywordCount >= 1 || urlCount >= 1 || excessiveCaps || suspiciousCharCount >= 3 -> FilterAction.WARN
             else -> FilterAction.ALLOW

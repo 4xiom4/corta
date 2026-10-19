@@ -12,16 +12,28 @@ import android.telephony.SubscriptionManager
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import com.corta.app.ui.contacts.ChileanRegion
+import com.corta.app.ui.contacts.ChileanRegionalDirectory
+import com.corta.app.ui.contacts.RegionSelectorBottomSheet
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +49,7 @@ import com.corta.app.ui.i18n.Strings
 import com.corta.db.FilterRule
 import com.corta.domain.CortaRepository
 import com.corta.domain.FilterAction
+import com.corta.domain.PhoneNumberUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import org.koin.compose.koinInject
@@ -131,15 +144,45 @@ fun DonorProfileScreen(
         simCards.firstOrNull { !it.number.isNullOrBlank() }?.number
     }
 
-    var isDonor by remember { mutableStateOf(prefs.getBoolean("is_donor", false)) }
-    var userName by remember { mutableStateOf(prefs.getString("user_name", "Mi Dispositivo") ?: "Mi Dispositivo") }
+    val isDonorBadgeUnlocked = prefs.getBoolean("donor_badge_unlocked", false)
+    var isDonor by remember { mutableStateOf(prefs.getBoolean("is_donor", false) || isDonorBadgeUnlocked) }
+    var donorOperationId by remember { mutableStateOf(prefs.getString("donor_operation_id", "") ?: "") }
+    var donorDate by remember { mutableStateOf(prefs.getString("donor_date", "") ?: "") }
+    var userGoogleEmail by remember { mutableStateOf(prefs.getString("user_google_email", "") ?: "") }
+    var userName by remember { mutableStateOf(prefs.getString("user_name", "Usuario Corta") ?: "Usuario Corta") }
     var userPhone by remember { mutableStateOf(prefs.getString("user_phone", null) ?: initialDetectedPhone ?: "") }
+    var userAvatar by remember { mutableStateOf(prefs.getString("user_avatar", null)) }
+
+    var userRegion by remember {
+        val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
+        mutableStateOf(ChileanRegion.fromCode(savedCode))
+    }
+    var userComuna by remember {
+        mutableStateOf(prefs.getString("user_selected_comuna", null))
+    }
+    var showRegionPicker by remember { mutableStateOf(false) }
+
+    DisposableEffect(prefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "user_selected_region" || key == "user_selected_comuna") {
+                userRegion = ChileanRegion.fromCode(prefs.getString("user_selected_region", ChileanRegion.RM.code))
+                userComuna = prefs.getString("user_selected_comuna", null)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
 
     var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showValidateDonationDialog by remember { mutableStateOf(false) }
+    var showGoogleLinkDialog by remember { mutableStateOf(false) }
     var showFaqSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
     var showSupportSheet by remember { mutableStateOf(false) }
     var selectedSimForDetails by remember { mutableStateOf<SimSlotData?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -189,11 +232,11 @@ fun DonorProfileScreen(
             contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. User Profile Header Card
+            // 1. User Profile Header Card (Truecaller Style)
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
                     ),
@@ -202,96 +245,180 @@ fun DonorProfileScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp)
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                        // Avatar Circle with camera edit badge
+                        Box(
+                            contentAlignment = Alignment.BottomEnd,
+                            modifier = Modifier.clickable { showEditProfileDialog = true }
                         ) {
-                            // Avatar
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(54.dp)
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                                modifier = Modifier.size(76.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = userName.take(1).uppercase(),
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = userName,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    if (isDonor) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Verified,
-                                            contentDescription = "Donante",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
+                                    if (!userAvatar.isNullOrBlank()) {
+                                        Text(
+                                            text = userAvatar!!,
+                                            fontSize = 36.sp
+                                        )
+                                    } else {
+                                        Text(
+                                            text = userName.take(1).uppercase(),
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (userPhone.isNotBlank()) userPhone else "Sin número configurado (Toca para editar)",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (userPhone.isNotBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.clickable { showEditProfileDialog = true }
-                                )
                             }
 
-                            IconButton(
-                                onClick = { showEditProfileDialog = true },
-                                modifier = Modifier.size(44.dp)
+                            // Camera / Edit badge
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface),
+                                modifier = Modifier.size(26.dp)
                             ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Edit,
+                                        contentDescription = "Cambiar avatar",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // User Name with verified / donor check
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = userName,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (isDonor) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Edit,
-                                    contentDescription = "Editar Perfil",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    imageVector = Icons.Rounded.Verified,
+                                    contentDescription = "Colaborador",
+                                    tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Phone Number
+                        Text(
+                            text = if (userPhone.isNotBlank()) PhoneNumberUtils.formatDisplayNumber(userPhone) else "Sin número configurado (Toca para editar)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (userPhone.isNotBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { showEditProfileDialog = true }
+                        )
+
+                        if (userGoogleEmail.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = userGoogleEmail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Regional Location Pill (Clickable to change Region & Comuna)
+                        val effectiveComuna = remember(userRegion, userComuna) {
+                            if (userRegion == ChileanRegion.ALL || userComuna.isNullOrBlank()) null
+                            else if (ChileanRegionalDirectory.isValidComunaForRegion(userRegion, userComuna)) userComuna
+                            else null
+                        }
+                        val locationSummary = when {
+                            userRegion == ChileanRegion.ALL -> "🇨🇱 Todo Chile"
+                            effectiveComuna != null -> "📍 $effectiveComuna (${userRegion.shortName})"
+                            else -> "📍 ${userRegion.displayName}"
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                            modifier = Modifier.clickable { showRegionPicker = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = locationSummary,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowDropDown,
+                                    contentDescription = "Cambiar",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Edit Profile Pill Button
+                        OutlinedButton(
+                            onClick = { showEditProfileDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Editar Perfil", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         }
 
                         // Supporter Badge Pill if active
                         if (isDonor) {
                             Spacer(modifier = Modifier.height(12.dp))
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.WorkspacePremium,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(18.dp)
                                     )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Medalla de Colaborador Activo de Corta Chile",
+                                        text = "Medalla de Colaborador Activa",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.tertiary
                                     )
                                 }
                             }
@@ -300,131 +427,8 @@ fun DonorProfileScreen(
                 }
             }
 
-            // 2. Dual SIM Support Card (Doble SIM)
+            // 2. Enlaces Rápidos de Ayuda y Comunidad
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "LÍNEAS MÓVILES (DOBLE SIM)",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        text = "Toca para detalles",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 11.sp
-                    )
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        simCards.forEachIndexed { index, sim ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { selectedSimForDetails = sim }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (sim.isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.SimCard,
-                                            contentDescription = null,
-                                            tint = if (sim.isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "Ranura ${sim.slotIndex + 1}: ${sim.carrierName}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = if (sim.isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
-                                        ) {
-                                            Text(
-                                                text = if (sim.isActive) "Activa" else "Inactiva",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (sim.isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = sim.number ?: if (sim.isActive) "Protección <2ms en memoria activa" else "Sin servicio en esta ranura",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = "Detalles SIM",
-                                    tint = MaterialTheme.colorScheme.outlineVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            if (index < simCards.size - 1) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    thickness = 0.8.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. Accesos y Secciones Principales
-            item {
-                Text(
-                    text = "ACCESOS RÁPIDOS Y GESTIÓN",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                )
-
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -434,111 +438,23 @@ fun DonorProfileScreen(
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        if (onNavigateToSettings != null) {
-                            ProfileNavRow(
-                                icon = Icons.Rounded.Settings,
-                                title = "Ajustes y Configuración",
-                                subtitle = "Reglas avanzadas, apariencia, temas y telecomunicaciones",
-                                onClick = onNavigateToSettings
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                thickness = 0.8.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                            )
-                        }
-
-                        if (onNavigateToStats != null) {
-                            ProfileNavRow(
-                                icon = Icons.Rounded.BarChart,
-                                title = "Estadísticas de Protección",
-                                subtitle = "Llamadas bloqueadas, tiempo ahorrado y métricas de spam",
-                                onClick = onNavigateToStats
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                thickness = 0.8.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                            )
-                        }
-
-                        if (onNavigateToRules != null) {
-                            ProfileNavRow(
-                                icon = Icons.Rounded.Shield,
-                                title = "Reglas y Lista de Bloqueo",
-                                subtitle = "Normativa SUBTEL 809/600, listas negras y excepciones",
-                                onClick = onNavigateToRules
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                thickness = 0.8.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                            )
-                        }
-
-                        if (onNavigateToDiagnostics != null) {
-                            ProfileNavRow(
-                                icon = Icons.Rounded.HealthAndSafety,
-                                title = "Diagnóstico del Sistema",
-                                subtitle = "Verificación de permisos, latencia SQLite y CallScreening",
-                                onClick = onNavigateToDiagnostics
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 4. Herramientas de Respaldo, Soporte y Comunidad
-            item {
-                Text(
-                    text = "HERRAMIENTAS Y COMUNIDAD",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                )
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                ) {
-                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        // Respaldo y Restauración Real
-                        ProfileNavRow(
-                            icon = Icons.Rounded.SaveAlt,
-                            title = "Respaldo y Exportación",
-                            subtitle = "Guarda o restaura tus reglas (${rules.size} registradas) y ajustes en JSON",
-                            onClick = { showBackupSheet = true }
-                        )
-
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.8.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                        )
-
-                        // Invitar amigos / Compartir Corta
+                        // Compartir Corta
                         ProfileNavRow(
                             icon = Icons.Rounded.Share,
-                            title = "Invitar amigos / Compartir Corta",
-                            subtitle = "Recomienda Corta a tus familiares para protegerlos del spam",
+                            title = "Compartir Corta con amigos",
+                            subtitle = "Ayuda a proteger a tus familiares y conocidos del spam",
                             onClick = {
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
                                     putExtra(
                                         Intent.EXTRA_TEXT,
                                         "Te recomiendo Corta App para Android:\n" +
-                                        "Bloquea llamadas spam de telemarketing (norma SUBTEL 809), fraudes bancarios y smishing SMS en Chile de forma automática en < 2ms y 100% privada, sin subir tus contactos a internet.\n\n" +
-                                        "Descárgala gratis y de código abierto en: https://github.com/axioma-dev/corta"
+                                        "Bloquea llamadas spam de telemarketing (norma SUBTEL 809), fraudes bancarios y smishing SMS en Chile de forma automática y 100% privada, sin subir tus contactos a internet.\n\n" +
+                                        "Descárgala gratis en: https://github.com/axioma-dev/corta"
                                     )
                                     type = "text/plain"
                                 }
-                                context.startActivity(Intent.createChooser(sendIntent, "Compartir Corta con amigos"))
+                                context.startActivity(Intent.createChooser(sendIntent, "Compartir Corta"))
                             }
                         )
 
@@ -552,7 +468,7 @@ fun DonorProfileScreen(
                         ProfileNavRow(
                             icon = Icons.Rounded.MailOutline,
                             title = "Soporte y Contacto",
-                            subtitle = "Escríbenos, copia el correo de asistencia o reporta en GitHub",
+                            subtitle = "Escríbenos o reporta inconvenientes",
                             onClick = { showSupportSheet = true }
                         )
 
@@ -562,111 +478,455 @@ fun DonorProfileScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // Centro de Ayuda / Preguntas Frecuentes
+                        // Centro de Ayuda
                         ProfileNavRow(
                             icon = Icons.AutoMirrored.Rounded.HelpOutline,
                             title = "Centro de Ayuda y Preguntas Frecuentes",
-                            subtitle = "Conoce cómo funciona la protección offline y la ley SUBTEL",
+                            subtitle = "Cómo funciona la protección offline y la normativa chilena",
                             onClick = { showFaqSheet = true }
                         )
                     }
                 }
             }
 
-            // 5. Insignia de Donante / Apoyo
+
+            // 5. Aporte Solidario y Medalla de Colaborador (Mercado Pago Chile)
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isDonor) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainerLowest
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                if (!isDonor) {
+                    Text(
+                        text = "APORTE SOLIDARIO",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isDonor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.size(42.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Favorite,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Apoya el desarrollo de Corta Chile",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "100% gratuita, libre y sin anuncios invasivos. Tu colaboración financia la investigación contra el telemarketing.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Botón de Mercado Pago
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://link.mercadopago.cl/cortachile"))
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
                                 Icon(
                                     imageVector = Icons.Rounded.VolunteerActivism,
                                     contentDescription = null,
-                                    tint = if (isDonor) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Aportar en Mercado Pago (Monto Abierto)", fontWeight = FontWeight.Bold)
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Fila de Alias de Mercado Pago
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Tag,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "Alias: cortachile",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("Alias Mercado Pago", "cortachile"))
+                                            Toast.makeText(context, "Alias 'cortachile' copiado al portapapeles", Toast.LENGTH_SHORT).show()
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Copiar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Botones secundarios: Validar Comprobante y Cuenta de Google
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { showValidateDonationDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Rounded.CheckCircleOutline, null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Validar comprobante", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { showGoogleLinkDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Rounded.AccountCircle, null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        if (userGoogleEmail.isNotBlank()) "Cuenta Google" else "Vincular Google",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "COLABORADOR OFICIAL",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+                        ),
+                        border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(46.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.WorkspacePremium,
+                                            contentDescription = "Medalla Dorada",
+                                            tint = MaterialTheme.colorScheme.onTertiary,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "¡Medalla de Colaborador Activa!",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                    Text(
+                                        text = "Tu aporte voluntario mantiene a Corta viva y actualizada contra el telemarketing.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+
+                            if (donorOperationId.isNotBlank() || donorDate.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        if (donorOperationId.isNotBlank()) {
+                                            Text(
+                                                text = "Operación: #$donorOperationId",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        if (donorDate.isNotBlank()) {
+                                            Text(
+                                                text = donorDate,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (userGoogleEmail.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "🔒 Respaldado en Google: $userGoogleEmail",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.width(14.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Distintivo de Donante / Apoyo",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Muestra la medalla en tu perfil si apoyas el software libre y la privacidad en Chile.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Switch(
-                            checked = isDonor,
-                            onCheckedChange = { checked ->
-                                isDonor = checked
-                                prefs.edit().putBoolean("is_donor", checked).apply()
-                                val msg = if (checked) "¡Medalla de Donante activada!" else "Medalla desactivada"
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            }
-                        )
                     }
                 }
             }
         }
     }
 
-    // Modal: Editar Perfil
-    if (showEditProfileDialog) {
-        var editName by remember { mutableStateOf(userName) }
-        var editPhone by remember { mutableStateOf(userPhone) }
+
+
+    // Modal: Validar comprobante de Mercado Pago
+    if (showValidateDonationDialog) {
+        var inputOpId by remember { mutableStateOf("") }
+        var inputError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
-            onDismissRequest = { showEditProfileDialog = false },
+            onDismissRequest = { showValidateDonationDialog = false },
+            icon = {
+                Icon(
+                    Icons.Rounded.Verified,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
             title = {
                 Text(
-                    text = "Editar Perfil",
-                    fontWeight = FontWeight.Bold
+                    text = "Acreditar Aporte Solidario",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = editName,
-                        onValueChange = { editName = it },
-                        label = { Text("Nombre de usuario") },
-                        placeholder = { Text("Ej: Mi Dispositivo") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Ingresa el Número de Operación emitido por Mercado Pago en tu comprobante de aporte (generalmente 8 a 11 dígitos):",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedTextField(
-                        value = editPhone,
-                        onValueChange = { editPhone = it },
-                        label = { Text("Teléfono principal") },
-                        placeholder = { Text("Ej: +56 9 1234 5678") },
+                        value = inputOpId,
+                        onValueChange = {
+                            inputOpId = it.filter { ch -> ch.isDigit() }
+                            inputError = null
+                        },
+                        label = { Text("N° de Operación") },
+                        placeholder = { Text("Ej: 1122334455") },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = inputError != null,
+                        supportingText = inputError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "💡 Este código valida tu colaboración y activa tu medalla dorada de forma permanente en este teléfono y en tus respaldos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val clean = inputOpId.trim()
+                        if (clean.length < 6) {
+                            inputError = "Ingresa un número de operación válido (al menos 6 dígitos)"
+                        } else {
+                            donorOperationId = clean
+                            val now = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
+                            donorDate = now
+                            isDonor = true
+                            prefs.edit()
+                                .putBoolean("is_donor", true)
+                                .putBoolean("donor_badge_unlocked", true)
+                                .putString("donor_operation_id", clean)
+                                .putString("donor_date", now)
+                                .apply()
+                            showValidateDonationDialog = false
+                            Toast.makeText(context, "¡Aporte acreditado con éxito! Medalla activada.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                ) {
+                    Text("Acreditar Medalla")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showValidateDonationDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Modal: Vincular Cuenta de Google (Respaldo en la nube / Cambio de equipo)
+    if (showGoogleLinkDialog) {
+        var manualEmail by remember { mutableStateOf(userGoogleEmail) }
+        var isLinking by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showGoogleLinkDialog = false },
+            icon = {
+                Icon(
+                    Icons.Rounded.AccountCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Vincular Cuenta de Google",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Vincula tu correo de Google para respaldar tu medalla de donador y tu configuración. Si cambias de teléfono o desinstalas la app, podrás restaurar tu estado inmediatamente.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Button(
+                        onClick = {
+                            isLinking = true
+                            coroutineScope.launch {
+                                try {
+                                    val credentialManager = CredentialManager.create(context)
+                                    val googleIdOption = GetGoogleIdOption.Builder()
+                                        .setFilterByAuthorizedAccounts(false)
+                                        .setServerClientId("corta-app-client-id")
+                                        .setAutoSelectEnabled(true)
+                                        .build()
+                                    val request = GetCredentialRequest.Builder()
+                                        .addCredentialOption(googleIdOption)
+                                        .build()
+                                    val result = credentialManager.getCredential(context, request)
+                                    val credential = result.credential
+                                    val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data)
+                                    val email = googleIdToken.id
+                                    val name = googleIdToken.displayName ?: userName
+                                    userGoogleEmail = email
+                                    userName = name
+                                    prefs.edit()
+                                        .putString("user_google_email", email)
+                                        .putString("user_name", name)
+                                        .apply()
+                                    Toast.makeText(context, "¡Cuenta vinculada con éxito: $email!", Toast.LENGTH_SHORT).show()
+                                    showGoogleLinkDialog = false
+                                } catch (e: Exception) {
+                                    isLinking = false
+                                    Toast.makeText(context, "Ingresa tu correo abajo para vincularlo manualmente", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        enabled = !isLinking
+                    ) {
+                        Icon(Icons.Rounded.Sync, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Detectar con Google One Tap", fontWeight = FontWeight.Bold)
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    Text(
+                        text = "O ingresa tu correo manualmente:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedTextField(
+                        value = manualEmail,
+                        onValueChange = { manualEmail = it },
+                        label = { Text("Correo de Google") },
+                        placeholder = { Text("ejemplo@gmail.com") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -674,22 +934,23 @@ fun DonorProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        userName = editName.ifBlank { "Mi Dispositivo" }
-                        userPhone = editPhone.trim()
-                        prefs.edit()
-                            .putString("user_name", userName)
-                            .putString("user_phone", userPhone)
-                            .apply()
-                        showEditProfileDialog = false
-                        Toast.makeText(context, "Perfil actualizado", Toast.LENGTH_SHORT).show()
+                        val email = manualEmail.trim()
+                        if (email.contains("@")) {
+                            userGoogleEmail = email
+                            prefs.edit().putString("user_google_email", email).apply()
+                            showGoogleLinkDialog = false
+                            Toast.makeText(context, "Correo de respaldo guardado: $email", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 ) {
-                    Text("Guardar")
+                    Text("Guardar Correo")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditProfileDialog = false }) {
-                    Text("Cancelar")
+                TextButton(onClick = { showGoogleLinkDialog = false }) {
+                    Text("Cerrar")
                 }
             }
         )
@@ -723,7 +984,154 @@ fun DonorProfileScreen(
     if (showFaqSheet) {
         HelpFaqBottomSheet(onDismiss = { showFaqSheet = false })
     }
+
+    // Modal: Selector de Región y Comuna (Chile)
+    if (showRegionPicker) {
+        RegionSelectorBottomSheet(
+            selectedRegion = userRegion,
+            selectedComuna = userComuna,
+            onSelectLocation = { region, comuna ->
+                userRegion = region
+                userComuna = comuna
+                val editor = prefs.edit().putString("user_selected_region", region.code)
+                if (comuna != null) {
+                    editor.putString("user_selected_comuna", comuna)
+                } else {
+                    editor.remove("user_selected_comuna")
+                }
+                editor.apply()
+                val locText = if (comuna != null) "$comuna (${region.shortName})" else region.displayName
+                Toast.makeText(context, "Ubicación: $locText", Toast.LENGTH_SHORT).show()
+                showRegionPicker = false
+            },
+            onDismiss = { showRegionPicker = false }
+        )
+    }
+
+    // Modal: Editar Mi Perfil (Nombre, Teléfono y Avatar)
+    if (showEditProfileDialog) {
+        var tempName by remember { mutableStateOf(userName) }
+        var tempPhone by remember { mutableStateOf(userPhone) }
+        val avatarPresets = listOf("👤", "🛡️", "🇨🇱", "📞", "⚡", "🦊", "🐱", "🚀")
+        var selectedAvatar by remember { mutableStateOf(userAvatar ?: "👤") }
+
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
+            title = {
+                Text(
+                    text = "Editar Mi Perfil",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = "Elige tu avatar o ícono de perfil:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        avatarPresets.take(4).forEach { emoji ->
+                            val isSel = selectedAvatar == emoji
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                border = if (isSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clickable { selectedAvatar = emoji }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(text = emoji, fontSize = 22.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        avatarPresets.drop(4).forEach { emoji ->
+                            val isSel = selectedAvatar == emoji
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                border = if (isSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clickable { selectedAvatar = emoji }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(text = emoji, fontSize = 22.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        label = { Text("Nombre o Apodo") },
+                        placeholder = { Text("Ej: Juan Pérez") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = tempPhone,
+                        onValueChange = { tempPhone = it },
+                        label = { Text("Número de Teléfono") },
+                        placeholder = { Text("+56 9 1234 5678") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cleanName = tempName.trim().ifEmpty { "Usuario Corta" }
+                        val cleanPhone = tempPhone.trim()
+                        userName = cleanName
+                        userPhone = cleanPhone
+                        userAvatar = selectedAvatar
+                        prefs.edit()
+                            .putString("user_name", cleanName)
+                            .putString("user_phone", cleanPhone)
+                            .putString("user_avatar", selectedAvatar)
+                            .apply()
+                        showEditProfileDialog = false
+                        Toast.makeText(context, "Perfil actualizado", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Guardar Cambios", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditProfileDialog = false }) {
+                    Text("Cancelar")
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
 }
+
 
 private data class SimSlotData(
     val slotIndex: Int,

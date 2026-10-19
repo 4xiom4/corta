@@ -137,17 +137,6 @@ fun ContactsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-    val initialContactFilter = remember {
-        val savedName = prefs.getString("default_contact_tab", ContactCategoryFilter.PERSONAL.name)
-        ContactCategoryFilter.entries.firstOrNull { it.name == savedName } ?: ContactCategoryFilter.PERSONAL
-    }
-    var currentFilter by remember { mutableStateOf(initialContactFilter) }
-    var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
-    var showCategoriesSheet by remember { mutableStateOf(false) }
-    var showRegionPicker by remember { mutableStateOf(false) }
-    var showReorderSheet by remember { mutableStateOf(false) }
-    var selectedContactForOptions by remember { mutableStateOf<ClassifiedContact?>(null) }
-
     val defaultOrder = remember {
         listOf(
             ContactCategoryFilter.PERSONAL,
@@ -167,14 +156,33 @@ fun ContactsScreen(
         } else emptyList()
         mutableStateOf(if (list.size == defaultOrder.size) list else defaultOrder)
     }
+    var currentFilter by remember { mutableStateOf(categoryOrder.firstOrNull() ?: ContactCategoryFilter.PERSONAL) }
+    var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
+    var showCategoriesSheet by remember { mutableStateOf(false) }
+    var showRegionPicker by remember { mutableStateOf(false) }
+    var showReorderSheet by remember { mutableStateOf(false) }
+    var selectedContactForOptions by remember { mutableStateOf<ClassifiedContact?>(null) }
 
     var selectedRegion by remember {
-        val savedCode = prefs.getString("user_selected_region", ChileanRegion.ALL.code)
+        val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
         mutableStateOf(ChileanRegion.fromCode(savedCode))
     }
 
     var selectedComuna by remember {
         mutableStateOf(prefs.getString("user_selected_comuna", null))
+    }
+
+    DisposableEffect(prefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "user_selected_region" || key == "user_selected_comuna") {
+                selectedRegion = ChileanRegion.fromCode(prefs.getString("user_selected_region", ChileanRegion.RM.code))
+                selectedComuna = prefs.getString("user_selected_comuna", null)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
     }
 
     val contactGroups by cortaRepository.observeContactGroups().collectAsState(initial = emptyList())
@@ -239,9 +247,15 @@ fun ContactsScreen(
         }
     }
 
+    val effectiveComuna = remember(selectedRegion, selectedComuna) {
+        if (selectedRegion == ChileanRegion.ALL || selectedComuna.isNullOrBlank()) null
+        else if (ChileanRegionalDirectory.isValidComunaForRegion(selectedRegion, selectedComuna)) selectedComuna
+        else null
+    }
+
     // Comprehensive Chilean Directory (~650 numbers filtered by user region and prioritized by comuna)
-    val chileanDirectory = remember(selectedRegion, selectedComuna) {
-        ChileanRegionalDirectory.getEntriesForRegionAndComuna(selectedRegion, selectedComuna).map { it.toClassifiedContact() }
+    val chileanDirectory = remember(selectedRegion, effectiveComuna) {
+        ChileanRegionalDirectory.getEntriesForRegionAndComuna(selectedRegion, effectiveComuna).map { it.toClassifiedContact() }
     }
 
     // Memoized classified contacts
@@ -576,7 +590,6 @@ fun ContactsScreen(
             currentFilter = currentFilter,
             counts = categoryCounts,
             categoryOrder = categoryOrder,
-            defaultFilter = initialContactFilter,
             selectedRegion = selectedRegion,
             selectedComuna = selectedComuna,
             contactGroups = contactGroups,
@@ -606,11 +619,10 @@ fun ContactsScreen(
                     }
                 }
             },
-            onReorderCategories = { newOrder, newDefault ->
+            onReorderCategories = { newOrder ->
                 categoryOrder = newOrder
                 prefs.edit()
                     .putString("contact_category_order", newOrder.joinToString(",") { it.name })
-                    .putString("default_contact_tab", newDefault.name)
                     .apply()
             },
             onOpenRegionPicker = {
@@ -896,7 +908,7 @@ fun ContactCard(
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
         ),
@@ -1016,25 +1028,21 @@ fun ContactCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Quick Call Action Button (44dp target)
+            // Standardized 40dp Circular Action Button (Harmonized across CallLog and Contacts)
             val isFav = contact.isFavorite
-            IconButton(
+            Surface(
                 onClick = onCallClick,
-                modifier = Modifier.size(44.dp)
+                shape = CircleShape,
+                color = if (isFav) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(40.dp)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = if (isFav) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = if (isFav) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Call,
-                            contentDescription = "Llamar a ${contact.name}",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Call,
+                        contentDescription = "Llamar a ${contact.name}",
+                        tint = if (isFav) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -1303,7 +1311,6 @@ fun ContactCategoriesBottomSheet(
     currentFilter: ContactCategoryFilter,
     counts: Map<ContactCategoryFilter, Int>,
     categoryOrder: List<ContactCategoryFilter>,
-    defaultFilter: ContactCategoryFilter,
     selectedRegion: ChileanRegion,
     selectedComuna: String?,
     contactGroups: List<ContactGroup>,
@@ -1316,7 +1323,7 @@ fun ContactCategoriesBottomSheet(
     onSelectFilter: (ContactCategoryFilter) -> Unit,
     onSelectGroup: (ContactGroup?) -> Unit,
     onCreateGroup: (String) -> Unit,
-    onReorderCategories: (List<ContactCategoryFilter>, ContactCategoryFilter) -> Unit,
+    onReorderCategories: (List<ContactCategoryFilter>) -> Unit,
     onOpenRegionPicker: () -> Unit,
     onImportSimContacts: () -> Unit = {},
     onExportVcf: () -> Unit,
@@ -1328,8 +1335,6 @@ fun ContactCategoriesBottomSheet(
     var showCreateGroupDialog by remember { mutableStateOf(false) }
     var newGroupName by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-    val defaultContactTabName = prefs.getString("default_contact_tab", ContactCategoryFilter.PERSONAL.name)
 
     if (showCreateGroupDialog) {
         AlertDialog(
@@ -1402,7 +1407,7 @@ fun ContactCategoriesBottomSheet(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Reordena las pestañas con ↑/↓ y fija la pestaña inicial con ★",
+                        text = "Usa ↑/↓ para ordenar. La primera categoría será la pestaña inicial.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1417,7 +1422,7 @@ fun ContactCategoriesBottomSheet(
                             ContactCategoryFilter.OFFICIAL_600,
                             ContactCategoryFilter.ALL
                         )
-                        onReorderCategories(defaultList, ContactCategoryFilter.PERSONAL)
+                        onReorderCategories(defaultList)
                     }
                 ) {
                     Text("Restablecer", fontSize = 12.sp)
@@ -1433,7 +1438,7 @@ fun ContactCategoriesBottomSheet(
             ) {
                 categoryOrder.forEachIndexed { index, cat ->
                     val isSelected = cat == currentFilter && selectedGroup == null
-                    val isDefault = cat.name == defaultContactTabName
+                    val isFirst = index == 0
                     val count = counts[cat] ?: 0
 
                     val catName = when (cat) {
@@ -1468,24 +1473,9 @@ fun ContactCategoriesBottomSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Default tab star toggle
-                            IconButton(
-                                onClick = {
-                                    onReorderCategories(categoryOrder, cat)
-                                },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (isDefault) Icons.Rounded.Star else Icons.Rounded.StarOutline,
-                                    contentDescription = "Pestaña predeterminada",
-                                    tint = if (isDefault) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
                             // Body (clickable to select)
                             Column(
                                 modifier = Modifier
@@ -1501,27 +1491,32 @@ fun ContactCategoriesBottomSheet(
                                         text = "$catName ($count)",
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                         fontSize = 14.5.sp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
-                                    if (isDefault) {
+                                    if (isFirst) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer
+                                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
                                         ) {
                                             Text(
-                                                text = "Predeterminada",
-                                                fontSize = 9.5.sp,
+                                                text = "Pestaña inicial",
+                                                fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
                                         }
                                     }
                                 }
                                 Text(
-                                    text = if (isDefault) "Se abrirá al iniciar la app" else catDesc,
+                                    text = catDesc,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (isDefault) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1535,8 +1530,7 @@ fun ContactCategoriesBottomSheet(
                                             val mutable = categoryOrder.toMutableList()
                                             val item = mutable.removeAt(index)
                                             mutable.add(index - 1, item)
-                                            val currentDef = categoryOrder.firstOrNull { it.name == defaultContactTabName } ?: ContactCategoryFilter.PERSONAL
-                                            onReorderCategories(mutable, currentDef)
+                                            onReorderCategories(mutable)
                                         }
                                     },
                                     enabled = index > 0,
@@ -1554,8 +1548,7 @@ fun ContactCategoriesBottomSheet(
                                             val mutable = categoryOrder.toMutableList()
                                             val item = mutable.removeAt(index)
                                             mutable.add(index + 1, item)
-                                            val currentDef = categoryOrder.firstOrNull { it.name == defaultContactTabName } ?: ContactCategoryFilter.PERSONAL
-                                            onReorderCategories(mutable, currentDef)
+                                            onReorderCategories(mutable)
                                         }
                                     },
                                     enabled = index < categoryOrder.size - 1,
@@ -1714,46 +1707,6 @@ fun ContactCategoriesBottomSheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Gestión de Tarjeta SIM
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.SimCard,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Contactos en Tarjeta SIM",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Importar contactos guardados en chips SIM 1 / SIM 2 a la app",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    FilledTonalButton(
-                        onClick = onImportSimContacts,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Importar", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
             // Region & Comuna Row
             Surface(
                 shape = RoundedCornerShape(12.dp),
@@ -1796,67 +1749,6 @@ fun ContactCategoriesBottomSheet(
                     TextButton(onClick = onOpenRegionPicker) {
                         Text("Cambiar", fontWeight = FontWeight.Bold)
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Actions: Export & Import VCF / CSV
-            Text(
-                text = "Exportación y Respaldo",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onExportVcf,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.FileDownload, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Exportar vCard", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-
-                Button(
-                    onClick = onImportVcf,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.FileUpload, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Importar vCard", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onExportCsv,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.TableChart, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Exportar CSV", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-
-                Button(
-                    onClick = onImportCsv,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.UploadFile, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Importar CSV", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -2248,6 +2140,7 @@ fun RegionSelectorBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
+                .imePadding()
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp)
         ) {
             Row(
@@ -2458,10 +2351,11 @@ fun RegionSelectorBottomSheet(
                                         )
                                     },
                                     supportingContent = {
+                                        val hasValidComuna = isRegionActive && selectedComuna != null && ChileanRegionalDirectory.isValidComunaForRegion(region, selectedComuna)
                                         Text(
-                                            text = if (isRegionActive && selectedComuna != null) "Comuna activa: $selectedComuna" else "${comunasForRegion.size} comunas",
+                                            text = if (hasValidComuna) "Comuna activa: $selectedComuna" else "${comunasForRegion.size} comunas",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = if (isRegionActive && selectedComuna != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = if (hasValidComuna) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     },
                                     leadingContent = {

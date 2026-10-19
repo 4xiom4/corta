@@ -3,6 +3,7 @@ package com.corta.app.ui
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.corta.app.ui.contacts.ContactsScreen
 import com.corta.app.ui.diagnostics.SystemDiagnosticsScreen
 import com.corta.app.ui.i18n.Strings
@@ -55,12 +57,39 @@ enum class AppScreen { DASHBOARD, SETTINGS, RULES, STATS, PROFILE, DIAGNOSTICS }
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DashboardScreen(
+    initialTargetTab: Int? = null,
+    initialSmsSender: String? = null,
+    initialCallNumber: String? = null,
+    donationApproved: Boolean = false,
+    onClearDeepLink: () -> Unit = {},
     viewModel: CortaAppViewModel = org.koin.androidx.compose.koinViewModel()
 ) {
     val context = LocalContext.current
     val currentLanguage by viewModel.language.collectAsState()
 
-    var currentScreen by remember { mutableStateOf(AppScreen.DASHBOARD) }
+    var screenStack by remember { mutableStateOf(listOf(AppScreen.DASHBOARD)) }
+    val currentScreen = screenStack.lastOrNull() ?: AppScreen.DASHBOARD
+
+    fun navigateTo(screen: AppScreen) {
+        if (screenStack.lastOrNull() != screen) {
+            screenStack = screenStack + screen
+        }
+    }
+
+    fun navigateBack() {
+        if (screenStack.size > 1) {
+            screenStack = screenStack.dropLast(1)
+        } else {
+            (context as? android.app.Activity)?.moveTaskToBack(true)
+        }
+    }
+
+    LaunchedEffect(donationApproved) {
+        if (donationApproved) {
+            navigateTo(AppScreen.PROFILE)
+            onClearDeepLink()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -68,50 +97,53 @@ fun DashboardScreen(
     ) {
         when (currentScreen) {
             AppScreen.SETTINGS -> {
-                BackHandler { currentScreen = AppScreen.DASHBOARD }
                 SettingsScreen(
                     currentLanguage = currentLanguage,
                     onLanguageChange = { language ->
                         viewModel.setLanguage(language)
                     },
-                    onBack = { currentScreen = AppScreen.DASHBOARD },
-                    onNavigateToDiagnostics = { currentScreen = AppScreen.DIAGNOSTICS },
-                    onNavigateToStats = { currentScreen = AppScreen.STATS },
-                    onNavigateToRules = { currentScreen = AppScreen.RULES }
+                    onBack = { navigateBack() },
+                    onNavigateToDiagnostics = { navigateTo(AppScreen.DIAGNOSTICS) },
+                    onNavigateToStats = { navigateTo(AppScreen.STATS) },
+                    onNavigateToRules = { navigateTo(AppScreen.RULES) }
                 )
             }
             AppScreen.RULES -> {
-                BackHandler { currentScreen = AppScreen.DASHBOARD }
-                RulesScreen(onBack = { currentScreen = AppScreen.DASHBOARD })
+                BackHandler { navigateBack() }
+                RulesScreen(onBack = { navigateBack() })
             }
             AppScreen.STATS -> {
-                BackHandler { currentScreen = AppScreen.DASHBOARD }
-                StatisticsScreen(onBack = { currentScreen = AppScreen.DASHBOARD })
+                BackHandler { navigateBack() }
+                StatisticsScreen(onBack = { navigateBack() })
             }
             AppScreen.PROFILE -> {
-                BackHandler { currentScreen = AppScreen.DASHBOARD }
+                BackHandler { navigateBack() }
                 DonorProfileScreen(
-                    onBack = { currentScreen = AppScreen.DASHBOARD },
-                    onNavigateToSettings = { currentScreen = AppScreen.SETTINGS },
-                    onNavigateToRules = { currentScreen = AppScreen.RULES },
-                    onNavigateToStats = { currentScreen = AppScreen.STATS },
-                    onNavigateToDiagnostics = { currentScreen = AppScreen.DIAGNOSTICS }
+                    onBack = { navigateBack() },
+                    onNavigateToSettings = { navigateTo(AppScreen.SETTINGS) },
+                    onNavigateToRules = { navigateTo(AppScreen.RULES) },
+                    onNavigateToStats = { navigateTo(AppScreen.STATS) },
+                    onNavigateToDiagnostics = { navigateTo(AppScreen.DIAGNOSTICS) }
                 )
             }
             AppScreen.DIAGNOSTICS -> {
-                BackHandler { currentScreen = AppScreen.DASHBOARD }
-                SystemDiagnosticsScreen(onBack = { currentScreen = AppScreen.DASHBOARD })
+                BackHandler { navigateBack() }
+                SystemDiagnosticsScreen(onBack = { navigateBack() })
             }
             AppScreen.DASHBOARD -> {
                 BackHandler(enabled = true) {
                     (context as? android.app.Activity)?.moveTaskToBack(true)
                 }
                 DashboardMainContent(
-                    onNavigateToSettings = { currentScreen = AppScreen.SETTINGS },
-                    onNavigateToRules = { currentScreen = AppScreen.RULES },
-                    onNavigateToStats = { currentScreen = AppScreen.STATS },
-                    onNavigateToProfile = { currentScreen = AppScreen.PROFILE },
-                    onNavigateToDiagnostics = { currentScreen = AppScreen.DIAGNOSTICS }
+                    initialTargetTab = initialTargetTab,
+                    initialSmsSender = initialSmsSender,
+                    initialCallNumber = initialCallNumber,
+                    onClearDeepLink = onClearDeepLink,
+                    onNavigateToSettings = { navigateTo(AppScreen.SETTINGS) },
+                    onNavigateToRules = { navigateTo(AppScreen.RULES) },
+                    onNavigateToStats = { navigateTo(AppScreen.STATS) },
+                    onNavigateToProfile = { navigateTo(AppScreen.PROFILE) },
+                    onNavigateToDiagnostics = { navigateTo(AppScreen.DIAGNOSTICS) }
                 )
             }
         }
@@ -121,6 +153,10 @@ fun DashboardScreen(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DashboardMainContent(
+    initialTargetTab: Int? = null,
+    initialSmsSender: String? = null,
+    initialCallNumber: String? = null,
+    onClearDeepLink: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
     onNavigateToRules: () -> Unit,
     onNavigateToStats: () -> Unit,
@@ -132,8 +168,26 @@ fun DashboardMainContent(
     val cortaRepository: CortaRepository = koinInject()
     val contactRepository: ContactRepository = koinInject()
 
+    val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
+    var userAvatar by remember { mutableStateOf(prefs.getString("user_avatar", null)) }
+    var userName by remember { mutableStateOf(prefs.getString("user_name", "Usuario Corta")) }
+
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "user_avatar") {
+                userAvatar = prefs.getString("user_avatar", null)
+            } else if (key == "user_name") {
+                userName = prefs.getString("user_name", "Usuario Corta")
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
     // 0: Mensajes, 1: Llamadas, 2: Contactos
-    val pagerState = rememberPagerState(initialPage = 1) { 3 }
+    val pagerState = rememberPagerState(initialPage = initialTargetTab ?: 1) { 3 }
     val coroutineScope = rememberCoroutineScope()
 
     // SMS internal navigation state
@@ -146,6 +200,21 @@ fun DashboardMainContent(
     // Global search state
     var isSearchActive by remember { mutableStateOf(false) }
     var globalSearchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(initialTargetTab, initialSmsSender, initialCallNumber) {
+        if (initialTargetTab != null) {
+            pagerState.scrollToPage(initialTargetTab)
+        }
+        if (initialSmsSender != null) {
+            val resolvedThreadId = smsRepository.getThreadIdForSender(initialSmsSender) ?: "BLOCKED_$initialSmsSender"
+            selectedSmsThreadId = resolvedThreadId
+            onClearDeepLink()
+        }
+        if (initialCallNumber != null) {
+            globalSearchQuery = initialCallNumber
+            onClearDeepLink()
+        }
+    }
 
     if (isSearchActive) {
         BackHandler {
@@ -291,16 +360,23 @@ fun DashboardMainContent(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Person,
-                                        contentDescription = "Mi Perfil",
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    if (!userAvatar.isNullOrBlank()) {
+                                        Text(
+                                            text = userAvatar ?: "",
+                                            fontSize = 18.sp
+                                        )
+                                    } else {
+                                        Text(
+                                            text = (userName?.take(1)?.uppercase()?.ifBlank { "U" } ?: "U"),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
                                 }
                             }
                         }

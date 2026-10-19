@@ -1,5 +1,7 @@
 package com.corta.app.ui.contacts
 
+import com.corta.domain.PhoneNumberUtils
+
 /**
  * Directorio Oficial de Telecomunicaciones y Servicios Esenciales de Chile (~650 registros).
  * Cubre las 16 Regiones de Chile y las 346 Comunas del país.
@@ -862,6 +864,14 @@ object ChileanRegionalDirectory {
     }
 
     /**
+     * Valida si una comuna pertenece de forma legítima a una región específica de Chile.
+     */
+    fun isValidComunaForRegion(region: ChileanRegion, comuna: String?): Boolean {
+        if (comuna.isNullOrBlank() || region == ChileanRegion.ALL) return false
+        return getComunasForRegion(region).any { it.equals(comuna.trim(), ignoreCase = true) }
+    }
+
+    /**
      * Lista de todas las comunas con su región correspondiente para el buscador.
      */
     fun getAllComunasWithRegion(): List<Pair<String, ChileanRegion>> {
@@ -871,4 +881,48 @@ object ChileanRegionalDirectory {
             .distinctBy { it.first }
             .sortedBy { it.first }
     }
+
+    private val normalizedIndex: Map<String, ChileanDirectoryEntry> by lazy {
+        val map = HashMap<String, ChileanDirectoryEntry>(entries.size * 2)
+        entries.forEach { entry ->
+            val norm = PhoneNumberUtils.normalize(entry.number)
+            if (norm.isNotBlank()) {
+                map[norm] = entry
+                map[norm.removePrefix("+56")] = entry
+                map[norm.removePrefix("+")] = entry
+            }
+            val digits = entry.number.filter { it.isDigit() }
+            if (digits.isNotBlank()) {
+                map[digits] = entry
+                if (digits.startsWith("56")) {
+                    map[digits.removePrefix("56")] = entry
+                }
+            }
+        }
+        map
+    }
+
+    /**
+     * Busca en memoria local instantánea si un número entrante pertenece al directorio oficial de Chile.
+     */
+    fun findByNumber(number: String?): ChileanDirectoryEntry? {
+        if (number.isNullOrBlank()) return null
+        val norm = PhoneNumberUtils.normalize(number)
+        val directMatch = normalizedIndex[norm]
+        if (directMatch != null) return directMatch
+
+        val withoutPrefix = norm.removePrefix("+56").removePrefix("+")
+        val withoutMatch = normalizedIndex[withoutPrefix]
+        if (withoutMatch != null) return withoutMatch
+
+        val digits = number.filter { it.isDigit() }
+        val digitsMatch = normalizedIndex[digits]
+        if (digitsMatch != null) return digitsMatch
+
+        if (digits.startsWith("56")) {
+            return normalizedIndex[digits.removePrefix("56")]
+        }
+        return null
+    }
 }
+

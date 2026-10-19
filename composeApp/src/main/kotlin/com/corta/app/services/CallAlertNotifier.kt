@@ -70,29 +70,63 @@ object CallAlertNotifier {
             }
         }
 
+        val notificationId = phoneNumber.hashCode()
         val openAppIntent = Intent(context, com.corta.app.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_TARGET_TAB", 1)
+            putExtra("EXTRA_CALL_NUMBER", phoneNumber)
         }
         val pendingIntent = android.app.PendingIntent.getActivity(
             context,
-            phoneNumber.hashCode(),
+            notificationId,
             openAppIntent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val allowIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            this.action = NotificationActionReceiver.ACTION_ALLOW_CALL
+            putExtra(NotificationActionReceiver.EXTRA_CALL_NUMBER, phoneNumber)
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val allowPendingIntent = android.app.PendingIntent.getBroadcast(
+            context,
+            notificationId + 10,
+            allowIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
             .setContentTitle(title)
             .setContentText(body)
             .setSubText("¡Corta la hace corta!")
             .setContentIntent(pendingIntent)
+            .addAction(android.R.drawable.ic_menu_view, "Ver registro", pendingIntent)
+            .addAction(android.R.drawable.ic_menu_revert, "No es spam", allowPendingIntent)
+
+        if (action != CallAction.BLOCKED) {
+            val blockIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                this.action = NotificationActionReceiver.ACTION_BLOCK_CALL
+                putExtra(NotificationActionReceiver.EXTRA_CALL_NUMBER, phoneNumber)
+                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val blockPendingIntent = android.app.PendingIntent.getBroadcast(
+                context,
+                notificationId + 20,
+                blockIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Bloquear", blockPendingIntent)
+        }
+
+        val notification = builder
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setAutoCancel(true)
             .build()
 
         NotificationManagerCompat.from(context)
-            .notify(phoneNumber.hashCode(), notification)
+            .notify(notificationId, notification)
     }
 }
 

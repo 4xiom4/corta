@@ -26,7 +26,15 @@ import com.corta.app.ui.theme.AppTheme
 enum class LaunchState { LOGIN, ONBOARDING, DASHBOARD }
 
 @Composable
-fun CortaApp(roleManager: RoleManager, language: String = "en") {
+fun CortaApp(
+    roleManager: RoleManager,
+    language: String = "en",
+    initialTargetTab: Int? = null,
+    initialSmsSender: String? = null,
+    initialCallNumber: String? = null,
+    donationApproved: Boolean = false,
+    onClearDeepLink: () -> Unit = {}
+) {
     val viewModel: CortaAppViewModel = koinViewModel()
 
     LaunchedEffect(roleManager) {
@@ -72,7 +80,13 @@ fun CortaApp(roleManager: RoleManager, language: String = "en") {
                         )
                     }
                     LaunchState.DASHBOARD -> {
-                        DashboardScreen()
+                        DashboardScreen(
+                            initialTargetTab = initialTargetTab,
+                            initialSmsSender = initialSmsSender,
+                            initialCallNumber = initialCallNumber,
+                            donationApproved = donationApproved,
+                            onClearDeepLink = onClearDeepLink
+                        )
                     }
                 }
             }

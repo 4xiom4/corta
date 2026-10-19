@@ -41,8 +41,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.corta.app.ui.CortaAppViewModel
+import com.corta.app.ui.contacts.ChileanRegion
+import com.corta.app.ui.contacts.ChileanRegionalDirectory
+import com.corta.app.ui.contacts.RegionSelectorBottomSheet
 import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
 import com.corta.app.ui.sms.AndroidSmsRepository
@@ -70,14 +72,10 @@ import java.util.Locale
 
 enum class SettingsSubmenu(val title: String) {
     MAIN("Ajustes y Configuración"),
-    BLOCKING("Bloqueo Inteligente y Filtros"),
-    TELECOM("Motor SUBTEL y Telefonía"),
-    SMS("Seguridad SMS y Smishing"),
-    DUAL_SIM("Gestión Doble SIM (Chips)"),
-    THEME("Apariencia y Temas Stitch"),
-    DIAGNOSTICS("Diagnóstico y Rendimiento"),
-    BACKUP("Respaldo y Base de Datos"),
-    HELP("Ayuda, Privacidad y Soporte")
+    GENERAL("Configuración General"),
+    CALLS("Configuración de Llamadas"),
+    MESSAGES("Configuración de Mensajes (SMS)"),
+    CONTACTS("Configuración de Contactos")
 }
 
 data class SettingsSimSlot(
@@ -95,6 +93,7 @@ fun SettingsScreen(
     currentLanguage: String = "es",
     onLanguageChange: (String) -> Unit,
     onBack: () -> Unit,
+    initialSubmenu: SettingsSubmenu = SettingsSubmenu.MAIN,
     onNavigateToDiagnostics: (() -> Unit)? = null,
     onNavigateToStats: (() -> Unit)? = null,
     onNavigateToRules: (() -> Unit)? = null,
@@ -106,7 +105,7 @@ fun SettingsScreen(
     val strings = Strings
     val coroutineScope = rememberCoroutineScope()
 
-    var currentSubmenu by remember { mutableStateOf(SettingsSubmenu.MAIN) }
+    var currentSubmenu by remember { mutableStateOf(initialSubmenu) }
 
     // Intercept hardware / system back navigation
     BackHandler {
@@ -147,6 +146,28 @@ fun SettingsScreen(
     var showTrashSheet by remember { mutableStateOf(false) }
     var showSpamKeywordsSheet by remember { mutableStateOf(false) }
     var selectedSimForDetails by remember { mutableStateOf<SettingsSimSlot?>(null) }
+
+    var userRegion by remember {
+        val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
+        mutableStateOf(ChileanRegion.fromCode(savedCode))
+    }
+    var userComuna by remember {
+        mutableStateOf(prefs.getString("user_selected_comuna", null))
+    }
+    var showRegionPicker by remember { mutableStateOf(false) }
+
+    DisposableEffect(prefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "user_selected_region" || key == "user_selected_comuna") {
+                userRegion = ChileanRegion.fromCode(prefs.getString("user_selected_region", ChileanRegion.RM.code))
+                userComuna = prefs.getString("user_selected_comuna", null)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
 
     val rules by cortaRepository.observeRules().collectAsState(initial = emptyList())
 
@@ -354,557 +375,121 @@ fun SettingsScreen(
                         }
                     }
 
-                    SettingsSectionHeader("MÓDULOS DE CONFIGURACIÓN")
+                    SettingsSectionHeader("CATEGORÍAS DE CONFIGURACIÓN")
 
-                    // 1. Bloqueo Inteligente y Filtros
+                    // 1. Configuración General
                     SettingsHubCard(
-                        title = "1. Bloqueo Inteligente y Filtros",
-                        subtitle = "Desconocidos, llamadas privadas, prefijo internacional (+56) y telemarketing",
-                        badgeText = "${listOf(onlyContactsCalls, blockPrivateNumbers, blockInternationalCalls, chao809Aggressive).count { it }} activos",
-                        icon = Icons.Rounded.Shield,
+                        title = "1. Configuración General",
+                        subtitle = "Temas Stitch, modo oscuro OLED, ergonomía, idioma, respaldo JSON y diagnóstico",
+                        badgeText = currentThemeMode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        icon = Icons.Rounded.Settings,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        onClick = { currentSubmenu = SettingsSubmenu.BLOCKING }
+                        onClick = { currentSubmenu = SettingsSubmenu.GENERAL }
                     )
 
-                    // 2. Motor SUBTEL y Telefonía Chilena
+                    // 2. Configuración de Llamadas
                     SettingsHubCard(
-                        title = "2. Motor SUBTEL y Telefonía",
-                        subtitle = "Normativa SUBTEL 809, líneas 600, llamadas fantasma y hashes comunitarios",
-                        badgeText = "Norma 809",
-                        icon = Icons.Rounded.CellTower,
+                        title = "2. Configuración de Llamadas",
+                        subtitle = "Filtro SUBTEL 809, números privados, llamadas internacionales, doble SIM y papelera",
+                        badgeText = "${listOf(chao809Aggressive, blockPrivateNumbers, blockInternationalCalls, silenceWarnCalls).count { it }} activos",
+                        icon = Icons.Rounded.Call,
                         iconTint = MaterialTheme.colorScheme.secondary,
-                        onClick = { currentSubmenu = SettingsSubmenu.TELECOM }
+                        onClick = { currentSubmenu = SettingsSubmenu.CALLS }
                     )
 
-                    // 3. Seguridad SMS y Smishing
+                    // 3. Configuración de Mensajes (SMS)
                     SettingsHubCard(
-                        title = "3. Seguridad SMS y Smishing",
-                        subtitle = "Detección de enlaces bancarios fraudulentos, remitentes masivos y alertas",
-                        badgeText = if (protectSmsLinks) "Activo" else "Pausado",
+                        title = "3. Configuración de Mensajes (SMS)",
+                        subtitle = "Escudo anti-smishing, remitentes institucionales, palabras clave y exportación",
+                        badgeText = if (protectSmsLinks) "Protegido" else "Pausado",
                         icon = Icons.Rounded.Sms,
                         iconTint = MaterialTheme.colorScheme.error,
-                        onClick = { currentSubmenu = SettingsSubmenu.SMS }
+                        onClick = { currentSubmenu = SettingsSubmenu.MESSAGES }
                     )
 
-                    // 4. Gestión Doble SIM (Chips)
-                    val simSummary = if (simCarriers.size > 1) "${simCarriers[0]} + ${simCarriers[1]}" else simCarriers.firstOrNull() ?: "1 Ranura"
+                    // 4. Configuración de Contactos
                     SettingsHubCard(
-                        title = "4. Gestión Doble SIM (Chips)",
-                        subtitle = "Supervisión diferenciada de ranuras móviles y badges en llamadas entrantes",
-                        badgeText = simSummary,
-                        icon = Icons.Rounded.SimCard,
-                        iconTint = MaterialTheme.colorScheme.tertiary,
-                        onClick = { currentSubmenu = SettingsSubmenu.DUAL_SIM }
-                    )
-
-                    // 5. Apariencia y Temas Stitch
-                    SettingsHubCard(
-                        title = "5. Apariencia y Temas Stitch",
-                        subtitle = "Modo Oscuro OLED puro, 4 variantes Stitch, escala UI y modo forense",
-                        badgeText = currentThemeMode.name.lowercase().replaceFirstChar { it.uppercase() },
-                        icon = Icons.Rounded.Palette,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        onClick = { currentSubmenu = SettingsSubmenu.THEME }
-                    )
-
-                    // 6. Diagnóstico y Rendimiento
-                    SettingsHubCard(
-                        title = "6. Diagnóstico y Rendimiento",
-                        subtitle = "Monitor de latencia en memoria (<2ms), roles de Android 15 y base SQLCipher",
-                        badgeText = "< 2ms",
-                        icon = Icons.Rounded.Speed,
-                        iconTint = MaterialTheme.colorScheme.secondary,
-                        onClick = { currentSubmenu = SettingsSubmenu.DIAGNOSTICS }
-                    )
-
-                    // 7. Respaldo y Base de Datos
-                    SettingsHubCard(
-                        title = "7. Respaldo y Base de Datos",
-                        subtitle = "Exportar/importar reglas en formato JSON seguro y optimizar almacenamiento",
+                        title = "4. Configuración de Contactos",
+                        subtitle = "Sincronización segura de agenda, emergencias 13x/14xx inmutables y reglas",
                         badgeText = "${rules.size} reglas",
-                        icon = Icons.Rounded.Storage,
+                        icon = Icons.Rounded.Contacts,
                         iconTint = MaterialTheme.colorScheme.tertiary,
-                        onClick = { currentSubmenu = SettingsSubmenu.BACKUP }
-                    )
-
-                    // 8. Ayuda, Privacidad y Soporte
-                    SettingsHubCard(
-                        title = "8. Ayuda, Privacidad y Soporte",
-                        subtitle = "Servicios de emergencia 13x/14xx inmutables, FAQ chileno y contacto",
-                        badgeText = "Zero-Knowledge",
-                        icon = Icons.AutoMirrored.Rounded.HelpOutline,
-                        iconTint = MaterialTheme.colorScheme.outline,
-                        onClick = { currentSubmenu = SettingsSubmenu.HELP }
+                        onClick = { currentSubmenu = SettingsSubmenu.CONTACTS }
                     )
                 }
 
-                SettingsSubmenu.BLOCKING -> {
+                SettingsSubmenu.GENERAL -> {
                     SubmenuInfoCard(
-                        title = "Filtros Locales Avanzados",
-                        description = "Toda evaluación se realiza en la memoria RAM de tu dispositivo en menos de 2 milisegundos. Las llamadas de emergencia (131, 132, 133, 14xx) y servicios de salud están protegidos por ley y nunca se bloquean."
+                        title = "Configuración General del Sistema",
+                        description = "Personalización visual y ergonomía según la regla 60-30-10, respaldos JSON seguros, diagnóstico de rendimiento (<2ms) e información del proyecto."
                     )
 
-                    SettingsCardContainer {
-                        SettingsSwitchItem(
-                            title = "Solo personas en mi agenda / contactos",
-                            subtitle = "Rechaza llamadas de personas no guardadas en tu agenda (las emergencias 13x, 14xx y 600 siempre se permiten por ley)",
-                            icon = Icons.Rounded.ContactPhone,
-                            checked = onlyContactsCalls,
-                            onCheckedChange = {
-                                onlyContactsCalls = it
-                                prefs.edit().putBoolean("only_contacts_calls", it).apply()
-                            }
-                        )
+                    SettingsSectionHeader("UBICACIÓN Y COBERTURA REGIONAL (CHILE)")
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Bloquear números privados y ocultos",
-                            subtitle = "Rechaza automáticamente llamadas entrantes sin identificador o con número reservado",
-                            icon = Icons.Rounded.VisibilityOff,
-                            checked = blockPrivateNumbers,
-                            onCheckedChange = {
-                                blockPrivateNumbers = it
-                                prefs.edit().putBoolean("block_private_numbers", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Solo llamadas de Chile (+56)",
-                            subtitle = "Bloquea llamadas de números internacionales extranjeros que no tengas guardados en tus contactos",
-                            icon = Icons.Rounded.PublicOff,
-                            checked = blockInternationalCalls,
-                            onCheckedChange = {
-                                blockInternationalCalls = it
-                                prefs.edit().putBoolean("block_international_calls", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Chao 809 y Telemarketing SUBTEL",
-                            subtitle = "Bloqueo obligatorio al primer tono de prefijos 809 de ventas masivas no solicitadas",
-                            icon = Icons.Rounded.Shield,
-                            checked = chao809Aggressive,
-                            onCheckedChange = {
-                                chao809Aggressive = it
-                                prefs.edit().putBoolean("chao_809_aggressive", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Silenciar números sospechosos",
-                            subtitle = "Atenúa el timbre en llamadas con prefijo comercial 600 o patrones de advertencia",
-                            icon = Icons.AutoMirrored.Rounded.VolumeMute,
-                            checked = silenceWarnCalls,
-                            onCheckedChange = {
-                                silenceWarnCalls = it
-                                prefs.edit().putBoolean("silence_warn_calls", it).apply()
-                            }
-                        )
-
-                        if (onNavigateToRules != null) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                            SettingsActionItem(
-                                title = "Administrador de Reglas y Lista de Bloqueo",
-                                subtitle = "Ver, buscar, agregar números o prefijos bloqueados (${rules.size} activos)",
-                                icon = Icons.Rounded.Block,
-                                onClick = onNavigateToRules
-                            )
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Papelera de Llamadas Rechazadas",
-                            subtitle = "Revisa, restaura o elimina permanentemente llamadas en la papelera",
-                            icon = Icons.Rounded.DeleteSweep,
-                            onClick = { showTrashSheet = true }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Exportar Historial de Llamadas a CSV",
-                            subtitle = "Crea un archivo CSV con el registro de llamadas para respaldo o denuncias SERNAC",
-                            icon = Icons.Rounded.FileDownload,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val calls = cortaRepository.getCallLogs()
-                                    CortaExportImportHelper.exportCallLogEntriesToCsv(context, calls)
-                                }
-                            }
-                        )
-                    }
-                }
-
-                SettingsSubmenu.TELECOM -> {
-                    SubmenuInfoCard(
-                        title = "Normativa SUBTEL y Reglas Oficiales",
-                        description = "En Chile, la Subsecretaría de Telecomunicaciones (SUBTEL) asignó el prefijo 809 exclusivamente a llamadas de telemarketing masivo no solicitado. Corta pre-siembra estas reglas localmente sin requerir conexión a internet."
-                    )
-
-                    SettingsCardContainer {
-                        SettingsSwitchItem(
-                            title = "Bloqueo estricto prefijo SUBTEL 809",
-                            subtitle = "Corta la comunicación antes de que suene el teléfono (setDisallowCall + setRejectCall)",
-                            icon = Icons.Rounded.Gavel,
-                            checked = chao809Aggressive,
-                            onCheckedChange = {
-                                chao809Aggressive = it
-                                prefs.edit().putBoolean("chao_809_aggressive", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Detección de llamadas fantasma (Ping)",
-                            subtitle = "Identifica y marca llamadas robotizadas de telemarketing que se cortan en menos de 2 segundos",
-                            icon = Icons.Rounded.HourglassEmpty,
-                            checked = detectPingCalls,
-                            onCheckedChange = {
-                                detectPingCalls = it
-                                prefs.edit().putBoolean("detect_ping_calls", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Sincronizar base comunitaria ahora",
-                            subtitle = "Descarga hashes SHA-256 diferenciales de spammers reportados en Chile",
-                            icon = Icons.Rounded.Sync,
-                            onClick = {
-                                SubtelSyncScheduler.enqueueImmediate(context, true)
-                                Toast.makeText(context, "Sincronización diferencial iniciada en segundo plano", Toast.LENGTH_SHORT).show()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Portal de Denuncias SUBTEL",
-                            subtitle = "Visita el portal oficial del gobierno chileno para reportar abusos de telemarketing",
-                            icon = Icons.AutoMirrored.Rounded.OpenInNew,
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.subtel.gob.cl/"))
-                                try { context.startActivity(intent) } catch (e: Exception) { /* ignore */ }
-                            }
-                        )
+                    val effectiveComuna = remember(userRegion, userComuna) {
+                        if (userRegion == ChileanRegion.ALL || userComuna.isNullOrBlank()) null
+                        else if (ChileanRegionalDirectory.isValidComunaForRegion(userRegion, userComuna)) userComuna
+                        else null
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    val locationText = when {
+                        userRegion == ChileanRegion.ALL -> "🇨🇱 Todo Chile (Sin filtro comunal)"
+                        effectiveComuna != null -> "📍 $effectiveComuna (${userRegion.displayName})"
+                        else -> "📍 ${userRegion.displayName}"
+                    }
 
-                    SettingsSectionHeader("SIMULADOR EN MEMORIA RAM (<2MS)")
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Probar Evaluación de Número",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Ingresa un número (ej: 809123456, 133, 1402, +56912345678) para ver cómo responde Corta en tiempo real sin salir a internet.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
+                    SettingsCardContainer {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showRegionPicker = true }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                OutlinedTextField(
-                                    value = simNumberInput,
-                                    onValueChange = { simNumberInput = it },
-                                    placeholder = { Text("Ej: 809123456") },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                Button(
-                                    onClick = {
-                                        if (simNumberInput.isNotBlank()) {
-                                            val start = System.nanoTime()
-                                            val isWhite = cortaRepository.isWhitelistedNumber(simNumberInput)
-                                            val action = cortaRepository.getActionForNumber(simNumberInput)
-                                            simLatencyNanos = System.nanoTime() - start
-                                            simResultAction = action
-                                            simResultReason = when {
-                                                isWhite -> "Lista Blanca Crítica Inmutable de Chile"
-                                                action == FilterAction.BLOCK && (simNumberInput.contains("809")) -> "Regla Oficial SUBTEL 809 (Telemarketing Masivo)"
-                                                action == FilterAction.BLOCK -> "Regla de Bloqueo Activa en Corta"
-                                                action == FilterAction.WARN -> "Aviso / Precaución Comercial (Línea 600)"
-                                                else -> "Número Regular / Sin reportes de spam"
-                                            }
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(54.dp)
-                                ) {
-                                    Text("Evaluar")
-                                }
-                            }
-
-                            if (simResultAction != null) {
-                                Spacer(modifier = Modifier.height(14.dp))
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = when (simResultAction) {
-                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.errorContainer
-                                        FilterAction.WARN -> MaterialTheme.colorScheme.tertiaryContainer
-                                        else -> MaterialTheme.colorScheme.primaryContainer
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    Box(contentAlignment = Alignment.Center) {
                                         Icon(
-                                            imageVector = when (simResultAction) {
-                                                FilterAction.BLOCK -> Icons.Rounded.Block
-                                                FilterAction.WARN -> Icons.Rounded.Warning
-                                                else -> Icons.Rounded.CheckCircle
-                                            },
+                                            imageVector = Icons.Rounded.LocationOn,
                                             contentDescription = null,
-                                            tint = when (simResultAction) {
-                                                FilterAction.BLOCK -> MaterialTheme.colorScheme.error
-                                                FilterAction.WARN -> MaterialTheme.colorScheme.tertiary
-                                                else -> MaterialTheme.colorScheme.primary
-                                            },
-                                            modifier = Modifier.size(28.dp)
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = "Acción: ${simResultAction?.name}",
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = when (simResultAction) {
-                                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer
-                                                        FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer
-                                                        else -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                    }
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Surface(
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                                                ) {
-                                                    Text(
-                                                        text = String.format(Locale.US, "%.2f ms", simLatencyNanos / 1_000_000.0),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                            Text(
-                                                text = simResultReason ?: "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = when (simResultAction) {
-                                                    FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
-                                                    FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.9f)
-                                                    else -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                                }
-                                            )
-                                        }
                                     }
                                 }
+                                Column {
+                                    Text(
+                                        text = locationText,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Filtra números oficiales, seguridad 14xx y comisarías de tu zona",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                contentDescription = "Cambiar ubicación",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
-                }
 
-                SettingsSubmenu.SMS -> {
-                    SubmenuInfoCard(
-                        title = "Escudo Antifraude SMS (Smishing)",
-                        description = "Analiza remitentes y cuerpos de mensajes SMS buscando suplantación de identidad bancaria (BancoEstado, Santander, Banco de Chile, etc.) y enlaces acortados peligrosos con heurística 100% on-device."
-                    )
-
-                    SettingsCardContainer {
-                        SettingsSwitchItem(
-                            title = "Protección de enlaces bancarios (Smishing)",
-                            subtitle = "Analiza dominios engañosos y enlaces acortados con heurística de seguridad",
-                            icon = Icons.Rounded.LinkOff,
-                            checked = protectSmsLinks,
-                            onCheckedChange = {
-                                protectSmsLinks = it
-                                prefs.edit().putBoolean("protect_sms_links", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Filtrar remitentes alfanuméricos falsos",
-                            subtitle = "Verifica si el remitente institucional corresponde a una entidad real registrada",
-                            icon = Icons.Rounded.MarkEmailRead,
-                            checked = filterAlphanumeric,
-                            onCheckedChange = {
-                                filterAlphanumeric = it
-                                prefs.edit().putBoolean("filter_alphanumeric_senders", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsSwitchItem(
-                            title = "Notificaciones discretas de spam",
-                            subtitle = "Alerta silenciosa sin sonido ni vibración cuando un mensaje peligroso es interceptado",
-                            icon = Icons.Rounded.NotificationsPaused,
-                            checked = smsSpamNotifications,
-                            onCheckedChange = {
-                                smsSpamNotifications = it
-                                prefs.edit().putBoolean("sms_spam_notifications_enabled", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Gestionar Palabras Clave Bloqueadas",
-                            subtitle = "Personaliza términos de smishing bancario, premios falsos y estafas",
-                            icon = Icons.Rounded.Key,
-                            onClick = { showSpamKeywordsSheet = true }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Papelera de Mensajes SMS",
-                            subtitle = "Revisa y restaura mensajes SMS enviados a la papelera",
-                            icon = Icons.Rounded.DeleteSweep,
-                            onClick = { showTrashSheet = true }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Exportar Mensajes SMS a CSV",
-                            subtitle = "Descarga todos tus mensajes en un archivo CSV para análisis o respaldo",
-                            icon = Icons.Rounded.FileDownload,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
-                                    CortaExportImportHelper.exportSmsToCsv(context, messages)
-                                }
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Exportar Mensajes SMS a JSON",
-                            subtitle = "Descarga una copia completa de tus SMS en formato JSON estándar",
-                            icon = Icons.Rounded.Code,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
-                                    CortaExportImportHelper.exportSmsToJson(context, messages)
-                                }
-                            }
-                        )
-                    }
-                }
-
-                SettingsSubmenu.DUAL_SIM -> {
-                    SubmenuInfoCard(
-                        title = "Soporte Multi-SIM Inteligente",
-                        description = "Corta detecta automáticamente si tu equipo tiene múltiples tarjetas SIM activas y te permite aplicar las políticas de protección a ambas líneas sin compartir datos entre operadores."
-                    )
-
-                    SettingsCardContainer {
-                        simCards.forEach { sim ->
-                            val slot = sim.slotIndex + 1
-                            val isChecked = if (slot == 1) protectSim1 else protectSim2
-                            SettingsSwitchItem(
-                                title = "Proteger Ranura $slot: ${sim.carrierName}",
-                                subtitle = "Aplica bloqueo de telemarketing 809 y filtro de spam en las llamadas entrantes de este chip",
-                                icon = Icons.Rounded.SimCard,
-                                checked = isChecked,
-                                onCheckedChange = {
-                                    if (slot == 1) {
-                                        protectSim1 = it
-                                        prefs.edit().putBoolean("protect_sim_1", it).apply()
-                                    } else {
-                                        protectSim2 = it
-                                        prefs.edit().putBoolean("protect_sim_2", it).apply()
-                                    }
-                                }
-                            )
-
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                            SettingsActionItem(
-                                title = "Detalles Técnicos de Ranura $slot",
-                                subtitle = "Operador: ${sim.carrierName} • Número: ${sim.number ?: "No publicado"} (Toca para inspeccionar)",
-                                icon = Icons.Rounded.Info,
-                                onClick = { selectedSimForDetails = sim }
-                            )
-
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        }
-
-                        SettingsSwitchItem(
-                            title = "Mostrar indicador de SIM [1] / [2]",
-                            subtitle = "Muestra el badge del chip receptor en el registro de llamadas entrantes",
-                            icon = Icons.Rounded.Badge,
-                            checked = showSimBadges,
-                            onCheckedChange = {
-                                showSimBadges = it
-                                prefs.edit().putBoolean("show_sim_badges", it).apply()
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Sincronizar Contactos de SIM y Dispositivo",
-                            subtitle = "Lee contactos almacenados en los chips SIM y teléfono para sumarlos a la agenda segura de Corta",
-                            icon = Icons.Rounded.Sync,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    try {
-                                        val contacts = contactRepository.getContacts()
-                                        cortaRepository.syncContacts(contacts)
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Sincronizados ${contacts.size} contactos de SIM y dispositivo", Toast.LENGTH_SHORT).show()
-                                        }
-                                    } catch (e: Exception) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Error al sincronizar: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-
-                SettingsSubmenu.THEME -> {
-                    SubmenuInfoCard(
-                        title = "Personalización Visual y Ergonomía",
-                        description = "Paleta basada en la regla armónica 60-30-10 con modo oscuro OLED puro (#000000 / #111318) para máximo ahorro de batería y variantes de color Stitch."
-                    )
+                    SettingsSectionHeader("APARIENCIA Y TEMAS STITCH")
 
                     SettingsCardContainer {
                         // Selector visual de Tema
@@ -1077,13 +662,9 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setDetailedMode(it) }
                         )
                     }
-                }
 
-                SettingsSubmenu.DIAGNOSTICS -> {
-                    SubmenuInfoCard(
-                        title = "Rendimiento y Telemetría Local",
-                        description = "Garantía AGENTS.md: latencia de evaluación local inferior a 2ms. Prohibida toda petición de red durante la llamada entrante para asegurar máxima fluidez a 120Hz."
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("RENDIMIENTO Y DIAGNÓSTICO LOCAL")
 
                     SettingsCardContainer {
                         if (onNavigateToDiagnostics != null) {
@@ -1168,13 +749,9 @@ fun SettingsScreen(
                             }
                         }
                     }
-                }
 
-                SettingsSubmenu.BACKUP -> {
-                    SubmenuInfoCard(
-                        title = "Respaldo y Seguridad de Datos",
-                        description = "Tus reglas y listas negras están encriptadas con SQLCipher. Puedes exportar un respaldo completo en formato JSON seguro para conservarlo o transferirlo a otro equipo."
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("RESPALDO Y BASE DE DATOS")
 
                     SettingsCardContainer {
                         SettingsActionItem(
@@ -1202,48 +779,6 @@ fun SettingsScreen(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         SettingsActionItem(
-                            title = "Exportar Contactos a vCard (.vcf)",
-                            subtitle = "Guarda todos los contactos seguros en formato universal vCard 3.0",
-                            icon = Icons.Rounded.Contacts,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val contacts = contactRepository.getContacts()
-                                    CortaExportImportHelper.exportAllContactsToVcf(context, contacts)
-                                }
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Exportar Historial de Llamadas a CSV",
-                            subtitle = "Genera un archivo CSV con el historial de llamadas para respaldo o denuncias",
-                            icon = Icons.Rounded.Call,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val calls = cortaRepository.getCallLogs()
-                                    CortaExportImportHelper.exportCallLogEntriesToCsv(context, calls)
-                                }
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
-                            title = "Exportar Mensajes SMS a CSV",
-                            subtitle = "Descarga todos los mensajes de texto a un archivo de hoja de cálculo CSV",
-                            icon = Icons.Rounded.Sms,
-                            onClick = {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
-                                    CortaExportImportHelper.exportSmsToCsv(context, messages)
-                                }
-                            }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                        SettingsActionItem(
                             title = "Optimizar Base de Datos SQLCipher",
                             subtitle = "Reorganiza índices locales y compacta tablas SQLite",
                             icon = Icons.Rounded.CleaningServices,
@@ -1252,24 +787,11 @@ fun SettingsScreen(
                             }
                         )
                     }
-                }
 
-                SettingsSubmenu.HELP -> {
-                    SubmenuInfoCard(
-                        title = "Transparencia y Protección Legal",
-                        description = "Corta es un proyecto 100% chileno desarrollado bajo el principio Zero-Knowledge: tus contactos, historial y mensajes nunca se transmiten a servidores externos."
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("TRANSPARENCIA Y SOPORTE")
 
                     SettingsCardContainer {
-                        SettingsActionItem(
-                            title = "Servicios de Emergencia Inmutables",
-                            subtitle = "131 SAMU, 132 Bomberos, 133 Carabineros, 14xx Municipal y 600 Salud Responde",
-                            icon = Icons.Rounded.HealthAndSafety,
-                            onClick = { showEmergencySheet = true }
-                        )
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
                         SettingsActionItem(
                             title = "Preguntas Frecuentes y Ayuda",
                             subtitle = "Conoce más sobre cómo funciona la protección offline y el bloqueo 809",
@@ -1303,12 +825,516 @@ fun SettingsScreen(
                         )
                     }
                 }
+
+                SettingsSubmenu.CALLS -> {
+                    SubmenuInfoCard(
+                        title = "Filtros y Protección de Llamadas",
+                        description = "Toda evaluación se realiza en la memoria RAM en <2ms. Las emergencias (131, 132, 133, 14xx) y salud están protegidas por ley. Los números chilenos desconocidos se permiten por defecto para asegurar llamadas legítimas de doctores, colegios y repartos."
+                    )
+
+                    SettingsSectionHeader("BLOQUEO Y REGLAS DE LLAMADAS")
+
+                    SettingsCardContainer {
+                        SettingsSwitchItem(
+                            title = "Chao 809 y Telemarketing SUBTEL",
+                            subtitle = "Bloqueo obligatorio al primer tono de prefijos 809 de ventas masivas no solicitadas (Normativa SUBTEL)",
+                            icon = Icons.Rounded.Gavel,
+                            checked = chao809Aggressive,
+                            onCheckedChange = {
+                                chao809Aggressive = it
+                                prefs.edit().putBoolean("chao_809_aggressive", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Bloquear números privados y ocultos",
+                            subtitle = "Rechaza automáticamente llamadas entrantes sin identificador o con número reservado",
+                            icon = Icons.Rounded.VisibilityOff,
+                            checked = blockPrivateNumbers,
+                            onCheckedChange = {
+                                blockPrivateNumbers = it
+                                prefs.edit().putBoolean("block_private_numbers", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Solo llamadas de Chile (+56)",
+                            subtitle = "Bloquea llamadas de números internacionales extranjeros que no tengas guardados en tus contactos",
+                            icon = Icons.Rounded.PublicOff,
+                            checked = blockInternationalCalls,
+                            onCheckedChange = {
+                                blockInternationalCalls = it
+                                prefs.edit().putBoolean("block_international_calls", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Detección de llamadas fantasma (Ping / Wangiri)",
+                            subtitle = "Identifica llamadas robotizadas que se cortan en menos de 2 segundos desde números sospechosos",
+                            icon = Icons.Rounded.HourglassEmpty,
+                            checked = detectPingCalls,
+                            onCheckedChange = {
+                                detectPingCalls = it
+                                prefs.edit().putBoolean("detect_ping_calls", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Silenciar números sospechosos",
+                            subtitle = "Atenúa el timbre en llamadas con prefijo comercial 600 o patrones de advertencia (Desactivado por defecto)",
+                            icon = Icons.AutoMirrored.Rounded.VolumeMute,
+                            checked = silenceWarnCalls,
+                            onCheckedChange = {
+                                silenceWarnCalls = it
+                                prefs.edit().putBoolean("silence_warn_calls", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Solo personas en mi agenda / contactos",
+                            subtitle = "Modo estricto opcional: rechaza llamadas de personas no guardadas (Desactivado por defecto; emergencias 13x/14xx siempre pasan)",
+                            icon = Icons.Rounded.ContactPhone,
+                            checked = onlyContactsCalls,
+                            onCheckedChange = {
+                                onlyContactsCalls = it
+                                prefs.edit().putBoolean("only_contacts_calls", it).apply()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("GESTIÓN MULTI-SIM (CHIPS)")
+
+                    SettingsCardContainer {
+                        simCards.forEach { sim ->
+                            val slot = sim.slotIndex + 1
+                            val isChecked = if (slot == 1) protectSim1 else protectSim2
+                            SettingsSwitchItem(
+                                title = "Proteger Ranura $slot: ${sim.carrierName}",
+                                subtitle = "Aplica bloqueo 809 y filtro de spam en las llamadas entrantes de este chip",
+                                icon = Icons.Rounded.SimCard,
+                                checked = isChecked,
+                                onCheckedChange = {
+                                    if (slot == 1) {
+                                        protectSim1 = it
+                                        prefs.edit().putBoolean("protect_sim_1", it).apply()
+                                    } else {
+                                        protectSim2 = it
+                                        prefs.edit().putBoolean("protect_sim_2", it).apply()
+                                    }
+                                }
+                            )
+
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                            SettingsActionItem(
+                                title = "Detalles Técnicos de Ranura $slot",
+                                subtitle = "Operador: ${sim.carrierName} • Número: ${sim.number ?: "No publicado"} (Toca para inspeccionar)",
+                                icon = Icons.Rounded.Info,
+                                onClick = { selectedSimForDetails = sim }
+                            )
+
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        }
+
+                        SettingsSwitchItem(
+                            title = "Mostrar indicador de SIM [1] / [2]",
+                            subtitle = "Muestra el badge del chip receptor en el registro de llamadas entrantes",
+                            icon = Icons.Rounded.Badge,
+                            checked = showSimBadges,
+                            onCheckedChange = {
+                                showSimBadges = it
+                                prefs.edit().putBoolean("show_sim_badges", it).apply()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("HERRAMIENTAS Y REGISTRO DE LLAMADAS")
+
+                    SettingsCardContainer {
+                        SettingsActionItem(
+                            title = "Sincronizar base comunitaria ahora",
+                            subtitle = "Descarga hashes SHA-256 diferenciales de spammers reportados en Chile",
+                            icon = Icons.Rounded.Sync,
+                            onClick = {
+                                SubtelSyncScheduler.enqueueImmediate(context, true)
+                                Toast.makeText(context, "Sincronización diferencial iniciada en segundo plano", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Portal de Denuncias SUBTEL",
+                            subtitle = "Visita el portal oficial del gobierno chileno para reportar abusos de telemarketing",
+                            icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.subtel.gob.cl/"))
+                                try { context.startActivity(intent) } catch (e: Exception) { /* ignore */ }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Papelera de Llamadas Rechazadas",
+                            subtitle = "Revisa, restaura o elimina permanentemente llamadas en la papelera",
+                            icon = Icons.Rounded.DeleteSweep,
+                            onClick = { showTrashSheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Historial de Llamadas a CSV",
+                            subtitle = "Crea un archivo CSV con el registro de llamadas para respaldo o denuncias SERNAC",
+                            icon = Icons.Rounded.FileDownload,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val calls = cortaRepository.getCallLogs()
+                                    CortaExportImportHelper.exportCallLogEntriesToCsv(context, calls)
+                                }
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("SIMULADOR EN MEMORIA RAM (<2MS)")
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Probar Evaluación de Número",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Ingresa un número (ej: 809123456, 133, 1402, +56912345678) para ver cómo responde Corta en tiempo real sin salir a internet.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = simNumberInput,
+                                    onValueChange = { simNumberInput = it },
+                                    placeholder = { Text("Ej: 809123456") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                Button(
+                                    onClick = {
+                                        if (simNumberInput.isNotBlank()) {
+                                            val start = System.nanoTime()
+                                            val isWhite = cortaRepository.isWhitelistedNumber(simNumberInput)
+                                            val action = cortaRepository.getActionForNumber(simNumberInput)
+                                            simLatencyNanos = System.nanoTime() - start
+                                            simResultAction = action
+                                            simResultReason = when {
+                                                isWhite -> "Lista Blanca Crítica Inmutable de Chile"
+                                                action == FilterAction.BLOCK && (simNumberInput.contains("809")) -> "Regla Oficial SUBTEL 809 (Telemarketing Masivo)"
+                                                action == FilterAction.BLOCK -> "Regla de Bloqueo Activa en Corta"
+                                                action == FilterAction.WARN -> "Aviso / Precaución Comercial (Línea 600)"
+                                                else -> "Número Regular / Sin reportes de spam"
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.height(54.dp)
+                                ) {
+                                    Text("Evaluar")
+                                }
+                            }
+
+                            if (simResultAction != null) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = when (simResultAction) {
+                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.errorContainer
+                                        FilterAction.WARN -> MaterialTheme.colorScheme.tertiaryContainer
+                                        else -> MaterialTheme.colorScheme.primaryContainer
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = when (simResultAction) {
+                                                FilterAction.BLOCK -> Icons.Rounded.Block
+                                                FilterAction.WARN -> Icons.Rounded.Warning
+                                                else -> Icons.Rounded.CheckCircle
+                                            },
+                                            contentDescription = null,
+                                            tint = when (simResultAction) {
+                                                FilterAction.BLOCK -> MaterialTheme.colorScheme.error
+                                                FilterAction.WARN -> MaterialTheme.colorScheme.tertiary
+                                                else -> MaterialTheme.colorScheme.primary
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = "Acción: ${simResultAction?.name}",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = when (simResultAction) {
+                                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer
+                                                        FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer
+                                                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                    }
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                                                ) {
+                                                    Text(
+                                                        text = String.format(Locale.US, "%.2f ms", simLatencyNanos / 1_000_000.0),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = simResultReason ?: "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = when (simResultAction) {
+                                                    FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
+                                                    FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.9f)
+                                                    else -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SettingsSubmenu.MESSAGES -> {
+                    SubmenuInfoCard(
+                        title = "Escudo Antifraude SMS (Smishing)",
+                        description = "Analiza remitentes y cuerpos de mensajes SMS buscando suplantación bancaria y enlaces acortados peligrosos con heurística 100% local on-device."
+                    )
+
+                    SettingsSectionHeader("SEGURIDAD ANTIFRAUDE SMS")
+
+                    SettingsCardContainer {
+                        SettingsSwitchItem(
+                            title = "Protección de enlaces bancarios (Smishing)",
+                            subtitle = "Analiza dominios engañosos y enlaces acortados con heurística de seguridad",
+                            icon = Icons.Rounded.LinkOff,
+                            checked = protectSmsLinks,
+                            onCheckedChange = {
+                                protectSmsLinks = it
+                                prefs.edit().putBoolean("protect_sms_links", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Filtrar remitentes alfanuméricos falsos",
+                            subtitle = "Verifica si el remitente institucional corresponde a una entidad real registrada",
+                            icon = Icons.Rounded.MarkEmailRead,
+                            checked = filterAlphanumeric,
+                            onCheckedChange = {
+                                filterAlphanumeric = it
+                                prefs.edit().putBoolean("filter_alphanumeric_senders", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsSwitchItem(
+                            title = "Notificaciones discretas de spam",
+                            subtitle = "Alerta silenciosa sin sonido ni vibración cuando un mensaje peligroso es interceptado",
+                            icon = Icons.Rounded.NotificationsPaused,
+                            checked = smsSpamNotifications,
+                            onCheckedChange = {
+                                smsSpamNotifications = it
+                                prefs.edit().putBoolean("sms_spam_notifications_enabled", it).apply()
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Gestionar Palabras Clave Bloqueadas",
+                            subtitle = "Personaliza términos de smishing bancario, premios falsos y estafas",
+                            icon = Icons.Rounded.Key,
+                            onClick = { showSpamKeywordsSheet = true }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsSectionHeader("HERRAMIENTAS Y RESPALDO SMS")
+
+                    SettingsCardContainer {
+                        SettingsActionItem(
+                            title = "Papelera de Mensajes SMS",
+                            subtitle = "Revisa y restaura mensajes SMS enviados a la papelera",
+                            icon = Icons.Rounded.DeleteSweep,
+                            onClick = { showTrashSheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Mensajes SMS a CSV",
+                            subtitle = "Descarga todos tus mensajes en un archivo CSV para análisis o respaldo",
+                            icon = Icons.Rounded.FileDownload,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
+                                    CortaExportImportHelper.exportSmsToCsv(context, messages)
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Mensajes SMS a JSON",
+                            subtitle = "Descarga una copia completa de tus SMS en formato JSON estándar",
+                            icon = Icons.Rounded.Code,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val messages = AndroidSmsRepository(context, cortaRepository).getAllMessages()
+                                    CortaExportImportHelper.exportSmsToJson(context, messages)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                SettingsSubmenu.CONTACTS -> {
+                    SubmenuInfoCard(
+                        title = "Gestión de Contactos y Agenda Segura",
+                        description = "Sincroniza tus contactos a la base de datos segura de Corta, consulta la lista blanca de emergencia inmutable y administra tus reglas de números bloqueados y permitidos."
+                    )
+
+                    SettingsSectionHeader("AGENDA Y PROTECCIÓN DE CONTACTOS")
+
+                    SettingsCardContainer {
+                        SettingsActionItem(
+                            title = "Sincronizar Contactos de SIM y Dispositivo",
+                            subtitle = "Lee contactos almacenados en los chips SIM y teléfono para sumarlos a la agenda segura de Corta",
+                            icon = Icons.Rounded.Sync,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val contacts = contactRepository.getContacts()
+                                        cortaRepository.syncContacts(contacts)
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Sincronizados ${contacts.size} contactos de SIM y dispositivo", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Error al sincronizar: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Servicios de Emergencia Inmutables (Chile)",
+                            subtitle = "131 SAMU, 132 Bomberos, 133 Carabineros, 14xx Municipal y 600 Salud Responde",
+                            icon = Icons.Rounded.HealthAndSafety,
+                            onClick = { showEmergencySheet = true }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsActionItem(
+                            title = "Exportar Contactos a vCard (.vcf)",
+                            subtitle = "Guarda todos los contactos seguros en formato universal vCard 3.0",
+                            icon = Icons.Rounded.Contacts,
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val contacts = contactRepository.getContacts()
+                                    CortaExportImportHelper.exportAllContactsToVcf(context, contacts)
+                                }
+                            }
+                        )
+                    }
+
+                    if (onNavigateToRules != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        SettingsSectionHeader("REGLAS Y NÚMEROS PERSONALIZADOS")
+
+                        SettingsCardContainer {
+                            SettingsActionItem(
+                                title = "Administrador de Reglas y Lista de Bloqueo",
+                                subtitle = "Ver, buscar, agregar números o prefijos bloqueados y permitidos (${rules.size} activos)",
+                                icon = Icons.Rounded.Block,
+                                onClick = onNavigateToRules
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
     if (showAboutDialog) {
         AboutDialog(onDismiss = { showAboutDialog = false })
+    }
+
+    if (showRegionPicker) {
+        RegionSelectorBottomSheet(
+            selectedRegion = userRegion,
+            selectedComuna = userComuna,
+            onSelectLocation = { region, comuna ->
+                userRegion = region
+                userComuna = comuna
+                val editor = prefs.edit().putString("user_selected_region", region.code)
+                if (comuna != null) {
+                    editor.putString("user_selected_comuna", comuna)
+                } else {
+                    editor.remove("user_selected_comuna")
+                }
+                editor.apply()
+                val locText = if (comuna != null) "$comuna (${region.shortName})" else region.displayName
+                Toast.makeText(context, "Ubicación: $locText", Toast.LENGTH_SHORT).show()
+                showRegionPicker = false
+            },
+            onDismiss = { showRegionPicker = false }
+        )
     }
 
     if (showEmergencySheet) {

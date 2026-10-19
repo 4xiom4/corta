@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.provider.CallLog
 import android.provider.ContactsContract
@@ -12,6 +13,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.corta.app.ui.contacts.ChileanDirectoryEntry
+import com.corta.app.ui.contacts.ChileanRegion
+import com.corta.app.ui.contacts.ChileanRegionalDirectory
+import com.corta.app.ui.contacts.DirectoryCategory
+import com.corta.app.ui.contacts.RegionSelectorBottomSheet
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -61,6 +67,9 @@ import com.corta.domain.ChileanNumberType
 import com.corta.domain.ChileanTelecomClassifier
 import com.corta.domain.ChileanTelecomMeta
 import com.corta.domain.CortaRepository
+import com.corta.domain.ContactRepository
+import com.corta.domain.ContactInfo
+import com.corta.app.ui.contacts.normalizeForSearch
 import com.corta.domain.FilterAction
 import com.corta.domain.PhoneNumberUtils
 import kotlinx.coroutines.Dispatchers
@@ -81,9 +90,13 @@ fun resolveCallDisplayName(
     return when {
         !contactName.isNullOrBlank() -> contactName.trim()
         matchingRule != null && matchingRule.source.equals("USER", ignoreCase = true) && !matchingRule.alias.isNullOrBlank() -> matchingRule.alias!!.trim()
-        else -> number
+        else -> {
+            val directoryMatch = com.corta.app.ui.contacts.ChileanRegionalDirectory.findByNumber(number)
+            directoryMatch?.name ?: number
+        }
     }
 }
+
 
 enum class CallLogTabFilter(
     val label: String,
@@ -95,7 +108,8 @@ enum class CallLogTabFilter(
     MISSED("Perdidas", "Llamadas no contestadas", true),
     SUBTEL_809("Chao 809", "Telemarketing comercial masivo", true),
     INCOMING("Entrantes", "Llamadas recibidas contestadas", false),
-    OUTGOING("Salientes", "Llamadas emitidas desde tu equipo", false);
+    OUTGOING("Salientes", "Llamadas emitidas desde tu equipo", false),
+    REGIONAL("Directorio", "Directorio oficial y emergencias comunales", true);
 }
 
 private val callTimeFormat = ThreadLocal.withInitial { SimpleDateFormat("HH:mm", Locale.getDefault()) }
@@ -154,6 +168,7 @@ data class ClassifiedCall(
 @Composable
 fun CallLogScreen(
     repository: CortaRepository = koinInject(),
+    contactRepository: ContactRepository = koinInject(),
     viewModel: CallLogViewModel = koinViewModel(),
     searchQuery: String = ""
 ) {
@@ -170,17 +185,112 @@ fun CallLogScreen(
     var showTagDictionarySheet by remember { mutableStateOf(false) }
     var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
     val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-    val initialCallFilter = remember {
-        val savedName = prefs.getString("default_call_tab", CallLogTabFilter.INCOMING.name)
-        CallLogTabFilter.entries.firstOrNull { it.name == savedName } ?: CallLogTabFilter.INCOMING
+    val defaultCallCategoryOrder = remember {
+        listOf(
+            CallLogTabFilter.REGIONAL,
+            CallLogTabFilter.ALL,
+            CallLogTabFilter.INCOMING,
+            CallLogTabFilter.OUTGOING,
+            CallLogTabFilter.MISSED,
+            CallLogTabFilter.BLOCKED,
+            CallLogTabFilter.SUBTEL_809
+        )
     }
-    var currentFilter by remember { mutableStateOf(initialCallFilter) }
+    val savedCallOrderRaw = prefs.getString("call_category_order", null)
+    var categoryOrder by remember {
+        mutableStateOf(
+            if (savedCallOrderRaw != null) {
+                val names = savedCallOrderRaw.split(",")
+                val list = names.mapNotNull { name -> CallLogTabFilter.entries.firstOrNull { it.name == name } }.toMutableList()
+                CallLogTabFilter.entries.forEach { if (!list.contains(it)) list.add(it) }
+                list
+            } else {
+                defaultCallCategoryOrder
+            }
+        )
+    }
+    var currentFilter by remember { mutableStateOf(categoryOrder.firstOrNull() ?: CallLogTabFilter.ALL) }
     var showTrashSheet by remember { mutableStateOf(false) }
+
+    var selectedRegion by remember {
+        val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
+        mutableStateOf(ChileanRegion.fromCode(savedCode))
+    }
+    var selectedComuna by remember {
+        mutableStateOf(prefs.getString("user_selected_comuna", null))
+    }
+    var showRegionPicker by remember { mutableStateOf(false) }
+
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "user_selected_region" || key == "user_selected_comuna") {
+                selectedRegion = ChileanRegion.fromCode(prefs.getString("user_selected_region", ChileanRegion.RM.code))
+                selectedComuna = prefs.getString("user_selected_comuna", null)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    val effectiveComuna = remember(selectedRegion, selectedComuna) {
+        if (selectedRegion == ChileanRegion.ALL || selectedComuna.isNullOrBlank()) null
+        else if (ChileanRegionalDirectory.isValidComunaForRegion(selectedRegion, selectedComuna)) selectedComuna
+        else null
+    }
+
+    val locationLabel = remember(selectedRegion, effectiveComuna) {
+        when {
+            effectiveComuna != null && selectedRegion != ChileanRegion.ALL -> "$effectiveComuna (${selectedRegion.shortName})"
+            selectedRegion != ChileanRegion.ALL -> selectedRegion.shortName
+            else -> "Todo Chile"
+        }
+    }
+
+    val regionalDirectoryEntries = remember(selectedRegion, effectiveComuna) {
+        ChileanRegionalDirectory.getEntriesForRegionAndComuna(selectedRegion, effectiveComuna)
+    }
+
+    val directorySearchResults = remember(searchQuery, regionalDirectoryEntries) {
+        if (searchQuery.isBlank()) emptyList()
+        else {
+            val q = searchQuery.trim().normalizeForSearch()
+            regionalDirectoryEntries.filter {
+                it.name.normalizeForSearch().contains(q) ||
+                it.comuna.normalizeForSearch().contains(q) ||
+                it.number.contains(q) ||
+                it.subtitle.normalizeForSearch().contains(q)
+            }.take(8)
+        }
+    }
 
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    val deviceContacts by produceState<List<ContactInfo>>(initialValue = emptyList(), key1 = hasPermission) {
+        if (hasPermission) {
+            value = withContext(Dispatchers.IO) {
+                try {
+                    contactRepository.getContacts()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
+        }
+    }
+
+    val contactSearchResults = remember(searchQuery, deviceContacts) {
+        if (searchQuery.isBlank()) emptyList()
+        else {
+            val q = searchQuery.trim().normalizeForSearch()
+            deviceContacts.filter {
+                it.name.normalizeForSearch().contains(q) || it.phoneNumber.contains(q)
+            }.take(5)
+        }
     }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -212,15 +322,20 @@ fun CallLogScreen(
 
     // Clean filtered display list: ONLY items that match are passed to LazyColumn (eliminates empty gaps & lag)
     val displayList = remember(classifiedCalls, currentFilter, searchQuery) {
-        val baseList = when (currentFilter) {
-            CallLogTabFilter.ALL -> classifiedCalls
-            CallLogTabFilter.BLOCKED -> classifiedCalls.filter { it.isBlocked }
-            CallLogTabFilter.MISSED -> classifiedCalls.filter { it.isMissed }
-            CallLogTabFilter.SUBTEL_809 -> classifiedCalls.filter {
-                it.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 || it.log.number.contains("809")
+        val baseList = if (searchQuery.isNotBlank()) {
+            classifiedCalls
+        } else {
+            when (currentFilter) {
+                CallLogTabFilter.ALL -> classifiedCalls
+                CallLogTabFilter.BLOCKED -> classifiedCalls.filter { it.isBlocked }
+                CallLogTabFilter.MISSED -> classifiedCalls.filter { it.isMissed }
+                CallLogTabFilter.SUBTEL_809 -> classifiedCalls.filter {
+                    it.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 || it.log.number.contains("809")
+                }
+                CallLogTabFilter.INCOMING -> classifiedCalls.filter { it.isIncoming }
+                CallLogTabFilter.OUTGOING -> classifiedCalls.filter { it.isOutgoing }
+                CallLogTabFilter.REGIONAL -> emptyList()
             }
-            CallLogTabFilter.INCOMING -> classifiedCalls.filter { it.isIncoming }
-            CallLogTabFilter.OUTGOING -> classifiedCalls.filter { it.isOutgoing }
         }
 
         if (searchQuery.isBlank()) {
@@ -297,60 +412,87 @@ fun CallLogScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 1. Entrantes (DEFAULT)
+                        // Location Chip (Región y/o Comuna seleccionada)
                         StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.INCOMING,
-                            onClick = { currentFilter = CallLogTabFilter.INCOMING },
-                            label = "Entrantes",
-                            icon = Icons.AutoMirrored.Rounded.CallReceived,
-                            iconTint = MaterialTheme.colorScheme.secondary,
-                            count = if (incomingCount > 0) incomingCount else null
+                            selected = selectedRegion != ChileanRegion.ALL || selectedComuna != null,
+                            onClick = { showRegionPicker = true },
+                            label = locationLabel,
+                            icon = Icons.Rounded.LocationOn,
+                            iconTint = if (selectedRegion != ChileanRegion.ALL || selectedComuna != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // 2. Salientes
-                        StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.OUTGOING,
-                            onClick = { currentFilter = CallLogTabFilter.OUTGOING },
-                            label = "Salientes",
-                            icon = Icons.AutoMirrored.Rounded.CallMade,
-                            iconTint = MaterialTheme.colorScheme.primary,
-                            count = if (outgoingCount > 0) outgoingCount else null
-                        )
-
-                        // 3. Spam bloqueado
-                        StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.BLOCKED,
-                            onClick = { currentFilter = CallLogTabFilter.BLOCKED },
-                            label = if (blockedCount > 0) "Spam ($blockedCount)" else "Spam",
-                            icon = Icons.Rounded.Shield,
-                            iconTint = MaterialTheme.colorScheme.error
-                        )
-
-                        // 4. Perdidas
-                        StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.MISSED,
-                            onClick = { currentFilter = CallLogTabFilter.MISSED },
-                            label = "Perdidas",
-                            count = if (missedCount > 0) missedCount else null
-                        )
-
-                        // 5. Chao 809 (SUBTEL 809)
-                        StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.SUBTEL_809,
-                            onClick = { currentFilter = CallLogTabFilter.SUBTEL_809 },
-                            label = "Chao 809",
-                            icon = Icons.Rounded.CallEnd,
-                            iconTint = MaterialTheme.colorScheme.tertiary,
-                            count = if (subtelCount > 0) subtelCount else null
-                        )
-
-                        // 6. Todas
-                        StitchFilterChip(
-                            selected = currentFilter == CallLogTabFilter.ALL,
-                            onClick = { currentFilter = CallLogTabFilter.ALL },
-                            label = "Todas",
-                            count = if (allCount > 0) allCount else null
-                        )
+                        categoryOrder.forEach { filter ->
+                            val isSelected = currentFilter == filter
+                            when (filter) {
+                                CallLogTabFilter.INCOMING -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.INCOMING },
+                                        label = "Entrantes",
+                                        icon = Icons.AutoMirrored.Rounded.CallReceived,
+                                        iconTint = MaterialTheme.colorScheme.secondary,
+                                        count = if (incomingCount > 0) incomingCount else null
+                                    )
+                                }
+                                CallLogTabFilter.OUTGOING -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.OUTGOING },
+                                        label = "Salientes",
+                                        icon = Icons.AutoMirrored.Rounded.CallMade,
+                                        iconTint = MaterialTheme.colorScheme.primary,
+                                        count = if (outgoingCount > 0) outgoingCount else null
+                                    )
+                                }
+                                CallLogTabFilter.BLOCKED -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.BLOCKED },
+                                        label = if (blockedCount > 0) "Spam ($blockedCount)" else "Spam",
+                                        icon = Icons.Rounded.Shield,
+                                        iconTint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                CallLogTabFilter.MISSED -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.MISSED },
+                                        label = "Perdidas",
+                                        icon = Icons.AutoMirrored.Rounded.CallMissed,
+                                        iconTint = MaterialTheme.colorScheme.error,
+                                        count = if (missedCount > 0) missedCount else null
+                                    )
+                                }
+                                CallLogTabFilter.SUBTEL_809 -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.SUBTEL_809 },
+                                        label = "Chao 809",
+                                        icon = Icons.Rounded.CallEnd,
+                                        iconTint = MaterialTheme.colorScheme.tertiary,
+                                        count = if (subtelCount > 0) subtelCount else null
+                                    )
+                                }
+                                CallLogTabFilter.ALL -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.ALL },
+                                        label = "Todas",
+                                        count = if (allCount > 0) allCount else null
+                                    )
+                                }
+                                CallLogTabFilter.REGIONAL -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = { currentFilter = CallLogTabFilter.REGIONAL },
+                                        label = "Directorio",
+                                        icon = Icons.Rounded.ContactPhone,
+                                        iconTint = MaterialTheme.colorScheme.primary,
+                                        count = if (regionalDirectoryEntries.isNotEmpty()) regionalDirectoryEntries.size else null
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(6.dp))
@@ -391,9 +533,23 @@ fun CallLogScreen(
                             Text(strings.common.retry)
                         }
                     }
-                } else if (displayList.isEmpty()) {
+                } else {
+                    val isSearchMode = searchQuery.isNotBlank()
+                val isRegionalMode = currentFilter == CallLogTabFilter.REGIONAL && !isSearchMode
+                val isEmpty = if (isSearchMode) {
+                    displayList.isEmpty() && directorySearchResults.isEmpty() && contactSearchResults.isEmpty()
+                } else if (isRegionalMode) {
+                    regionalDirectoryEntries.isEmpty()
+                } else {
+                    displayList.isEmpty()
+                }
+
+                if (isEmpty) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -401,7 +557,12 @@ fun CallLogScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = if (currentFilter == CallLogTabFilter.BLOCKED) Icons.Rounded.Shield else Icons.AutoMirrored.Rounded.PhoneCallback,
+                                        imageVector = when {
+                                            isSearchMode -> Icons.Rounded.SearchOff
+                                            currentFilter == CallLogTabFilter.REGIONAL -> Icons.Rounded.LocationCity
+                                            currentFilter == CallLogTabFilter.BLOCKED -> Icons.Rounded.Shield
+                                            else -> Icons.AutoMirrored.Rounded.PhoneCallback
+                                        },
                                         contentDescription = null,
                                         modifier = Modifier.size(36.dp),
                                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
@@ -409,20 +570,32 @@ fun CallLogScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            val emptyText = when (currentFilter) {
-                                CallLogTabFilter.ALL -> "No hay llamadas en tu historial"
-                                CallLogTabFilter.BLOCKED -> "¡Impeque! Cero llamadas de spam bloqueadas"
-                                CallLogTabFilter.MISSED -> "No tienes llamadas perdidas"
-                                CallLogTabFilter.SUBTEL_809 -> "Ninguna llamada comercial 809 registrada"
-                                CallLogTabFilter.INCOMING -> "No tienes llamadas entrantes registradas"
-                                CallLogTabFilter.OUTGOING -> "No has emitido llamadas desde tu equipo"
+                            val emptyText = when {
+                                isSearchMode -> "No se encontraron contactos, servicios ni llamadas para \"$searchQuery\""
+                                currentFilter == CallLogTabFilter.REGIONAL -> "No hay registros disponibles en el directorio para $locationLabel"
+                                currentFilter == CallLogTabFilter.ALL -> "No hay llamadas en tu historial"
+                                currentFilter == CallLogTabFilter.BLOCKED -> "¡Impeque! Cero llamadas de spam bloqueadas"
+                                currentFilter == CallLogTabFilter.MISSED -> "No tienes llamadas perdidas"
+                                currentFilter == CallLogTabFilter.SUBTEL_809 -> "Ninguna llamada comercial 809 registrada"
+                                currentFilter == CallLogTabFilter.INCOMING -> "No tienes llamadas entrantes registradas"
+                                currentFilter == CallLogTabFilter.OUTGOING -> "No has emitido llamadas desde tu equipo"
+                                else -> "No hay llamadas registradas"
                             }
                             Text(
                                 text = emptyText,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
+                            if (currentFilter == CallLogTabFilter.REGIONAL) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedButton(onClick = { showRegionPicker = true }) {
+                                    Icon(Icons.Rounded.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Elegir otra comuna o región")
+                                }
+                            }
                         }
                     }
                 } else {
@@ -432,33 +605,252 @@ fun CallLogScreen(
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        itemsIndexed(
-                            items = displayList,
-                            key = { _, item -> item.log.id },
-                            contentType = { _, _ -> "call_card" }
-                        ) { index, item ->
-                            if (index >= displayList.size - 5 && logs.itemCount > 0) {
-                                SideEffect {
-                                    logs.get(logs.itemCount - 1)
-                                }
-                            }
-                            CallLogCard(
-                                item = item,
-                                isDetailedMode = isDetailedMode,
-                                onClick = { selectedCallLog = item },
-                                onTagClick = { tag ->
-                                    highlightedTagForDictionary = tag
-                                    showTagDictionarySheet = true
-                                },
-                                onActionClick = {
-                                    if (item.isBlocked || item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809) {
-                                        selectedCallLog = item
-                                    } else {
-                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${item.log.number}"))
-                                        context.startActivity(intent)
+                        if (isSearchMode) {
+                            // 1. Phone Contacts Section
+                            if (contactSearchResults.isNotEmpty()) {
+                                item(key = "search_contacts_header") {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp, bottom = 2.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Person,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.secondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = "Contactos del teléfono (${contactSearchResults.size})",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            )
+                                        }
                                     }
                                 }
-                            )
+
+                                items(
+                                    items = contactSearchResults,
+                                    key = { "contact_${it.id}" }
+                                ) { contact ->
+                                    ContactSearchCard(
+                                        contact = contact,
+                                        onCall = {
+                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phoneNumber}"))
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                }
+                            }
+
+                            // 2. Official Chilean Directory Results when searching
+                            if (directorySearchResults.isNotEmpty()) {
+                                item(key = "dir_search_header") {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 6.dp, bottom = 2.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Verified,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = "Directorio Oficial ($locationLabel - ${directorySearchResults.size})",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+
+                                items(
+                                    items = directorySearchResults,
+                                    key = { "dir_${it.id}" }
+                                ) { entry ->
+                                    OfficialDirectorySearchCard(
+                                        entry = entry,
+                                        onCall = {
+                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${entry.number}"))
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                }
+                            }
+
+                            // 3. Call History Results when searching
+                            if (displayList.isNotEmpty()) {
+                                item(key = "divider_search_calls") {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 6.dp, bottom = 2.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.History,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = "Historial de Llamadas (${displayList.size})",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+
+                                itemsIndexed(
+                                    items = displayList,
+                                    key = { _, item -> item.log.id },
+                                    contentType = { _, _ -> "call_card" }
+                                ) { index, item ->
+                                    CallLogCard(
+                                        item = item,
+                                        isDetailedMode = isDetailedMode,
+                                        onClick = { selectedCallLog = item },
+                                        onTagClick = { tag ->
+                                            highlightedTagForDictionary = tag
+                                            showTagDictionarySheet = true
+                                        },
+                                        onActionClick = {
+                                            if (item.isBlocked || item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809) {
+                                                selectedCallLog = item
+                                            } else {
+                                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${item.log.number}"))
+                                                context.startActivity(intent)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        } else if (isRegionalMode) {
+                            // Regional Directory Tab
+                            item(key = "regional_location_header") {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.LocationOn,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                            Column {
+                                                Text(
+                                                    text = "Directorio: $locationLabel",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = "${regionalDirectoryEntries.size} servicios oficiales y emergencias",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        TextButton(onClick = { showRegionPicker = true }) {
+                                            Text("Cambiar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+
+                            items(
+                                items = regionalDirectoryEntries,
+                                key = { "reg_${it.id}" }
+                            ) { entry ->
+                                OfficialDirectorySearchCard(
+                                    entry = entry,
+                                    onCall = {
+                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${entry.number}"))
+                                        context.startActivity(intent)
+                                    }
+                                )
+                            }
+                        } else {
+                            // Standard Call Log Filter View
+                            itemsIndexed(
+                                items = displayList,
+                                key = { _, item -> item.log.id },
+                                contentType = { _, _ -> "call_card" }
+                            ) { index, item ->
+                                if (index >= displayList.size - 5 && logs.itemCount > 0) {
+                                    SideEffect {
+                                        logs.get(logs.itemCount - 1)
+                                    }
+                                }
+                                CallLogCard(
+                                    item = item,
+                                    isDetailedMode = isDetailedMode,
+                                    onClick = { selectedCallLog = item },
+                                    onTagClick = { tag ->
+                                        highlightedTagForDictionary = tag
+                                        showTagDictionarySheet = true
+                                    },
+                                    onActionClick = {
+                                        if (item.isBlocked || item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809) {
+                                            selectedCallLog = item
+                                        } else {
+                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${item.log.number}"))
+                                            context.startActivity(intent)
+                                        }
+                                    }
+                                )
+                            }
                         }
 
                         // Background Protection Status Banner (Stitch Specification)
@@ -504,6 +896,7 @@ fun CallLogScreen(
                 }
             }
         }
+    }
 
         // Floating Action Button for Dialpad (Unified Corta FAB)
         CortaFloatingActionButton(
@@ -546,27 +939,58 @@ fun CallLogScreen(
     if (showCategoriesSheet) {
         CallCategoriesBottomSheet(
             currentFilter = currentFilter,
+            categoryOrder = categoryOrder,
             allCount = allCount,
             blockedCount = blockedCount,
             missedCount = missedCount,
             subtelCount = subtelCount,
             incomingCount = incomingCount,
             outgoingCount = outgoingCount,
+            regionalCount = regionalDirectoryEntries.size,
+            locationLabel = locationLabel,
+            onOpenRegionPicker = {
+                showCategoriesSheet = false
+                showRegionPicker = true
+            },
             onSelectFilter = { selected ->
                 currentFilter = selected
                 showCategoriesSheet = false
             },
-            onOpenTrash = {
-                showCategoriesSheet = false
-                showTrashSheet = true
+            onReorder = { newOrder ->
+                categoryOrder = newOrder
+                prefs.edit().putString("call_category_order", newOrder.joinToString(",") { it.name }).apply()
             },
-            onExportCsv = {
-                showCategoriesSheet = false
-                CortaExportImportHelper.exportCallsToCsv(context, classifiedCalls.map { it.log })
+            onResetOrder = {
+                categoryOrder = defaultCallCategoryOrder
+                prefs.edit().remove("call_category_order").apply()
             },
             onDismiss = { showCategoriesSheet = false }
         )
     }
+
+    // Modal: Region & Comuna Selector
+    if (showRegionPicker) {
+        RegionSelectorBottomSheet(
+            selectedRegion = selectedRegion,
+            selectedComuna = selectedComuna,
+            onSelectLocation = { region, comuna ->
+                selectedRegion = region
+                selectedComuna = comuna
+                val editor = prefs.edit().putString("user_selected_region", region.code)
+                if (comuna != null) {
+                    editor.putString("user_selected_comuna", comuna)
+                } else {
+                    editor.remove("user_selected_comuna")
+                }
+                editor.apply()
+                val locText = if (comuna != null) "$comuna (${region.shortName})" else region.displayName
+                Toast.makeText(context, "Ubicación: $locText", Toast.LENGTH_SHORT).show()
+                showRegionPicker = false
+            },
+            onDismiss = { showRegionPicker = false }
+        )
+    }
+
 
     // Tag Dictionary Bottom Sheet (Interactive Chilean Telecom Explanations)
     if (showTagDictionarySheet) {
@@ -684,7 +1108,7 @@ fun CallLogCard(
                 onClick = onClick,
                 onLongClick = onClick
             ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = when {
                 item.isBlocked -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.12f)
@@ -815,15 +1239,15 @@ fun CallLogCard(
                         }
                         val directionTint: Color = when {
                             item.isBlocked || item.isMissed -> MaterialTheme.colorScheme.error
-                            item.isOutgoing -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.secondary
+                            item.isOutgoing -> Color(0xFF1976D2)
+                            else -> Color(0xFF2E7D32)
                         }
 
                         Icon(
                             imageVector = directionIcon,
                             contentDescription = null,
                             tint = directionTint,
-                            modifier = Modifier.size(13.dp)
+                            modifier = Modifier.size(14.dp)
                         )
 
                         Spacer(modifier = Modifier.width(4.dp))
@@ -831,7 +1255,8 @@ fun CallLogCard(
                         Text(
                             text = item.subtitleText,
                             fontSize = 12.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (item.isMissed) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (item.isMissed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -840,34 +1265,25 @@ fun CallLogCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Right Action Button (Info for blocked/spam; Quick Dial for normal, 48x48dp target)
-                if (item.isBlocked || item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809) {
-                    IconButton(
-                        onClick = onActionClick,
-                        modifier = Modifier.size(48.dp)
-                    ) {
+                // Standardized 40dp Circular Action Button (Unified across CallLog and Contacts)
+                val isBlockedOrSpam = item.isBlocked || item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809
+                Surface(
+                    onClick = onActionClick,
+                    shape = CircleShape,
+                    color = if (!isBlockedOrSpam) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Rounded.Info,
-                            contentDescription = "Detalles y opciones",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(24.dp)
+                            imageVector = if (isBlockedOrSpam) Icons.Rounded.Info else Icons.Rounded.Call,
+                            contentDescription = if (isBlockedOrSpam) "Detalles y opciones" else "Llamar a ${item.displayName}",
+                            tint = if (!isBlockedOrSpam) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
-                    }
-                } else {
-                    Surface(
-                        onClick = onActionClick,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Call,
-                                contentDescription = "Llamar",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
                     }
                 }
             }
@@ -958,78 +1374,33 @@ fun CallAvatar(
     item: ClassifiedCall,
     modifier: Modifier = Modifier
 ) {
-    val containerColor = when {
-        item.isBlocked -> MaterialTheme.colorScheme.errorContainer
-        item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> MaterialTheme.colorScheme.tertiaryContainer
-        item.telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL -> MaterialTheme.colorScheme.secondaryContainer
-        item.telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
-        item.telecomMeta.isVerifiedOfficialService -> MaterialTheme.colorScheme.primaryContainer
-        item.isContact -> MaterialTheme.colorScheme.surfaceContainerHighest
-        item.isMissed -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
-        item.isIncoming -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
-        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    val incomingGreen = Color(0xFF2E7D32)
+    val incomingBg = Color(0xFFE8F5E9)
+    val outgoingBlue = Color(0xFF1976D2)
+    val outgoingBg = Color(0xFFE3F2FD)
+    val missedRed = MaterialTheme.colorScheme.error
+    val missedBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+
+    val (directionIcon, directionTint, directionBg) = when {
+        item.isBlocked -> Triple(Icons.Rounded.Shield, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer)
+        item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> Triple(Icons.Rounded.CallEnd, MaterialTheme.colorScheme.onTertiaryContainer, MaterialTheme.colorScheme.tertiaryContainer)
+        item.telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL -> Triple(Icons.Rounded.LocalPolice, MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondaryContainer)
+        item.telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX -> Triple(Icons.Rounded.Security, MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondaryContainer)
+        item.telecomMeta.isVerifiedOfficialService -> Triple(Icons.Rounded.AccountBalance, MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.colorScheme.primaryContainer)
+        item.isMissed -> Triple(Icons.AutoMirrored.Rounded.CallMissed, missedRed, missedBg)
+        item.isOutgoing -> Triple(Icons.AutoMirrored.Rounded.CallMade, outgoingBlue, outgoingBg)
+        else -> Triple(Icons.AutoMirrored.Rounded.CallReceived, incomingGreen, incomingBg)
     }
 
-    val iconTint = when {
-        item.isBlocked -> MaterialTheme.colorScheme.onErrorContainer
-        item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> MaterialTheme.colorScheme.onTertiaryContainer
-        item.telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL -> MaterialTheme.colorScheme.onSecondaryContainer
-        item.telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX -> MaterialTheme.colorScheme.onSecondaryContainer
-        item.telecomMeta.isVerifiedOfficialService -> MaterialTheme.colorScheme.onPrimaryContainer
-        item.isMissed -> MaterialTheme.colorScheme.error
-        item.isIncoming -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.primary
-    }
-
-    Surface(
-        shape = CircleShape,
-        color = containerColor,
-        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.35f)),
-        modifier = modifier.size(42.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            when {
-                item.isBlocked -> {
-                    Icon(
-                        imageVector = Icons.Rounded.Shield,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                item.telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> {
-                    Icon(
-                        imageVector = Icons.Rounded.CallEnd,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                item.telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL -> {
-                    Icon(
-                        imageVector = Icons.Rounded.LocalPolice,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                item.telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX -> {
-                    Icon(
-                        imageVector = Icons.Rounded.Security,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                item.telecomMeta.isVerifiedOfficialService -> {
-                    Icon(
-                        imageVector = Icons.Rounded.AccountBalance,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                item.isContact -> {
+    Box(modifier = modifier.size(44.dp)) {
+        if (item.isContact && !item.isBlocked && item.telecomMeta.type != ChileanNumberType.SUBTEL_TELEMARKETING_809) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     val firstLetter = item.displayName.firstOrNull { it.isLetter() }
                     if (firstLetter != null) {
                         Text(
@@ -1047,28 +1418,37 @@ fun CallAvatar(
                         )
                     }
                 }
-                item.isMissed -> {
+            }
+            Surface(
+                shape = CircleShape,
+                color = directionBg,
+                border = BorderStroke(1.dp, directionTint.copy(alpha = 0.6f)),
+                modifier = Modifier
+                    .size(18.dp)
+                    .align(Alignment.BottomEnd)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.CallMissed,
+                        imageVector = directionIcon,
                         contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
+                        tint = directionTint,
+                        modifier = Modifier.size(11.dp)
                     )
                 }
-                item.isOutgoing -> {
+            }
+        } else {
+            Surface(
+                shape = CircleShape,
+                color = directionBg,
+                border = BorderStroke(1.dp, directionTint.copy(alpha = 0.35f)),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.CallMade,
+                        imageVector = directionIcon,
                         contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                else -> {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.CallReceived,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
+                        tint = directionTint,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -1132,6 +1512,11 @@ fun CallTagBadge(
             tagTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             tagIcon = Icons.Rounded.Phone
         }
+        "Perdida" -> {
+            tagBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+            tagTextColor = MaterialTheme.colorScheme.onErrorContainer
+            tagIcon = Icons.AutoMirrored.Rounded.CallMissed
+        }
         else -> {
             // "Móvil" / "Llamada"
             tagBg = MaterialTheme.colorScheme.surfaceVariant
@@ -1174,85 +1559,23 @@ fun CallTagBadge(
 @Composable
 fun CallCategoriesBottomSheet(
     currentFilter: CallLogTabFilter,
+    categoryOrder: List<CallLogTabFilter>,
     allCount: Int,
     blockedCount: Int,
     missedCount: Int,
     subtelCount: Int,
     incomingCount: Int,
     outgoingCount: Int,
+    regionalCount: Int = 0,
+    locationLabel: String = "Chile",
+    onOpenRegionPicker: () -> Unit = {},
     onSelectFilter: (CallLogTabFilter) -> Unit,
-    onOpenTrash: () -> Unit = {},
-    onExportCsv: () -> Unit = {},
+    onReorder: (List<CallLogTabFilter>) -> Unit,
+    onResetOrder: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    data class CallCategoryOption(
-        val filter: CallLogTabFilter,
-        val title: String,
-        val subtitle: String,
-        val icon: ImageVector,
-        val iconBg: Color,
-        val iconTint: Color,
-        val count: Int
-    )
-
-    val categories = listOf(
-        CallCategoryOption(
-            filter = CallLogTabFilter.ALL,
-            title = "Todas las llamadas",
-            subtitle = "Historial completo de tu teléfono",
-            icon = Icons.Rounded.Phone,
-            iconBg = MaterialTheme.colorScheme.surfaceContainerHighest,
-            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-            count = allCount
-        ),
-        CallCategoryOption(
-            filter = CallLogTabFilter.BLOCKED,
-            title = "Spam bloqueado",
-            subtitle = "Llamadas silenciadas o rechazadas automáticamente",
-            icon = Icons.Rounded.Shield,
-            iconBg = MaterialTheme.colorScheme.errorContainer,
-            iconTint = MaterialTheme.colorScheme.onErrorContainer,
-            count = blockedCount
-        ),
-        CallCategoryOption(
-            filter = CallLogTabFilter.MISSED,
-            title = "Perdidas",
-            subtitle = "Llamadas no contestadas o pings fantasma",
-            icon = Icons.AutoMirrored.Rounded.CallMissed,
-            iconBg = MaterialTheme.colorScheme.errorContainer,
-            iconTint = MaterialTheme.colorScheme.onErrorContainer,
-            count = missedCount
-        ),
-        CallCategoryOption(
-            filter = CallLogTabFilter.SUBTEL_809,
-            title = "Chao 809 (Telemarketing)",
-            subtitle = "Campañas comerciales masivas reguladas por SUBTEL",
-            icon = Icons.Rounded.CallEnd,
-            iconBg = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
-            count = subtelCount
-        ),
-        CallCategoryOption(
-            filter = CallLogTabFilter.INCOMING,
-            title = "Entrantes",
-            subtitle = "Llamadas que recibiste y contestaste",
-            icon = Icons.AutoMirrored.Rounded.CallReceived,
-            iconBg = MaterialTheme.colorScheme.secondaryContainer,
-            iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
-            count = incomingCount
-        ),
-        CallCategoryOption(
-            filter = CallLogTabFilter.OUTGOING,
-            title = "Salientes",
-            subtitle = "Llamadas realizadas desde este equipo",
-            icon = Icons.AutoMirrored.Rounded.CallMade,
-            iconBg = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
-            count = outgoingCount
-        )
-    )
-
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -1263,95 +1586,228 @@ fun CallCategoriesBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp)
         ) {
-            Text(
-                text = "Categorías de llamadas",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Filtra el registro según la naturaleza de la llamada",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Categorías de llamadas",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Usa ↑/↓ para ordenar. La primera categoría será la pestaña inicial.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = onResetOrder) {
+                    Text("Restablecer", fontSize = 12.sp)
+                }
+            }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Regional Location Banner (Chile Directory Filter)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenRegionPicker() }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            Icons.Rounded.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Ubicación: $locationLabel",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Comuna y región para directorios y seguridad 14xx",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    TextButton(onClick = onOpenRegionPicker) {
+                        Text("Cambiar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            val context = LocalContext.current
-            val prefs = remember(context) { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-            val defaultTabName = prefs.getString("default_call_tab", CallLogTabFilter.INCOMING.name)
+            categoryOrder.forEachIndexed { index, filter ->
+                val isSelected = currentFilter == filter
+                val isFirst = index == 0
 
-            categories.forEach { option ->
-                val isSelected = currentFilter == option.filter
-                val isDefault = option.filter.name == defaultTabName
+                val (title, subtitle, icon, iconBg, iconTint, count) = when (filter) {
+                    CallLogTabFilter.REGIONAL -> Tuple6(
+                        "Directorio ($locationLabel)",
+                        "Emergencias, seguridad municipal 14xx y utilidad",
+                        Icons.Rounded.Verified,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer,
+                        regionalCount
+                    )
+                    CallLogTabFilter.INCOMING -> Tuple6(
+                        "Entrantes",
+                        "Llamadas contestadas",
+                        Icons.AutoMirrored.Rounded.CallReceived,
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.onSecondaryContainer,
+                        incomingCount
+                    )
+                    CallLogTabFilter.OUTGOING -> Tuple6(
+                        "Salientes",
+                        "Llamadas realizadas desde este equipo",
+                        Icons.AutoMirrored.Rounded.CallMade,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer,
+                        outgoingCount
+                    )
+                    CallLogTabFilter.BLOCKED -> Tuple6(
+                        "Spam bloqueado",
+                        "Llamadas silenciadas o rechazadas",
+                        Icons.Rounded.Shield,
+                        MaterialTheme.colorScheme.errorContainer,
+                        MaterialTheme.colorScheme.onErrorContainer,
+                        blockedCount
+                    )
+                    CallLogTabFilter.MISSED -> Tuple6(
+                        "Perdidas",
+                        "Llamadas no contestadas o pings",
+                        Icons.AutoMirrored.Rounded.CallMissed,
+                        MaterialTheme.colorScheme.errorContainer,
+                        MaterialTheme.colorScheme.onErrorContainer,
+                        missedCount
+                    )
+                    CallLogTabFilter.SUBTEL_809 -> Tuple6(
+                        "Chao 809 (Telemarketing)",
+                        "Ventas comerciales no solicitadas",
+                        Icons.Rounded.CallEnd,
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer,
+                        subtelCount
+                    )
+                    CallLogTabFilter.ALL -> Tuple6(
+                        "Todas las llamadas",
+                        "Historial completo de tu teléfono",
+                        Icons.Rounded.Phone,
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        allCount
+                    )
+                }
 
-                Surface(
-                    onClick = { onSelectFilter(option.filter) },
+                Card(
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else Color.Transparent,
-                    modifier = Modifier.fillMaxWidth()
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLowest
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = option.iconBg,
-                            modifier = Modifier.size(40.dp)
+                            color = iconBg,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { onSelectFilter(filter) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = option.icon,
+                                    imageVector = icon,
                                     contentDescription = null,
-                                    tint = option.iconTint,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = iconTint,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
 
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onSelectFilter(filter) }
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = option.title,
-                                    fontSize = 15.sp,
+                                    text = title,
+                                    fontSize = 14.5.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
-                                if (option.count > 0) {
+                                if (count > 0) {
                                     Surface(
                                         shape = CircleShape,
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                                     ) {
                                         Text(
-                                            text = "${option.count}",
-                                            fontSize = 11.sp,
+                                            text = "$count",
+                                            fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                         )
                                     }
                                 }
-                                if (isDefault) {
+                                if (isFirst) {
                                     Surface(
                                         shape = RoundedCornerShape(4.dp),
                                         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
                                     ) {
                                         Text(
-                                            text = "Inicial",
-                                            fontSize = 9.5.sp,
+                                            text = "Pestaña inicial",
+                                            fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false,
                                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                         )
@@ -1359,92 +1815,225 @@ fun CallCategoriesBottomSheet(
                                 }
                             }
                             Text(
-                                text = option.subtitle,
-                                fontSize = 12.sp,
+                                text = subtitle,
+                                fontSize = 11.5.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Rounded.CheckCircle,
-                                contentDescription = "Seleccionado",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
+                        // Reorder Actions (↑ / ↓)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    if (index > 0) {
+                                        val mutable = categoryOrder.toMutableList()
+                                        val temp = mutable[index]
+                                        mutable[index] = mutable[index - 1]
+                                        mutable[index - 1] = temp
+                                        onReorder(mutable)
+                                    }
+                                },
+                                enabled = index > 0,
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowUpward,
+                                    contentDescription = "Subir",
+                                    tint = if (index > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    if (index < categoryOrder.size - 1) {
+                                        val mutable = categoryOrder.toMutableList()
+                                        val temp = mutable[index]
+                                        mutable[index] = mutable[index + 1]
+                                        mutable[index + 1] = temp
+                                        onReorder(mutable)
+                                    }
+                                },
+                                enabled = index < categoryOrder.size - 1,
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowDownward,
+                                    contentDescription = "Bajar",
+                                    tint = if (index < categoryOrder.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfficialDirectorySearchCard(
+    entry: ChileanDirectoryEntry,
+    onCall: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val (icon, bg, fg) = when (entry.category) {
+                DirectoryCategory.EMERGENCY, DirectoryCategory.FIRE_DEPARTMENT -> Triple(Icons.Rounded.Shield, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                DirectoryCategory.MUNICIPAL, DirectoryCategory.POLICE_PDI -> Triple(Icons.Rounded.LocalPolice, MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
+                DirectoryCategory.HEALTH_HOSPITAL -> Triple(Icons.Rounded.LocalHospital, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                else -> Triple(Icons.Rounded.AccountBalance, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = {
-                    prefs.edit().putString("default_call_tab", currentFilter.name).apply()
-                    Toast.makeText(context, "Pestaña predeterminada actualizada", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Usar como pestaña predeterminada al abrir",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = bg,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
+                    }
+                }
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = entry.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Icon(
+                            imageVector = Icons.Rounded.Verified,
+                            contentDescription = "Verificado",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Text(
+                        text = "${entry.comuna} · ${entry.number}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onOpenTrash,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+            IconButton(
+                onClick = onCall,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.DeleteOutline,
-                    contentDescription = null,
+                    imageVector = Icons.Rounded.Call,
+                    contentDescription = "Llamar a ${entry.name}",
                     modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Papelera de reciclaje de llamadas",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = onExportCsv,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.FileDownload,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Exportar historial a CSV",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
     }
 }
+
+@Composable
+private fun ContactSearchCard(
+    contact: ContactInfo,
+    onCall: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = contact.name.trim().take(1).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                Column {
+                    Text(
+                        text = contact.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Contacto · ${PhoneNumberUtils.formatDisplayNumber(contact.phoneNumber)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = onCall,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Call,
+                    contentDescription = "Llamar a ${contact.name}",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+private data class Tuple6<A, B, C, D, E, F>(
+    val a: A, val b: B, val c: C, val d: D, val e: E, val f: F
+)
 
 /**
  * Bottom Sheet that explains all Call tags and Corta's automatic actions.

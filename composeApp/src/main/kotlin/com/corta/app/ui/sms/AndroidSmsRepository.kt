@@ -264,4 +264,27 @@ class AndroidSmsRepository(
         }
         messages
     }
+
+    suspend fun getThreadIdForSender(sender: String): String? = withContext(Dispatchers.IO) {
+        val blockedList = cortaRepository.observeBlockedSms().first()
+        if (blockedList.any { it.sender == sender }) {
+            return@withContext "BLOCKED_$sender"
+        }
+
+        val projection = arrayOf(Telephony.Sms.THREAD_ID)
+        val cursor = context.contentResolver.query(
+            Telephony.Sms.CONTENT_URI,
+            projection,
+            "${Telephony.Sms.ADDRESS} = ?",
+            arrayOf(sender),
+            Telephony.Sms.DEFAULT_SORT_ORDER
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val idx = it.getColumnIndex(Telephony.Sms.THREAD_ID)
+                if (idx != -1) return@withContext it.getString(idx)
+            }
+        }
+        "BLOCKED_$sender"
+    }
 }

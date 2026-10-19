@@ -82,11 +82,17 @@ corta-v1/
 # Compilar APK Debug
 ./gradlew :composeApp:assembleDebug
 
+# Compilar APK Release optimizado (14 MB, R8 / ProGuard)
+./gradlew :composeApp:assembleRelease
+
 # Ejecutar pruebas unitarias de dominio y UI
 ./gradlew testDebugUnitTest
 
-# Instalar en dispositivo físico o emulador conectado vía ADB
+# Instalar versión Debug en dispositivo físico vía ADB
 adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
+
+# Instalar versión Release en dispositivo físico vía ADB
+adb install -r composeApp/build/outputs/apk/release/composeApp-release.apk
 ```
 
 ---

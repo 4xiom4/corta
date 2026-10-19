@@ -120,16 +120,39 @@ fun SmsScreen(
     val isDetailedMode = LocalDetailedMode.current
 
     val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
+
+    val defaultSmsCategoryOrder = remember {
+        listOf(
+            SmsTabFilter.INBOX,
+            SmsTabFilter.OUTBOX,
+            SmsTabFilter.SPAM,
+            SmsTabFilter.ALL,
+            SmsTabFilter.BANKS_OTP,
+            SmsTabFilter.PERSONAL,
+            SmsTabFilter.ARCHIVED
+        )
+    }
+    val savedSmsOrderRaw = prefs.getString("sms_category_order", null)
+    var categoryOrder by remember {
+        mutableStateOf(
+            if (savedSmsOrderRaw != null) {
+                val names = savedSmsOrderRaw.split(",")
+                val list = names.mapNotNull { name -> SmsTabFilter.entries.firstOrNull { it.name == name } }.toMutableList()
+                SmsTabFilter.entries.forEach { if (!list.contains(it)) list.add(it) }
+                list
+            } else {
+                defaultSmsCategoryOrder
+            }
+        )
+    }
     val initialSmsFilter = remember {
         if (isProtectionMode) SmsTabFilter.SPAM
-        else {
-            val savedName = prefs.getString("default_sms_tab", SmsTabFilter.INBOX.name)
-            SmsTabFilter.entries.firstOrNull { it.name == savedName } ?: SmsTabFilter.INBOX
-        }
+        else categoryOrder.firstOrNull() ?: SmsTabFilter.INBOX
     }
     var currentFilter by remember {
         mutableStateOf(initialSmsFilter)
     }
+
     var showCategorySheet by remember { mutableStateOf(false) }
     var showTagDictionarySheet by remember { mutableStateOf(false) }
     var showSpamKeywordsSheet by remember { mutableStateOf(false) }
@@ -242,67 +265,78 @@ fun SmsScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Entrada (Recibidos)
-                StitchFilterChip(
-                    selected = currentFilter == SmsTabFilter.INBOX,
-                    onClick = { currentFilter = SmsTabFilter.INBOX },
-                    label = "Entrada",
-                    count = if (entradaCount > 0) entradaCount else null
-                )
-
-                // 2. Salida (Enviados)
-                StitchFilterChip(
-                    selected = currentFilter == SmsTabFilter.OUTBOX,
-                    onClick = { currentFilter = SmsTabFilter.OUTBOX },
-                    label = "Salida",
-                    count = if (salidaCount > 0) salidaCount else null
-                )
-
-                // 3. Spam (Estafas, 809, bloqueados)
-                StitchFilterChip(
-                    selected = currentFilter == SmsTabFilter.SPAM,
-                    onClick = { currentFilter = SmsTabFilter.SPAM },
-                    label = if (spamCount > 0) "Spam ($spamCount)" else "Spam"
-                )
-
-                // 4. Todos
-                StitchFilterChip(
-                    selected = currentFilter == SmsTabFilter.ALL,
-                    onClick = { currentFilter = SmsTabFilter.ALL },
-                    label = "Todos",
-                    count = if (todosCount > 0) todosCount else null
-                )
-
-                // 5. Chip de categoría secundaria visible si fue seleccionada desde (+)
-                if (currentFilter == SmsTabFilter.BANKS_OTP) {
-                    StitchFilterChip(
-                        selected = true,
-                        onClick = { currentFilter = SmsTabFilter.BANKS_OTP },
-                        label = "Bancos y claves",
-                        icon = Icons.Rounded.AccountBalance,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        count = if (bancosCount > 0) bancosCount else null
-                    )
-                } else if (currentFilter == SmsTabFilter.PERSONAL) {
-                    StitchFilterChip(
-                        selected = true,
-                        onClick = { currentFilter = SmsTabFilter.PERSONAL },
-                        label = "Personales",
-                        icon = Icons.Rounded.Person,
-                        iconTint = MaterialTheme.colorScheme.secondary,
-                        count = if (personalesCount > 0) personalesCount else null
-                    )
-                } else if (currentFilter == SmsTabFilter.ARCHIVED) {
-                    StitchFilterChip(
-                        selected = true,
-                        onClick = { currentFilter = SmsTabFilter.ARCHIVED },
-                        label = "Archivados",
-                        icon = Icons.Rounded.Archive,
-                        iconTint = MaterialTheme.colorScheme.tertiary,
-                        count = if (archivadosCount > 0) archivadosCount else null
-                    )
+                categoryOrder.forEach { filter ->
+                    val isSelected = currentFilter == filter
+                    when (filter) {
+                        SmsTabFilter.INBOX -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.INBOX },
+                                label = "Entrada",
+                                icon = Icons.AutoMirrored.Rounded.Chat,
+                                count = if (entradaCount > 0) entradaCount else null
+                            )
+                        }
+                        SmsTabFilter.OUTBOX -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.OUTBOX },
+                                label = "Salida",
+                                icon = Icons.AutoMirrored.Rounded.Send,
+                                count = if (salidaCount > 0) salidaCount else null
+                            )
+                        }
+                        SmsTabFilter.SPAM -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.SPAM },
+                                label = if (spamCount > 0) "Spam ($spamCount)" else "Spam",
+                                icon = Icons.Rounded.Shield,
+                                iconTint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        SmsTabFilter.ALL -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.ALL },
+                                label = "Todos",
+                                count = if (todosCount > 0) todosCount else null
+                            )
+                        }
+                        SmsTabFilter.BANKS_OTP -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.BANKS_OTP },
+                                label = "Bancos y claves",
+                                icon = Icons.Rounded.AccountBalance,
+                                iconTint = MaterialTheme.colorScheme.primary,
+                                count = if (bancosCount > 0) bancosCount else null
+                            )
+                        }
+                        SmsTabFilter.PERSONAL -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.PERSONAL },
+                                label = "Personales",
+                                icon = Icons.Rounded.Person,
+                                iconTint = MaterialTheme.colorScheme.secondary,
+                                count = if (personalesCount > 0) personalesCount else null
+                            )
+                        }
+                        SmsTabFilter.ARCHIVED -> {
+                            StitchFilterChip(
+                                selected = isSelected,
+                                onClick = { currentFilter = SmsTabFilter.ARCHIVED },
+                                label = "Archivados",
+                                icon = Icons.Rounded.Archive,
+                                iconTint = MaterialTheme.colorScheme.tertiary,
+                                count = if (archivadosCount > 0) archivadosCount else null
+                            )
+                        }
+                    }
                 }
             }
+
 
             Spacer(modifier = Modifier.width(6.dp))
 
@@ -407,6 +441,7 @@ fun SmsScreen(
             if (showCategorySheet) {
                 CategoriesBottomSheet(
                     currentFilter = currentFilter,
+                    categoryOrder = categoryOrder,
                     inboxCount = entradaCount,
                     outboxCount = salidaCount,
                     spamCount = spamCount,
@@ -417,25 +452,18 @@ fun SmsScreen(
                     onSelectFilter = { selected ->
                         currentFilter = selected
                     },
-                    onOpenKeywords = {
-                        showCategorySheet = false
-                        showSpamKeywordsSheet = true
+                    onReorder = { newOrder ->
+                        categoryOrder = newOrder
+                        prefs.edit().putString("sms_category_order", newOrder.joinToString(",") { it.name }).apply()
                     },
-                    onOpenTrash = {
-                        showCategorySheet = false
-                        showTrashSheet = true
-                    },
-                    onExportCsv = {
-                        showCategorySheet = false
-                        CortaExportImportHelper.exportSmsToCsv(context, loadedInbox.map { it.message })
-                    },
-                    onExportJson = {
-                        showCategorySheet = false
-                        CortaExportImportHelper.exportSmsToJson(context, loadedInbox.map { it.message })
+                    onResetOrder = {
+                        categoryOrder = defaultSmsCategoryOrder
+                        prefs.edit().remove("sms_category_order").apply()
                     },
                     onDismiss = { showCategorySheet = false }
                 )
             }
+
 
             if (showTagDictionarySheet) {
                 TagDictionaryBottomSheet(
@@ -801,7 +829,7 @@ fun ConversationItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = cardBg,
         border = cardBorder,
         shadowElevation = 0.dp
@@ -1130,6 +1158,7 @@ private data class CategoryOption(
 @Composable
 fun CategoriesBottomSheet(
     currentFilter: SmsTabFilter,
+    categoryOrder: List<SmsTabFilter>,
     inboxCount: Int,
     outboxCount: Int,
     spamCount: Int,
@@ -1138,16 +1167,14 @@ fun CategoriesBottomSheet(
     personalCount: Int,
     archivedCount: Int = 0,
     onSelectFilter: (SmsTabFilter) -> Unit,
+    onReorder: (List<SmsTabFilter>) -> Unit,
+    onResetOrder: () -> Unit,
     onOpenKeywords: () -> Unit = {},
     onOpenTrash: () -> Unit = {},
     onExportCsv: () -> Unit = {},
     onExportJson: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
-    val defaultTabName = prefs.getString("default_sms_tab", SmsTabFilter.INBOX.name)
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         dragHandle = { BottomSheetDefaults.DragHandle() },
@@ -1161,157 +1188,181 @@ fun CategoriesBottomSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
         ) {
-            Text(
-                text = "Categorías de mensajes",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Filtra tus SMS de forma rápida y segura en tu equipo",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp, bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Categorías de mensajes",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Usa ↑/↓ para ordenar. La primera categoría será la pestaña inicial.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = onResetOrder) {
+                    Text("Restablecer", fontSize = 12.sp)
+                }
+            }
 
+            Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            val categories = listOf(
-                CategoryOption(
-                    filter = SmsTabFilter.INBOX,
-                    title = "Entrada",
-                    subtitle = "Mensajes recibidos en tu bandeja",
-                    icon = Icons.AutoMirrored.Rounded.Chat,
-                    iconBg = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    count = inboxCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.OUTBOX,
-                    title = "Salida",
-                    subtitle = "Mensajes que enviaste desde tu teléfono",
-                    icon = Icons.AutoMirrored.Rounded.Send,
-                    iconBg = MaterialTheme.colorScheme.secondaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    count = outboxCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.SPAM,
-                    title = "Spam y estafas",
-                    subtitle = "Bloqueados, telemarketing 809 y cuentos del tío",
-                    icon = Icons.Rounded.Shield,
-                    iconBg = MaterialTheme.colorScheme.errorContainer,
-                    iconTint = MaterialTheme.colorScheme.onErrorContainer,
-                    count = spamCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.ALL,
-                    title = "Todos",
-                    subtitle = "Historial completo de conversaciones",
-                    icon = Icons.Rounded.AllInclusive,
-                    iconBg = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    count = allCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.BANKS_OTP,
-                    title = "Bancos y claves",
-                    subtitle = "Códigos de verificación (OTP) y bancos oficiales",
-                    icon = Icons.Rounded.AccountBalance,
-                    iconBg = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    count = banksCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.PERSONAL,
-                    title = "Personales",
-                    subtitle = "Contactos guardados en tu agenda y particulares",
-                    icon = Icons.Rounded.Person,
-                    iconBg = MaterialTheme.colorScheme.tertiaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    count = personalCount
-                ),
-                CategoryOption(
-                    filter = SmsTabFilter.ARCHIVED,
-                    title = "Archivados",
-                    subtitle = "Conversaciones guardadas y archivadas",
-                    icon = Icons.Rounded.Archive,
-                    iconBg = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    count = archivedCount
-                )
-            )
+            categoryOrder.forEachIndexed { index, filter ->
+                val isSelected = currentFilter == filter
+                val isFirst = index == 0
 
-            categories.forEach { option ->
-                val isSelected = currentFilter == option.filter
-                val isDefault = option.filter.name == defaultTabName
+                val (title, subtitle, icon, iconBg, iconTint, count) = when (filter) {
+                    SmsTabFilter.INBOX -> Tuple6(
+                        "Entrada",
+                        "Mensajes recibidos",
+                        Icons.AutoMirrored.Rounded.Chat,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer,
+                        inboxCount
+                    )
+                    SmsTabFilter.OUTBOX -> Tuple6(
+                        "Salida",
+                        "Mensajes enviados desde tu equipo",
+                        Icons.AutoMirrored.Rounded.Send,
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.onSecondaryContainer,
+                        outboxCount
+                    )
+                    SmsTabFilter.SPAM -> Tuple6(
+                        "Spam y estafas",
+                        "Bloqueados y sospechosos",
+                        Icons.Rounded.Shield,
+                        MaterialTheme.colorScheme.errorContainer,
+                        MaterialTheme.colorScheme.onErrorContainer,
+                        spamCount
+                    )
+                    SmsTabFilter.ALL -> Tuple6(
+                        "Todos",
+                        "Historial completo de conversaciones",
+                        Icons.Rounded.AllInclusive,
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        allCount
+                    )
+                    SmsTabFilter.BANKS_OTP -> Tuple6(
+                        "Bancos y claves",
+                        "Códigos de verificación y bancos",
+                        Icons.Rounded.AccountBalance,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.primary,
+                        banksCount
+                    )
+                    SmsTabFilter.PERSONAL -> Tuple6(
+                        "Personales",
+                        "Contactos y conocidos",
+                        Icons.Rounded.Person,
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer,
+                        personalCount
+                    )
+                    SmsTabFilter.ARCHIVED -> Tuple6(
+                        "Archivados",
+                        "Conversaciones guardadas",
+                        Icons.Rounded.Archive,
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        archivedCount
+                    )
+                }
 
-                Surface(
-                    onClick = {
-                        onSelectFilter(option.filter)
-                        onDismiss()
-                    },
+                Card(
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else Color.Transparent,
-                    modifier = Modifier.fillMaxWidth()
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLowest
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = option.iconBg,
-                            modifier = Modifier.size(40.dp)
+                            color = iconBg,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable {
+                                    onSelectFilter(filter)
+                                    onDismiss()
+                                }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = option.icon,
+                                    imageVector = icon,
                                     contentDescription = null,
-                                    tint = option.iconTint,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = iconTint,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
 
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    onSelectFilter(filter)
+                                    onDismiss()
+                                }
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = option.title,
-                                    fontSize = 15.sp,
+                                    text = title,
+                                    fontSize = 14.5.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
-                                if (option.count > 0) {
+                                if (count > 0) {
                                     Surface(
                                         shape = CircleShape,
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                                     ) {
                                         Text(
-                                            text = "${option.count}",
-                                            fontSize = 11.sp,
+                                            text = "$count",
+                                            fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                         )
                                     }
                                 }
-                                if (isDefault) {
+                                if (isFirst) {
                                     Surface(
                                         shape = RoundedCornerShape(4.dp),
                                         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
                                     ) {
                                         Text(
-                                            text = "Inicial",
-                                            fontSize = 9.5.sp,
+                                            text = "Pestaña inicial",
+                                            fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false,
                                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                         )
@@ -1319,89 +1370,68 @@ fun CategoriesBottomSheet(
                                 }
                             }
                             Text(
-                                text = option.subtitle,
-                                fontSize = 12.sp,
+                                text = subtitle,
+                                fontSize = 11.5.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Rounded.CheckCircle,
-                                contentDescription = "Seleccionado",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
+                        // Reorder Actions (↑ / ↓)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    if (index > 0) {
+                                        val mutable = categoryOrder.toMutableList()
+                                        val temp = mutable[index]
+                                        mutable[index] = mutable[index - 1]
+                                        mutable[index - 1] = temp
+                                        onReorder(mutable)
+                                    }
+                                },
+                                enabled = index > 0,
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowUpward,
+                                    contentDescription = "Subir",
+                                    tint = if (index > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    if (index < categoryOrder.size - 1) {
+                                        val mutable = categoryOrder.toMutableList()
+                                        val temp = mutable[index]
+                                        mutable[index] = mutable[index + 1]
+                                        mutable[index + 1] = temp
+                                        onReorder(mutable)
+                                    }
+                                },
+                                enabled = index < categoryOrder.size - 1,
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowDownward,
+                                    contentDescription = "Bajar",
+                                    tint = if (index < categoryOrder.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Herramientas y Gestión
-            Text(
-                text = "Herramientas de Mensajería",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-
-            ListItem(
-                headlineContent = { Text("Gestionar palabras clave bloqueadas", fontWeight = FontWeight.SemiBold) },
-                supportingContent = { Text("Configura términos de smishing y fraude bancario", style = MaterialTheme.typography.bodySmall) },
-                leadingContent = { Icon(Icons.Rounded.FilterList, null, tint = MaterialTheme.colorScheme.primary) },
-                modifier = Modifier.clickable {
-                    onDismiss()
-                    onOpenKeywords()
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text("Papelera de reciclaje", fontWeight = FontWeight.SemiBold) },
-                supportingContent = { Text("Revisa o restaura mensajes eliminados", style = MaterialTheme.typography.bodySmall) },
-                leadingContent = { Icon(Icons.Rounded.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
-                modifier = Modifier.clickable {
-                    onDismiss()
-                    onOpenTrash()
-                }
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onExportCsv,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.FileDownload, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Exportar CSV", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
-                    onClick = onExportJson,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Rounded.Code, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Exportar JSON", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
+
+private data class Tuple6<A, B, C, D, E, F>(
+    val a: A, val b: B, val c: C, val d: D, val e: E, val f: F
+)
 
 /**
  * Bottom Sheet that explains all tags, their meanings, and how Corta protects against them.

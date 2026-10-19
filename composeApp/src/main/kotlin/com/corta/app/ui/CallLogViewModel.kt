@@ -21,6 +21,8 @@ import com.corta.domain.ChileanTelecomMeta
 import com.corta.domain.CortaRepository
 import com.corta.domain.FilterAction
 import com.corta.domain.PhoneNumberUtils
+import com.corta.app.ui.contacts.ChileanRegionalDirectory
+import com.corta.app.ui.contacts.DirectoryCategory
 import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.Flow
@@ -60,36 +62,50 @@ fun buildCallLogUiModel(
     type: Int,
     duration: Long,
     matchingRule: FilterRule?,
-    simSlot: Int? = null
+    simSlot: Int? = null,
+    screeningAction: FilterAction? = null
 ): CallLogUiModel {
     val telecomMeta = ChileanTelecomClassifier.classify(number)
-    val isBlocked = type == CallLog.Calls.REJECTED_TYPE ||
-        type == CallLog.Calls.BLOCKED_TYPE ||
-        matchingRule?.action == FilterAction.BLOCK.name
-    val isMissed = type == CallLog.Calls.MISSED_TYPE
+    val isExplicitlyBlocked = type == CallLog.Calls.BLOCKED_TYPE ||
+        matchingRule?.action == FilterAction.BLOCK.name ||
+        screeningAction == FilterAction.BLOCK
+    val isBlocked = isExplicitlyBlocked
+    val isMissed = type == CallLog.Calls.MISSED_TYPE || (type == CallLog.Calls.REJECTED_TYPE && !isExplicitlyBlocked)
     val isOutgoing = type == CallLog.Calls.OUTGOING_TYPE
     val isAnsweredIncoming = type == CallLog.Calls.INCOMING_TYPE
-    // In telephony, all calls directed to this phone (answered, missed, blocked) are incoming calls
-    val isIncoming = type != CallLog.Calls.OUTGOING_TYPE
-    val isPingCall = duration in 0..2 && (isMissed || type == CallLog.Calls.REJECTED_TYPE)
+    val isIncoming = type == CallLog.Calls.INCOMING_TYPE
+
+    // Una llamada perdida común NO es una llamada fantasma.
+    // Solo se califica como "Fantasma" (ping wangiri) si la duración fue <= 2s, no fue contestada,
+    // y proviene de telemarketing 809, números desconocidos internacionales o patrones sospechosos.
+    val isSuspiciousPingNumber = telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 ||
+        (number.startsWith("+") && !number.startsWith("+56")) ||
+        telecomMeta.type == ChileanNumberType.UNKNOWN
+    val isPingCall = duration in 0..2 && isMissed && isSuspiciousPingNumber && !isBlocked && name.isNullOrBlank()
     val isContact = !name.isNullOrBlank()
 
     val formattedNum = PhoneNumberUtils.formatDisplayNumber(number)
+    val directoryEntry = ChileanRegionalDirectory.findByNumber(number)
     val resolvedName = resolveCallDisplayName(
         number = number,
         contactName = name,
         matchingRule = matchingRule
     )
-    val displayName = if (resolvedName == number) formattedNum else resolvedName
+    val displayName = when {
+        resolvedName != number -> resolvedName
+        directoryEntry != null -> directoryEntry.name
+        else -> formattedNum
+    }
 
     val tag = when {
         isBlocked -> "Spam"
         telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 || number.contains("809") -> "Comercial"
         isPingCall -> "Fantasma"
-        telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL -> "Emergencia"
-        telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX -> "Municipal"
-        telecomMeta.isVerifiedOfficialService -> "Oficial"
+        telecomMeta.type == ChileanNumberType.EMERGENCY_NATIONAL || directoryEntry?.category == DirectoryCategory.EMERGENCY -> "Emergencia"
+        telecomMeta.type == ChileanNumberType.MUNICIPAL_SECURITY_14XX || directoryEntry?.category == DirectoryCategory.MUNICIPAL -> "Municipal"
+        telecomMeta.isVerifiedOfficialService || directoryEntry != null -> "Oficial"
         isContact -> "Contacto"
+        isMissed -> "Perdida"
         telecomMeta.type == ChileanNumberType.MOBILE -> "Móvil"
         telecomMeta.type == ChileanNumberType.FIXED_LANDLINE -> "Fijo"
         else -> "Llamada"
@@ -97,17 +113,22 @@ fun buildCallLogUiModel(
 
     val dateDisplay = formatCallDateChile(date)
     val durationPart = formatCallDuration(duration)
+    val location = directoryEntry?.comuna ?: telecomMeta.cityOrRegion
+    val locationPrefix = if (!location.isNullOrBlank()) "$location · " else ""
+
     val statusPart = when {
-        isBlocked -> "Silenciada automáticamente"
-        telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> "Silenciada automáticamente"
-        isPingCall -> "Llamada fantasma (ping)"
-        isMissed -> "No contestada"
-        isAnsweredIncoming && durationPart.isNotBlank() -> "Entrante ($durationPart)"
-        isAnsweredIncoming -> "Entrante"
+        isBlocked -> "${locationPrefix}Silenciada automáticamente"
+        telecomMeta.type == ChileanNumberType.SUBTEL_TELEMARKETING_809 -> "${locationPrefix}Silenciada automáticamente"
+        isPingCall -> "${locationPrefix}Llamada fantasma (ping)"
+        isMissed -> "${locationPrefix}No contestada"
+        type == CallLog.Calls.REJECTED_TYPE -> "${locationPrefix}Llamada rechazada"
+        isAnsweredIncoming && durationPart.isNotBlank() -> "${locationPrefix}Entrante ($durationPart)"
+        isAnsweredIncoming -> "${locationPrefix}Entrante"
         isOutgoing && durationPart.isNotBlank() -> "Saliente ($durationPart)"
         isOutgoing -> "Saliente"
-        else -> "Llamada"
+        else -> "${locationPrefix}Llamada"
     }
+
 
     val subtitleText = if (displayName != formattedNum && formattedNum.isNotBlank()) {
         "$formattedNum · $statusPart"
@@ -154,26 +175,7 @@ class CallLogPagingSource(
             val loadSize = params.loadSize
 
             val resultLogs = mutableListOf<CallLogUiModel>()
-
-            // On initial load (position 0), prepend internal logs recorded directly by Corta
-            if (position == 0) {
-                internalLogs.forEach { internalLog ->
-                    val rule = ruleCache.getOrPut(internalLog.phoneNumber) {
-                        repository.getRuleForNumber(internalLog.phoneNumber, rules)
-                    }
-                    resultLogs.add(
-                        buildCallLogUiModel(
-                            id = "internal_${internalLog.id}",
-                            number = internalLog.phoneNumber,
-                            name = null,
-                            date = internalLog.timestamp,
-                            type = CallLog.Calls.BLOCKED_TYPE,
-                            duration = internalLog.duration,
-                            matchingRule = rule
-                        )
-                    )
-                }
-            }
+            val matchedInternalLogIds = mutableSetOf<Long>()
 
             val projection = arrayOf(
                 CallLog.Calls._ID,
@@ -222,6 +224,7 @@ class CallLogPagingSource(
                 null
             }
 
+            Timber.tag(TAG).d("CallLog query: position=$position loadSize=$loadSize cursorCount=${cursor?.count} internalLogsCount=${internalLogs.size}")
             var itemsRead = 0
             cursor?.use {
                 val idIdx = it.getColumnIndex(CallLog.Calls._ID)
@@ -243,8 +246,25 @@ class CallLogPagingSource(
                 while (it.moveToNext() && itemsRead < loadSize) {
                     itemsRead++
                     val number = it.getString(numIdx) ?: "Desconocido"
+                    val callDate = it.getLong(dateIdx)
+                    val rawType = it.getInt(typeIdx)
+                    val duration = it.getLong(durIdx)
+
                     val matchingRule = ruleCache.getOrPut(number) {
                         repository.getRuleForNumber(number, rules)
+                    }
+
+                    // Unificar con logs internos para saber la decisión de Corta (BLOCK / WARN / ALLOW)
+                    // sin duplicar la llamada en pantalla
+                    val normalizedNum = PhoneNumberUtils.normalize(number)
+                    val matchingInternal = internalLogs.firstOrNull { internal ->
+                        PhoneNumberUtils.normalize(internal.phoneNumber) == normalizedNum &&
+                            kotlin.math.abs(internal.timestamp - callDate) < 30_000L
+                    }
+
+                    val screeningAction = matchingInternal?.let { matched ->
+                        matchedInternalLogIds.add(matched.id)
+                        try { FilterAction.valueOf(matched.actionTaken) } catch (e: Exception) { null }
                     }
 
                     val simSlot = when {
@@ -264,17 +284,43 @@ class CallLogPagingSource(
                             id = it.getString(idIdx) ?: "call_${System.currentTimeMillis()}_$itemsRead",
                             number = number,
                             name = it.getString(nameIdx),
-                            date = it.getLong(dateIdx),
-                            type = it.getInt(typeIdx),
-                            duration = it.getLong(durIdx),
+                            date = callDate,
+                            type = rawType,
+                            duration = duration,
                             matchingRule = matchingRule,
-                            simSlot = simSlot
+                            simSlot = simSlot,
+                            screeningAction = screeningAction
                         )
                     )
                 }
             }
 
+            // Si es la página inicial, incluir únicamente logs internos huérfanos que el sistema Android
+            // no haya registrado en CallLog.Calls (por ejemplo, llamadas bloqueadas antes de sonar en ciertos fabricantes)
             if (position == 0) {
+                internalLogs.filter { it.id !in matchedInternalLogIds }.forEach { orphanLog ->
+                    val rule = ruleCache.getOrPut(orphanLog.phoneNumber) {
+                        repository.getRuleForNumber(orphanLog.phoneNumber, rules)
+                    }
+                    val orphanAction = try { FilterAction.valueOf(orphanLog.actionTaken) } catch (e: Exception) { FilterAction.BLOCK }
+                    val syntheticType = when (orphanAction) {
+                        FilterAction.BLOCK -> CallLog.Calls.BLOCKED_TYPE
+                        FilterAction.MUTE -> CallLog.Calls.MISSED_TYPE
+                        else -> CallLog.Calls.INCOMING_TYPE
+                    }
+                    resultLogs.add(
+                        buildCallLogUiModel(
+                            id = "internal_${orphanLog.id}",
+                            number = orphanLog.phoneNumber,
+                            name = null,
+                            date = orphanLog.timestamp,
+                            type = syntheticType,
+                            duration = orphanLog.duration,
+                            matchingRule = rule,
+                            screeningAction = orphanAction
+                        )
+                    )
+                }
                 resultLogs.sortByDescending { it.date }
             }
 

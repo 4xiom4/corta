@@ -76,10 +76,9 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <action android:name="android.intent.action.DIAL" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="tel" />
+                <data android:scheme="corta" android:host="donation" />
             </intent-filter>
         </activity>
 
@@ -136,6 +135,17 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Notification actions receiver (No es spam, Bloquear) -->
+        <receiver android:name=".services.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.corta.app.ACTION_ALLOW_SMS" />
+                <action android:name="com.corta.app.ACTION_BLOCK_SMS" />
+                <action android:name="com.corta.app.ACTION_ALLOW_CALL" />
+                <action android:name="com.corta.app.ACTION_BLOCK_CALL" />
             </intent-filter>
         </receiver>
 

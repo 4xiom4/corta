@@ -1,15 +1,13 @@
 package com.corta.app.ui.designsystem
 
+import androidx.activity.ComponentActivity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assertContentDescriptionContains
-import androidx.compose.ui.test.assertContentDescriptionEquals
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
@@ -27,7 +25,7 @@ import org.junit.Test
 class CortaIconButtonAccessibilityTest {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun CortaIconButton_propagates_contentDescription_to_semantics_tree() {
@@ -53,8 +51,12 @@ class CortaIconButtonAccessibilityTest {
         // The decorative icon should not be findable by any content
         // description, while the sibling text is fully present.
         composeTestRule
-            .onNodeWithContentDescription("Configuración", substring = true)
-            .assertContentDescriptionContains("Configuración")
+            .onNodeWithContentDescription("Configuración")
+            .assertDoesNotExist()
+
+        composeTestRule
+            .onNodeWithText("Configuración")
+            .assertIsDisplayed()
     }
 
     @Test

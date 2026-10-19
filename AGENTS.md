@@ -1,4 +1,4 @@
-# AGENTS.md v1.2 (Octubre 2026)
+# AGENTS.md v1.3 (Octubre 2026)
 
 - **Módulos y Build**: Proyecto Kotlin Multiplatform (KMP) con `:composeApp` (Android + Jetpack Compose + servicios del SO) y `:shared` (dominio, datos, SQLDelight, Ktor, Koin). Sin `gradlew` de sistema previo; usa el wrapper `./gradlew` generado en la raíz (Gradle 9.5.0, Java 17 toolchain). Enlaces en `settings.gradle.kts` y catálogo en `gradle/libs.versions.toml`.
 - **Inicio y DI**: `composeApp/.../CortaApplication.kt` carga SQLCipher en memoria de forma atómica, arranca Koin (`appModule`) y agenda la sincronización diferencial en segundo plano. DI en `composeApp/.../di/AppModule.kt` provee `CortaDatabase`, `CortaRepository`, `SpamEvaluator`, `CallValidator` y factories de drivers.
@@ -10,11 +10,21 @@
   - En Chile las llamadas entran tanto en formato local (`809XXXXXX`, `9XXXXXXXX`) como internacional (`+56809XXXXXX`, `+569XXXXXXXX`).
   - Todo matching de reglas (Trie exacto, prefijo o regex) y toda inserción en base de datos debe normalizarse de forma simétrica usando `PhoneNumberUtils.normalize()`.
   - Las reglas de la SUBTEL (`809` para bloqueo de telemarketing masivo no solicitado y `600` para aviso de servicios contratados) deben estar **pre-sembradas localmente en la base de datos** desde el primer arranque, sin depender de que se complete una sincronización de red.
-- **Lista Blanca Crítica Inmutable (Chile)**:
+- **Lista Blanca Crítica Inmutable y Directorio Regional (Chile)**:
   - Nunca bloquear servicios de emergencia: 130, 131, 132, 133, 134, 137, 147, 149.
   - Nunca bloquear líneas 14xx de Seguridad Municipal (1402, 1403, 1406, 1414, 1416, 1417, 1418, 1419, 1445, 1468, etc.).
-  - Nunca bloquear servicios esenciales de salud y utilidad pública (600 360 7777 Salud Responde, Registro Civil, bancos públicos, servicios básicos).
+  - Directorio oficial con más de 600 números comunales y regionales (`ChileanRegionalDirectory`) clasificados por región y comuna, presembrados y sin dependencias de red.
   - La verificación de whitelist en `CortaRepository.isWhitelistedNumber()` se evalúa antes que cualquier regla de usuario, SUBTEL o comunidad.
+- **Búsqueda Unificada On-Device**:
+  - En `CallLogScreen`, la barra de búsqueda consulta simultáneamente: historial de llamadas locales, agenda telefónica del dispositivo (`ContactRepository`) y el directorio chileno oficial (`ChileanRegionalDirectory`), mostrando resultados organizados con botones de marcado directo.
+- **Lógica de Categorías y Pestañas Predeterminadas (Orden 1-N)**:
+  - **Sin botones de estrella redundantes**: El orden de la lista en la hoja modal `(+)` es la única fuente de verdad (SSOT).
+  - La categoría en la primera posición (`index == 0`) es automáticamente la primera en la barra horizontal y la **pestaña inicial al abrir la app**.
+  - Insignia no interactiva `"Pestaña inicial"` con `softWrap = false, maxLines = 1` y título con `weight(1f, fill = false)` para prevenir deformaciones verticales en nombres extensos.
+- **Separación de Identidad vs Configuración de Sistema**:
+  - El diálogo de perfil (`DonorProfileScreen`) gestiona exclusivamente la identidad del usuario, cuenta, datos de contacto y aporte/donación.
+  - Prohibido mezclar widgets ficticios ("Estado de protección 100% 2ms") en el perfil de usuario.
+  - Toda la configuración del motor anti-spam, reglas, base de datos y diagnóstico se administra exclusivamente desde `SettingsScreen` (icono de engranaje).
 - **Paginación Segura en Android 15 (`ContentResolver`)**:
   - **Prohibido:** Concatenar strings como `"${CallLog.Calls.DATE} DESC LIMIT 30 OFFSET 0"` en el argumento `sortOrder` de `ContentResolver.query()`. Android 10+ y Android 15 lanzan `IllegalArgumentException` por inyección de cláusulas SQL no autorizadas.
   - **Obligatorio:** Utilizar `Bundle` con `ContentResolver.QUERY_ARG_LIMIT` y `ContentResolver.QUERY_ARG_OFFSET` en API 26+ (o navegación por posición de cursor como fallback seguro).
@@ -29,5 +39,7 @@
   - Objetivos táctiles mínimos de **48x48 dp** y soporte para `WindowInsets.safeDrawing` para cumplir la norma Edge-to-Edge de Android 15.
 - **Comandos del Proyecto**:
   - Compilar APK debug: `./gradlew :composeApp:assembleDebug`
+  - Compilar APK release optimizada (14 MB): `./gradlew :composeApp:assembleRelease`
   - Ejecutar pruebas: `./gradlew testDebugUnitTest`
-  - Instalar en dispositivo físico o emulador vía ADB: `adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk`
+  - Instalar APK debug vía ADB: `adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk`
+  - Instalar APK release vía ADB: `adb install -r composeApp/build/outputs/apk/release/composeApp-release.apk`

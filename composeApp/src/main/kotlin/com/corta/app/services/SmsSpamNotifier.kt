@@ -71,13 +71,29 @@ object SmsSpamNotifier {
         ensureChannels(context)
 
         try {
+            val notificationId = sender.hashCode()
             val openAppIntent = Intent(context, com.corta.app.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("EXTRA_TARGET_TAB", 0)
+                putExtra("EXTRA_SMS_SENDER", sender)
             }
             val pendingIntent = PendingIntent.getActivity(
                 context,
-                sender.hashCode(),
+                notificationId,
                 openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Acción interactiva: No es spam (desmarca y añade excepción en segundo plano)
+            val allowIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_ALLOW_SMS
+                putExtra(NotificationActionReceiver.EXTRA_SMS_SENDER, sender)
+                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val allowPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId + 10,
+                allowIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
@@ -86,12 +102,14 @@ object SmsSpamNotifier {
                 .setContentTitle(context.getString(R.string.sms_blocked_title))
                 .setContentText(context.getString(R.string.sms_blocked_desc, sender))
                 .setContentIntent(pendingIntent)
+                .addAction(android.R.drawable.ic_menu_view, "Ver mensaje", pendingIntent)
+                .addAction(android.R.drawable.ic_menu_revert, "No es spam", allowPendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setAutoCancel(true)
                 .build()
 
-            NotificationManagerCompat.from(context).notify(sender.hashCode(), notification)
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
             Timber.tag(TAG).d("Sent notification for blocked SMS from %s", sender)
         } catch (e: SecurityException) {
             Timber.tag(TAG).e(e, "Missing permission for notification")
@@ -103,13 +121,40 @@ object SmsSpamNotifier {
         ensureChannels(context)
 
         try {
+            val notificationId = sender.hashCode() + 1
             val openAppIntent = Intent(context, com.corta.app.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("EXTRA_TARGET_TAB", 0)
+                putExtra("EXTRA_SMS_SENDER", sender)
             }
             val pendingIntent = PendingIntent.getActivity(
                 context,
-                sender.hashCode() + 1,
+                notificationId,
                 openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val allowIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_ALLOW_SMS
+                putExtra(NotificationActionReceiver.EXTRA_SMS_SENDER, sender)
+                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val allowPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId + 10,
+                allowIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val blockIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_BLOCK_SMS
+                putExtra(NotificationActionReceiver.EXTRA_SMS_SENDER, sender)
+                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val blockPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId + 20,
+                blockIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
@@ -118,12 +163,15 @@ object SmsSpamNotifier {
                 .setContentTitle(context.getString(R.string.sms_spam_warn_title))
                 .setContentText(context.getString(R.string.sms_spam_warn_desc, sender))
                 .setContentIntent(pendingIntent)
+                .addAction(android.R.drawable.ic_menu_view, "Ver", pendingIntent)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Bloquear", blockPendingIntent)
+                .addAction(android.R.drawable.ic_menu_revert, "No es spam", allowPendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setAutoCancel(true)
                 .build()
 
-            NotificationManagerCompat.from(context).notify(sender.hashCode() + 1, notification)
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
             Timber.tag(TAG).d("Sent notification for suspicious SMS from %s", sender)
         } catch (e: SecurityException) {
             Timber.tag(TAG).e(e, "Missing permission for notification")

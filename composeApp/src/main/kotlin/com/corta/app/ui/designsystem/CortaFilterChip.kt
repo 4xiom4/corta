@@ -1,8 +1,11 @@
 package com.corta.app.ui.designsystem
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FilterChip
@@ -155,8 +158,8 @@ fun CortaCategoryExploreButton(
 }
 
 /**
- * Unified Floating Action Button across all 3 main tabs (SMS, Calls, Contacts).
- * Standard 56dp squircle with 16dp rounded corners, primary theme container, and 4dp elevation.
+ * Modern Material 3 Expressive Floating Action Button across all 3 main tabs (SMS, Calls, Contacts).
+ * Styled with 20dp squircle curvature, subtle tonal depth border, and high-contrast tactile feedback.
  */
 @Composable
 fun CortaFloatingActionButton(
@@ -165,22 +168,29 @@ fun CortaFloatingActionButton(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
-    FloatingActionButton(
+    Surface(
         onClick = onClick,
-        modifier = modifier.size(56.dp),
-        containerColor = MaterialTheme.colorScheme.primary,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 8.dp
-        )
+        shadowElevation = 6.dp,
+        tonalElevation = 4.dp,
+        border = androidx.compose.foundation.BorderStroke(
+            1.5.dp,
+            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f)
+        ),
+        modifier = modifier.size(58.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp)
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(26.dp)
+            )
+        }
     }
 }
 

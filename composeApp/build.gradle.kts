@@ -90,7 +90,6 @@ android {
         getByName("debug") {
             isMinifyEnabled = false
             isDebuggable = true
-            applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
     }
@@ -123,9 +122,10 @@ android {
         testImplementation("app.cash.sqldelight:sqlite-driver:2.0.2")
         testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.0")
         testImplementation("androidx.compose.ui:ui-test-junit4:1.6.7")
-        @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-        testImplementation(compose.uiTest)
         androidTestImplementation("androidx.test.ext:junit:1.1.5")
         androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+        androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.7")
+        androidTestImplementation("app.cash.sqldelight:android-driver:2.0.2")
+        debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.7")
     }
 }
