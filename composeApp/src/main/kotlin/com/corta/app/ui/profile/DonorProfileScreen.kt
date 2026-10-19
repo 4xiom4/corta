@@ -17,6 +17,12 @@ import com.corta.app.ui.contacts.ChileanRegionalDirectory
 import com.corta.app.ui.contacts.RegionSelectorBottomSheet
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.FileOutputStream
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,7 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -153,6 +161,43 @@ fun DonorProfileScreen(
     var userPhone by remember { mutableStateOf(prefs.getString("user_phone", null) ?: initialDetectedPhone ?: "") }
     var userAvatar by remember { mutableStateOf(prefs.getString("user_avatar", null)) }
 
+    val customAvatarFile = remember { File(context.filesDir, "user_avatar_custom.jpg") }
+    var customAvatarBitmap by remember {
+        mutableStateOf(
+            if (customAvatarFile.exists()) {
+                try { BitmapFactory.decodeFile(customAvatarFile.absolutePath) } catch (e: Exception) { null }
+            } else null
+        )
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                    if (originalBitmap != null) {
+                        val size = minOf(originalBitmap.width, originalBitmap.height)
+                        val x = (originalBitmap.width - size) / 2
+                        val y = (originalBitmap.height - size) / 2
+                        val squareBitmap = Bitmap.createBitmap(originalBitmap, x, y, size, size)
+                        val scaledBitmap = Bitmap.createScaledBitmap(squareBitmap, 384, 384, true)
+                        FileOutputStream(customAvatarFile).use { out ->
+                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                        }
+                        customAvatarBitmap = scaledBitmap
+                        userAvatar = "custom"
+                        prefs.edit().putString("user_avatar", "custom").apply()
+                        Toast.makeText(context, "Foto de perfil actualizada", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "No se pudo cargar la imagen", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     var userRegion by remember {
         val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
         mutableStateOf(ChileanRegion.fromCode(savedCode))
@@ -260,7 +305,16 @@ fun DonorProfileScreen(
                                 modifier = Modifier.size(76.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    if (!userAvatar.isNullOrBlank()) {
+                                    if (userAvatar == "custom" && customAvatarBitmap != null) {
+                                        Image(
+                                            bitmap = customAvatarBitmap!!.asImageBitmap(),
+                                            contentDescription = "Avatar de usuario",
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else if (!userAvatar.isNullOrBlank() && userAvatar != "custom") {
                                         Text(
                                             text = userAvatar!!,
                                             fontSize = 36.sp
@@ -360,7 +414,7 @@ fun DonorProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.LocationOn,
+                                    imageVector = Icons.Rounded.Map,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
@@ -448,9 +502,9 @@ fun DonorProfileScreen(
                                     action = Intent.ACTION_SEND
                                     putExtra(
                                         Intent.EXTRA_TEXT,
-                                        "Te recomiendo Corta App para Android:\n" +
-                                        "Bloquea llamadas spam de telemarketing (norma SUBTEL 809), fraudes bancarios y smishing SMS en Chile de forma automática y 100% privada, sin subir tus contactos a internet.\n\n" +
-                                        "Descárgala gratis en: https://github.com/axioma-dev/corta"
+                                        "¡Hola! Te comparto Corta App para cortar de una el spam en Chile 🇨🇱🚫\n\n" +
+                                        "Bloquea al toque llamadas molestas de telemarketing (norma SUBTEL 809), cobranzas chantas y estafas por SMS. Funciona 100% en tu teléfono, sin comerciales y sin subir tus contactos a ninguna parte.\n\n" +
+                                        "Descárgala gratis y dile chao al spam: https://corta.app"
                                     )
                                     type = "text/plain"
                                 }
@@ -1012,7 +1066,13 @@ fun DonorProfileScreen(
     if (showEditProfileDialog) {
         var tempName by remember { mutableStateOf(userName) }
         var tempPhone by remember { mutableStateOf(userPhone) }
-        val avatarPresets = listOf("👤", "🛡️", "🇨🇱", "📞", "⚡", "🦊", "🐱", "🚀")
+        val avatarPresets = remember {
+            listOf(
+                "👨‍💼", "👩‍💼", "🧔", "👩‍🦰",
+                "👴", "👵", "🧑‍🎓", "🇨🇱",
+                "🛡️", "🦉", "🏔️", "☕"
+            )
+        }
         var selectedAvatar by remember { mutableStateOf(userAvatar ?: "👤") }
 
         AlertDialog(
@@ -1030,48 +1090,81 @@ fun DonorProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "Elige tu avatar o ícono de perfil:",
+                        text = "Foto o avatar de perfil:",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    OutlinedButton(
+                        onClick = { photoPickerLauncher.launch("image/*") },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        avatarPresets.take(4).forEach { emoji ->
-                            val isSel = selectedAvatar == emoji
-                            Surface(
-                                shape = CircleShape,
-                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                border = if (isSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clickable { selectedAvatar = emoji }
+                        Icon(Icons.Rounded.AddPhotoAlternate, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (customAvatarBitmap != null) "Cambiar foto de la galería" else "Elegir foto de la galería",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (customAvatarBitmap != null) {
+                        val isCustomSel = selectedAvatar == "custom"
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isCustomSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            border = if (isCustomSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedAvatar = "custom" }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(text = emoji, fontSize = 22.sp)
-                                }
+                                Image(
+                                    bitmap = customAvatarBitmap!!.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Text(
+                                    text = "Usar mi foto personalizada",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isCustomSel) FontWeight.Bold else FontWeight.Normal,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        avatarPresets.drop(4).forEach { emoji ->
-                            val isSel = selectedAvatar == emoji
-                            Surface(
-                                shape = CircleShape,
-                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                border = if (isSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clickable { selectedAvatar = emoji }
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(text = emoji, fontSize = 22.sp)
+                    Text(
+                        text = "O elige uno de los avatares predeterminados:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    avatarPresets.chunked(4).forEach { rowEmojis ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            rowEmojis.forEach { emoji ->
+                                val isSel = selectedAvatar == emoji
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = if (isSel) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clickable { selectedAvatar = emoji }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(text = emoji, fontSize = 22.sp)
+                                    }
                                 }
                             }
                         }

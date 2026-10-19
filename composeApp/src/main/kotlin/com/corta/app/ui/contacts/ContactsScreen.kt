@@ -559,18 +559,32 @@ fun ContactsScreen(
             }
         }
 
-        // Floating Action Button (Add Contact)
+        // Floating Action Button (Add Contact) - Safe resolution & Handedness support
+        val fabAlignment = if (handedness == Handedness.LEFT) Alignment.BottomStart else Alignment.BottomEnd
         CortaFloatingActionButton(
             onClick = {
-                val intent = Intent(Intent.ACTION_INSERT).apply {
-                    type = ContactsContract.RawContacts.CONTENT_TYPE
+                try {
+                    val intent = Intent(Intent.ACTION_INSERT).apply {
+                        data = ContactsContract.Contacts.CONTENT_URI
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    try {
+                        val fallback = Intent(Intent.ACTION_INSERT).apply {
+                            type = ContactsContract.RawContacts.CONTENT_TYPE
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(fallback)
+                    } catch (e2: Exception) {
+                        Toast.makeText(context, "No se encontró una aplicación de contactos compatible", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                context.startActivity(intent)
             },
             icon = Icons.Rounded.PersonAdd,
             contentDescription = strings.contacts.addAction,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(fabAlignment)
                 .padding(16.dp)
         )
     }
@@ -1704,53 +1718,6 @@ fun ContactCategoriesBottomSheet(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Region & Comuna Row
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenRegionPicker() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Ubicación activa",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        val locLabel = when {
-                            selectedComuna != null -> "$selectedComuna (${selectedRegion.displayName})"
-                            selectedRegion != ChileanRegion.ALL -> selectedRegion.displayName
-                            else -> "Chile (Todas las regiones)"
-                        }
-                        Text(
-                            text = locLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    TextButton(onClick = onOpenRegionPicker) {
-                        Text("Cambiar", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
         }
     }
 }
@@ -2391,42 +2358,85 @@ fun RegionSelectorBottomSheet(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
                                             text = "Selecciona tu comuna:",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(bottom = 6.dp)
+                                            modifier = Modifier.padding(bottom = 2.dp)
                                         )
-                                        Row(
+
+                                        // Option: Toda la región
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (isRegionActive && selectedComuna == null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .horizontalScroll(rememberScrollState()),
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            // Chip for "Toda la región"
-                                            FilterChip(
-                                                selected = isRegionActive && selectedComuna == null,
-                                                onClick = {
+                                                .clickable {
                                                     onSelectLocation(region, null)
                                                     onDismiss()
-                                                },
-                                                label = { Text("Toda la región") },
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            comunasForRegion.forEach { com ->
-                                                val isComunaSelected = isRegionActive && selectedComuna.equals(com, ignoreCase = true)
-                                                FilterChip(
-                                                    selected = isComunaSelected,
-                                                    onClick = {
-                                                        onSelectLocation(region, com)
-                                                        onDismiss()
-                                                    },
-                                                    label = { Text(com, fontWeight = if (isComunaSelected) FontWeight.Bold else FontWeight.Normal) },
-                                                    shape = RoundedCornerShape(8.dp)
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Rounded.Public,
+                                                    contentDescription = null,
+                                                    tint = if (isRegionActive && selectedComuna == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(16.dp)
                                                 )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Toda la Región (${region.displayName})",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = if (isRegionActive && selectedComuna == null) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isRegionActive && selectedComuna == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+
+                                        // Comunas in 2-column rows (no horizontal scroll conflict)
+                                        comunasForRegion.chunked(2).forEach { rowComunas ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                for (com in rowComunas) {
+                                                    val isComunaSelected = isRegionActive && selectedComuna.equals(com, ignoreCase = true)
+                                                    Surface(
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        color = if (isComunaSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                                        border = if (isComunaSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clickable {
+                                                                onSelectLocation(region, com)
+                                                                onDismiss()
+                                                            }
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                                                            contentAlignment = Alignment.CenterStart
+                                                        ) {
+                                                            Text(
+                                                                text = com,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                fontWeight = if (isComunaSelected) FontWeight.Bold else FontWeight.Normal,
+                                                                color = if (isComunaSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                if (rowComunas.size == 1) {
+                                                    Spacer(modifier = Modifier.weight(1f))
+                                                }
                                             }
                                         }
                                     }

@@ -402,7 +402,7 @@ fun SubtelBannerCard() {
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Telemarketing masivo no solicitado bloqueado de fábrica en memoria local (<2ms) sin peticiones a internet.",
+                    text = "Telemarketing masivo no solicitado bloqueado de fábrica en el dispositivo, sin consumir datos móviles ni salir a internet.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

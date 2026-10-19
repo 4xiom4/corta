@@ -50,7 +50,9 @@ import com.corta.app.ui.designsystem.CortaFloatingActionButton
 import com.corta.app.ui.designsystem.StitchFilterChip
 import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
+import com.corta.app.ui.theme.Handedness
 import com.corta.app.ui.theme.LocalDetailedMode
+import com.corta.app.ui.theme.LocalHandedness
 import com.corta.app.ui.trash.TrashBottomSheet
 import com.corta.domain.*
 import kotlinx.coroutines.Dispatchers
@@ -102,6 +104,55 @@ fun formatSmsDateChile(timestamp: Long): String {
         return synchronized(smsDayMonthFormat) { smsDayMonthFormat.format(Date(timestamp)) }
     }
     return synchronized(smsYearFormat) { smsYearFormat.format(Date(timestamp)) }
+}
+
+fun formatSmsDateSectionChile(timestamp: Long): String {
+    if (timestamp <= 0L) return "Anteriores"
+    val now = Calendar.getInstance()
+    val msgCal = Calendar.getInstance().apply { timeInMillis = timestamp }
+
+    val nowYear = now.get(Calendar.YEAR)
+    val msgYear = msgCal.get(Calendar.YEAR)
+    val nowDayOfYear = now.get(Calendar.DAY_OF_YEAR)
+    val msgDayOfYear = msgCal.get(Calendar.DAY_OF_YEAR)
+
+    return when {
+        nowYear == msgYear && nowDayOfYear == msgDayOfYear -> "Hoy"
+        nowYear == msgYear && nowDayOfYear - msgDayOfYear == 1 -> "Ayer"
+        nowYear == msgYear && now.get(Calendar.WEEK_OF_YEAR) == msgCal.get(Calendar.WEEK_OF_YEAR) -> "Esta semana"
+        nowYear == msgYear && now.get(Calendar.MONTH) == msgCal.get(Calendar.MONTH) -> "Este mes"
+        nowYear == msgYear -> SimpleDateFormat("MMMM", Locale("es", "CL")).format(Date(timestamp)).replaceFirstChar { it.uppercase() }
+        else -> SimpleDateFormat("MMMM yyyy", Locale("es", "CL")).format(Date(timestamp)).replaceFirstChar { it.uppercase() }
+    }
+}
+
+@Composable
+private fun SmsSectionHeader(title: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 4.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            HorizontalDivider(
+                modifier = Modifier.weight(1f),
+                thickness = 0.8.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -393,40 +444,54 @@ fun SmsScreen(
                     )
                 }
             } else {
+                val groupedSms = remember(displayList) {
+                    displayList.groupBy { (item, _) ->
+                        formatSmsDateSectionChile(item.message.date)
+                    }
+                }
+
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(
-                        items = displayList,
-                        key = { _, (item, _) -> item.message.threadId.ifBlank { item.message.id } },
-                        contentType = { _, _ -> "sms_card" }
-                    ) { index, (item, smsMeta) ->
-                        if (index >= displayList.size - 5 && inboxSms.itemCount > 0) {
-                            SideEffect {
-                                inboxSms.get(inboxSms.itemCount - 1)
-                            }
+                    groupedSms.forEach { (sectionTitle, itemsInSection) ->
+                        stickyHeader(key = "header_sms_$sectionTitle") {
+                            SmsSectionHeader(title = sectionTitle.uppercase(Locale("es", "CL")))
                         }
-                        ConversationItem(
-                            message = item.message,
-                            displayName = item.displayName,
-                            smsMeta = smsMeta,
-                            isDetailedMode = isDetailedMode,
-                            onClick = { onThreadClick(item.message.threadId) },
-                            onLongClick = {
-                                selectedSmsForMenu = item.message
-                                selectedDisplayNameForMenu = item.displayName
-                            },
-                            onTagClick = { tag ->
-                                highlightedTagForDictionary = tag
-                                showTagDictionarySheet = true
+                        itemsIndexed(
+                            items = itemsInSection,
+                            key = { _, (item, _) -> item.message.threadId.ifBlank { item.message.id } },
+                            contentType = { _, _ -> "sms_card" }
+                        ) { index, (item, smsMeta) ->
+                            if (index >= itemsInSection.size - 2 && inboxSms.itemCount > 0) {
+                                SideEffect {
+                                    inboxSms.get(inboxSms.itemCount - 1)
+                                }
                             }
-                        )
+                            ConversationItem(
+                                message = item.message,
+                                displayName = item.displayName,
+                                smsMeta = smsMeta,
+                                isDetailedMode = isDetailedMode,
+                                onClick = { onThreadClick(item.message.threadId) },
+                                onLongClick = {
+                                    selectedSmsForMenu = item.message
+                                    selectedDisplayNameForMenu = item.displayName
+                                },
+                                onTagClick = { tag ->
+                                    highlightedTagForDictionary = tag
+                                    showTagDictionarySheet = true
+                                }
+                            )
+                        }
                     }
                 }
             }
+
+            val handedness = LocalHandedness.current
+            val fabAlignment = if (handedness == Handedness.LEFT) Alignment.BottomStart else Alignment.BottomEnd
 
             // Compose New SMS Button (Unified Material 3 Corta FAB)
             CortaFloatingActionButton(
@@ -434,7 +499,7 @@ fun SmsScreen(
                 icon = Icons.Rounded.Edit,
                 contentDescription = Strings.sms.newMessageCd,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(fabAlignment)
                     .padding(16.dp)
             )
 
@@ -892,8 +957,8 @@ fun ConversationItem(
 
                         Text(
                             text = formatSmsDateChile(message.date),
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 6.dp)
                         )

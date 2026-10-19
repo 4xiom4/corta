@@ -33,6 +33,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -170,11 +171,6 @@ fun SettingsScreen(
     }
 
     val rules by cortaRepository.observeRules().collectAsState(initial = emptyList())
-
-    var simNumberInput by remember { mutableStateOf("") }
-    var simResultAction by remember { mutableStateOf<FilterAction?>(null) }
-    var simResultReason by remember { mutableStateOf<String?>(null) }
-    var simLatencyNanos by remember { mutableLongStateOf(0L) }
 
     var measuredLatencyMs by remember { mutableStateOf("0.8 ms") }
     var isBenchmarking by remember { mutableStateOf(false) }
@@ -330,58 +326,13 @@ fun SettingsScreen(
         ) {
             when (currentSubmenu) {
                 SettingsSubmenu.MAIN -> {
-                    // Quick overview summary
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.VerifiedUser,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column {
-                                Text(
-                                    text = "Protección Corta Activa",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Motor de evaluación local <2ms • Base SUBTEL pre-sembrada • Zero-Knowledge",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
                     SettingsSectionHeader("CATEGORÍAS DE CONFIGURACIÓN")
 
                     // 1. Configuración General
                     SettingsHubCard(
                         title = "1. Configuración General",
-                        subtitle = "Temas Stitch, modo oscuro OLED, ergonomía, idioma, respaldo JSON y diagnóstico",
-                        badgeText = currentThemeMode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        subtitle = "Temas Stitch, modo oscuro OLED, ergonomía, idioma, respaldo y diagnóstico",
+                        badgeText = null,
                         icon = Icons.Rounded.Settings,
                         iconTint = MaterialTheme.colorScheme.primary,
                         onClick = { currentSubmenu = SettingsSubmenu.GENERAL }
@@ -391,7 +342,7 @@ fun SettingsScreen(
                     SettingsHubCard(
                         title = "2. Configuración de Llamadas",
                         subtitle = "Filtro SUBTEL 809, números privados, llamadas internacionales, doble SIM y papelera",
-                        badgeText = "${listOf(chao809Aggressive, blockPrivateNumbers, blockInternationalCalls, silenceWarnCalls).count { it }} activos",
+                        badgeText = null,
                         icon = Icons.Rounded.Call,
                         iconTint = MaterialTheme.colorScheme.secondary,
                         onClick = { currentSubmenu = SettingsSubmenu.CALLS }
@@ -400,8 +351,8 @@ fun SettingsScreen(
                     // 3. Configuración de Mensajes (SMS)
                     SettingsHubCard(
                         title = "3. Configuración de Mensajes (SMS)",
-                        subtitle = "Escudo anti-smishing, remitentes institucionales, palabras clave y exportación",
-                        badgeText = if (protectSmsLinks) "Protegido" else "Pausado",
+                        subtitle = "Protección contra estafas por SMS, remitentes institucionales y palabras clave",
+                        badgeText = null,
                         icon = Icons.Rounded.Sms,
                         iconTint = MaterialTheme.colorScheme.error,
                         onClick = { currentSubmenu = SettingsSubmenu.MESSAGES }
@@ -410,8 +361,8 @@ fun SettingsScreen(
                     // 4. Configuración de Contactos
                     SettingsHubCard(
                         title = "4. Configuración de Contactos",
-                        subtitle = "Sincronización segura de agenda, emergencias 13x/14xx inmutables y reglas",
-                        badgeText = "${rules.size} reglas",
+                        subtitle = "Sincronización segura de agenda, emergencias protegidas y reglas de bloqueo",
+                        badgeText = null,
                         icon = Icons.Rounded.Contacts,
                         iconTint = MaterialTheme.colorScheme.tertiary,
                         onClick = { currentSubmenu = SettingsSubmenu.CONTACTS }
@@ -419,10 +370,6 @@ fun SettingsScreen(
                 }
 
                 SettingsSubmenu.GENERAL -> {
-                    SubmenuInfoCard(
-                        title = "Configuración General del Sistema",
-                        description = "Personalización visual y ergonomía según la regla 60-30-10, respaldos JSON seguros, diagnóstico de rendimiento (<2ms) e información del proyecto."
-                    )
 
                     SettingsSectionHeader("UBICACIÓN Y COBERTURA REGIONAL (CHILE)")
 
@@ -827,11 +774,6 @@ fun SettingsScreen(
                 }
 
                 SettingsSubmenu.CALLS -> {
-                    SubmenuInfoCard(
-                        title = "Filtros y Protección de Llamadas",
-                        description = "Toda evaluación se realiza en la memoria RAM en <2ms. Las emergencias (131, 132, 133, 14xx) y salud están protegidas por ley. Los números chilenos desconocidos se permiten por defecto para asegurar llamadas legítimas de doctores, colegios y repartos."
-                    )
-
                     SettingsSectionHeader("BLOQUEO Y REGLAS DE LLAMADAS")
 
                     SettingsCardContainer {
@@ -913,7 +855,7 @@ fun SettingsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
-                    SettingsSectionHeader("GESTIÓN MULTI-SIM (CHIPS)")
+                    SettingsSectionHeader("GESTIÓN MULTI-SIM")
 
                     SettingsCardContainer {
                         simCards.forEach { sim ->
@@ -1008,146 +950,9 @@ fun SettingsScreen(
                             }
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    SettingsSectionHeader("SIMULADOR EN MEMORIA RAM (<2MS)")
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Probar Evaluación de Número",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Ingresa un número (ej: 809123456, 133, 1402, +56912345678) para ver cómo responde Corta en tiempo real sin salir a internet.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedTextField(
-                                    value = simNumberInput,
-                                    onValueChange = { simNumberInput = it },
-                                    placeholder = { Text("Ej: 809123456") },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                Button(
-                                    onClick = {
-                                        if (simNumberInput.isNotBlank()) {
-                                            val start = System.nanoTime()
-                                            val isWhite = cortaRepository.isWhitelistedNumber(simNumberInput)
-                                            val action = cortaRepository.getActionForNumber(simNumberInput)
-                                            simLatencyNanos = System.nanoTime() - start
-                                            simResultAction = action
-                                            simResultReason = when {
-                                                isWhite -> "Lista Blanca Crítica Inmutable de Chile"
-                                                action == FilterAction.BLOCK && (simNumberInput.contains("809")) -> "Regla Oficial SUBTEL 809 (Telemarketing Masivo)"
-                                                action == FilterAction.BLOCK -> "Regla de Bloqueo Activa en Corta"
-                                                action == FilterAction.WARN -> "Aviso / Precaución Comercial (Línea 600)"
-                                                else -> "Número Regular / Sin reportes de spam"
-                                            }
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(54.dp)
-                                ) {
-                                    Text("Evaluar")
-                                }
-                            }
-
-                            if (simResultAction != null) {
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = when (simResultAction) {
-                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.errorContainer
-                                        FilterAction.WARN -> MaterialTheme.colorScheme.tertiaryContainer
-                                        else -> MaterialTheme.colorScheme.primaryContainer
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = when (simResultAction) {
-                                                FilterAction.BLOCK -> Icons.Rounded.Block
-                                                FilterAction.WARN -> Icons.Rounded.Warning
-                                                else -> Icons.Rounded.CheckCircle
-                                            },
-                                            contentDescription = null,
-                                            tint = when (simResultAction) {
-                                                FilterAction.BLOCK -> MaterialTheme.colorScheme.error
-                                                FilterAction.WARN -> MaterialTheme.colorScheme.tertiary
-                                                else -> MaterialTheme.colorScheme.primary
-                                            },
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = "Acción: ${simResultAction?.name}",
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = when (simResultAction) {
-                                                        FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer
-                                                        FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer
-                                                        else -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                    }
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Surface(
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                                                ) {
-                                                    Text(
-                                                        text = String.format(Locale.US, "%.2f ms", simLatencyNanos / 1_000_000.0),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                            Text(
-                                                text = simResultReason ?: "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = when (simResultAction) {
-                                                    FilterAction.BLOCK -> MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
-                                                    FilterAction.WARN -> MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.9f)
-                                                    else -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
 
                 SettingsSubmenu.MESSAGES -> {
-                    SubmenuInfoCard(
-                        title = "Escudo Antifraude SMS (Smishing)",
-                        description = "Analiza remitentes y cuerpos de mensajes SMS buscando suplantación bancaria y enlaces acortados peligrosos con heurística 100% local on-device."
-                    )
-
                     SettingsSectionHeader("SEGURIDAD ANTIFRAUDE SMS")
 
                     SettingsCardContainer {
@@ -1240,11 +1045,6 @@ fun SettingsScreen(
                 }
 
                 SettingsSubmenu.CONTACTS -> {
-                    SubmenuInfoCard(
-                        title = "Gestión de Contactos y Agenda Segura",
-                        description = "Sincroniza tus contactos a la base de datos segura de Corta, consulta la lista blanca de emergencia inmutable y administra tus reglas de números bloqueados y permitidos."
-                    )
-
                     SettingsSectionHeader("AGENDA Y PROTECCIÓN DE CONTACTOS")
 
                     SettingsCardContainer {
@@ -1356,57 +1156,104 @@ fun SettingsScreen(
     }
 
     selectedSimForDetails?.let { sim ->
-        SimCardDetailsDialog(
+        SimCardDetailsBottomSheet(
             sim = sim,
             onDismiss = { selectedSimForDetails = null }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SimCardDetailsDialog(
+fun SimCardDetailsBottomSheet(
     sim: SettingsSimSlot,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Rounded.SimCard,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(36.dp)
-            )
-        },
-        title = {
-            Text(
-                text = "Ranura ${sim.slotIndex + 1}: ${sim.carrierName}",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SettingsSimDetailRow(label = "Operador", value = sim.carrierName)
-                SettingsSimDetailRow(label = "Estado", value = if (sim.isActive) "Activa y Protegida" else "Inactiva / Sin SIM")
-                SettingsSimDetailRow(label = "Número", value = sim.number ?: "No publicado por operador")
-                SettingsSimDetailRow(label = "País", value = sim.countryIso ?: "CL")
-                if (sim.subId != -1) {
-                    SettingsSimDetailRow(label = "ID Suscripción", value = "${sim.subId}")
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.SimCard,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                Text(
-                    text = "Corta evalúa en memoria (<2ms) todas las llamadas y SMS que entran por esta línea según la normativa chilena.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Ranura ${sim.slotIndex + 1}: ${sim.carrierName}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Información del chip telefónico",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Entendido", fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SettingsSimDetailRow(label = "Operador", value = sim.carrierName)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                    SettingsSimDetailRow(label = "Estado", value = if (sim.isActive) "Activa y Protegida" else "Inactiva / Sin SIM")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                    SettingsSimDetailRow(label = "Número", value = sim.number ?: "No publicado por operador")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                    SettingsSimDetailRow(label = "País", value = sim.countryIso ?: "CL")
+                    if (sim.subId != -1) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                        SettingsSimDetailRow(label = "ID Suscripción", value = "${sim.subId}")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Corta evalúa en memoria todas las llamadas y SMS que entran por esta línea según la normativa chilena.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text(Strings.common.understood)
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -1508,32 +1355,6 @@ fun SettingsHubCard(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun SubmenuInfoCard(title: String, description: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 18.sp
             )
         }
     }
@@ -1843,21 +1664,48 @@ fun ColorPaletteGrid(
                                 .padding(horizontal = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(swatch.primaryColor)
-                                    .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isSelected) {
+                            if (swatch.accent == AccentColor.DYNAMIC) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    Color(0xFF4285F4),
+                                                    Color(0xFF34A853),
+                                                    Color(0xFFFBBC05),
+                                                    Color(0xFFEA4335)
+                                                )
+                                            )
+                                        )
+                                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Icon(
-                                        imageVector = Icons.Rounded.Check,
+                                        imageVector = if (isSelected) Icons.Rounded.Check else Icons.Rounded.AutoAwesome,
                                         contentDescription = null,
                                         tint = Color.White,
-                                        modifier = Modifier.size(14.dp)
+                                        modifier = Modifier.size(13.dp)
                                     )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(swatch.primaryColor)
+                                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.width(10.dp))
@@ -1931,46 +1779,65 @@ fun EmergencyWhitelistSheet(onDismiss: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             val emergencyList = listOf(
+                "130" to "CONAF (Incendios Forestales)",
                 "131" to "SAMU (Ambulancia)",
                 "132" to "Cuerpo de Bomberos de Chile",
-                "133" to "Carabineros de Chile (Emergencias Policiales)",
+                "133" to "Carabineros de Chile (Emergencias)",
                 "134" to "Policía de Investigaciones (PDI)",
+                "135" to "Fono Drogas (Carabineros)",
                 "137" to "Búsqueda y Salvamento Marítimo",
+                "139" to "Información Policial",
                 "147" to "Fono Familia (Violencia Intrafamiliar)",
                 "149" to "Fono Niños",
-                "14xx" to "Seguridad Ciudadana Municipal (1402, 1414, 1406, 1416, 1418, etc.)",
+                "1455" to "Fono Orientación Violencia contra la Mujer",
+                "*4141" to "Línea Prevención del Suicidio (MINSAL)",
+                "14xx" to "Seguridad Ciudadana Municipal (1402, 1414, 1406...)",
                 "600 360 7777" to "Salud Responde (MINSAL)"
             )
 
-            emergencyList.forEach { (number, service) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.width(96.dp).height(32.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 380.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                emergencyList.forEach { (number, service) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = number,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier
+                                .defaultMinSize(minWidth = 56.dp)
+                                .height(32.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            ) {
+                                Text(
+                                    text = number,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = service,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = service,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
 

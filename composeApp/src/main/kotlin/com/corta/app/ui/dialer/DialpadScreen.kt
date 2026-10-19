@@ -76,32 +76,34 @@ fun DialpadScreen(
         else getChileanNumberHint(phoneNumber)
     }
 
+    val handedness = com.corta.app.ui.theme.LocalHandedness.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Phone number display area
+        // 1. Phone number display area (Large, standard dialer scale)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp),
+                .height(84.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             if (phoneNumber.isEmpty()) {
                 Text(
                     text = strings.calls.dialpadPlaceholder,
-                    style = MaterialTheme.typography.titleLarge,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     textAlign = TextAlign.Center
                 )
             } else {
                 Text(
                     text = formatDialpadDisplay(phoneNumber),
-                    fontSize = if (phoneNumber.length > 11) 26.sp else 32.sp,
+                    fontSize = if (phoneNumber.length > 12) 30.sp else 38.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
@@ -117,19 +119,19 @@ fun DialpadScreen(
             ) {
                 Text(
                     text = numberHint,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                     textAlign = TextAlign.Center,
                     maxLines = 1
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // 2. Dialpad Matrix (4 rows of 3 buttons)
+        // 2. Dialpad Matrix (4 rows of 3 buttons, spacious M3 buttons)
         val dialRows = listOf(
             listOf(DialKey("1", ""), DialKey("2", "ABC"), DialKey("3", "DEF")),
             listOf(DialKey("4", "GHI"), DialKey("5", "JKL"), DialKey("6", "MNO")),
@@ -167,43 +169,116 @@ fun DialpadScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Action Row: Add Contact | Call (Green/Primary Squircle) | Backspace
+        // 3. Action Row: Add Contact | Call | Backspace (Adapts to Left/Right Handedness)
+        val isLeftHanded = handedness == com.corta.app.ui.theme.Handedness.LEFT
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Action: Add Contact
-            Box(
-                modifier = Modifier.size(56.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (phoneNumber.isNotEmpty()) {
-                    IconButton(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_INSERT).apply {
-                                type = ContactsContract.RawContacts.CONTENT_TYPE
-                                putExtra(ContactsContract.Intents.Insert.PHONE, phoneNumber)
-                            }
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PersonAdd,
-                            contentDescription = strings.contacts.addContact,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(26.dp)
-                        )
+            val addContactButton: @Composable () -> Unit = {
+                Box(
+                    modifier = Modifier.size(56.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (phoneNumber.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_INSERT).apply {
+                                        data = ContactsContract.Contacts.CONTENT_URI
+                                        putExtra(ContactsContract.Intents.Insert.PHONE, phoneNumber)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    try {
+                                        val fallback = Intent(Intent.ACTION_INSERT).apply {
+                                            type = ContactsContract.RawContacts.CONTENT_TYPE
+                                            putExtra(ContactsContract.Intents.Insert.PHONE, phoneNumber)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(fallback)
+                                    } catch (e2: Exception) {
+                                        // Ignore
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.PersonAdd,
+                                contentDescription = strings.contacts.addContact,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // Center Action: Call Button (Stitch Compliant Squircle 64dp)
+            val backspaceButton: @Composable () -> Unit = {
+                Box(
+                    modifier = Modifier.size(56.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (phoneNumber.isNotEmpty()) {
+                        var isDeleting by remember { mutableStateOf(false) }
+
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .pointerInput(phoneNumber) {
+                                    detectTapGestures(
+                                        onPress = {
+                                            if (phoneNumber.isEmpty()) return@detectTapGestures
+                                            isDeleting = true
+                                            val job = scope.launch {
+                                                delay(380)
+                                                while (isDeleting && phoneNumber.isNotEmpty()) {
+                                                    phoneNumber = phoneNumber.dropLast(1)
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    delay(65)
+                                                }
+                                            }
+                                            tryAwaitRelease()
+                                            isDeleting = false
+                                            job.cancel()
+                                        },
+                                        onTap = {
+                                            if (phoneNumber.isNotEmpty()) {
+                                                phoneNumber = phoneNumber.dropLast(1)
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                        }
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Backspace,
+                                contentDescription = strings.common.delete,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (isLeftHanded) {
+                backspaceButton()
+            } else {
+                addContactButton()
+            }
+
+            // Center Action: Call Button (Large M3 Container 68dp)
             Surface(
                 onClick = {
                     if (phoneNumber.isNotEmpty()) {
@@ -211,8 +286,8 @@ fun DialpadScreen(
                         onDial(phoneNumber)
                     }
                 },
-                modifier = Modifier.size(64.dp),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.size(68.dp),
+                shape = CircleShape,
                 color = if (phoneNumber.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                 shadowElevation = if (phoneNumber.isNotEmpty()) 4.dp else 0.dp
             ) {
@@ -221,58 +296,15 @@ fun DialpadScreen(
                         imageVector = Icons.Rounded.Call,
                         contentDescription = strings.common.dial,
                         tint = if (phoneNumber.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            // Right Action: Backspace with single-tap delete and long-press clear
-            Box(
-                modifier = Modifier.size(56.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (phoneNumber.isNotEmpty()) {
-                    var isDeleting by remember { mutableStateOf(false) }
-
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .pointerInput(phoneNumber) {
-                                detectTapGestures(
-                                    onPress = {
-                                        if (phoneNumber.isEmpty()) return@detectTapGestures
-                                        isDeleting = true
-                                        val job = scope.launch {
-                                            delay(380)
-                                            while (isDeleting && phoneNumber.isNotEmpty()) {
-                                                phoneNumber = phoneNumber.dropLast(1)
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                delay(70)
-                                            }
-                                        }
-                                        tryAwaitRelease()
-                                        isDeleting = false
-                                        job.cancel()
-                                    },
-                                    onTap = {
-                                        if (phoneNumber.isNotEmpty()) {
-                                            phoneNumber = phoneNumber.dropLast(1)
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        }
-                                    }
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Backspace,
-                            contentDescription = strings.common.delete,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-                }
+            if (isLeftHanded) {
+                addContactButton()
+            } else {
+                backspaceButton()
             }
         }
     }
@@ -286,43 +318,43 @@ fun DialpadButton(
 ) {
     Surface(
         modifier = Modifier
-            .size(width = 80.dp, height = 58.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .size(width = 86.dp, height = 64.dp)
+            .clip(RoundedCornerShape(22.dp))
             .pointerInput(key) {
                 detectTapGestures(
                     onTap = { onTap() },
                     onLongPress = { onLongPress() }
                 )
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp
+        tonalElevation = 2.dp
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            val fontSize = if (key.digit == "*") 28.sp else 23.sp
+            val fontSize = if (key.digit == "*") 30.sp else 27.sp
             val topOffset = if (key.digit == "*") 4.dp else 0.dp
 
             Text(
                 text = key.digit,
                 fontSize = fontSize,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = topOffset),
-                lineHeight = 24.sp
+                lineHeight = 28.sp
             )
 
             if (key.letters.isNotEmpty()) {
                 Text(
                     text = key.letters,
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    letterSpacing = 1.2.sp,
-                    lineHeight = 10.sp
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    letterSpacing = 1.3.sp,
+                    lineHeight = 11.sp
                 )
             }
         }

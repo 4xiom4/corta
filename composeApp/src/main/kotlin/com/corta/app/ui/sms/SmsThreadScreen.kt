@@ -32,11 +32,15 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import android.provider.ContactsContract
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.sp
 import com.corta.app.ui.contacts.AndroidContactRepository
 import com.corta.app.ui.i18n.Strings
 import com.corta.domain.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat
 import java.util.*
@@ -177,6 +181,106 @@ fun SmsThreadScreen(
         }
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            // Unknown Sender Quick Actions: Agregar a Contactos / Marcar como No es Spam
+            if (!isKnownContact && !threadMeta.isVerifiedBankOrService) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.PersonSearch,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Remitente no guardado en contactos",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "¿Conoces este remitente? Puedes agregarlo a tu agenda o marcarlo como legítimo para evitar avisos futuros.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilledTonalButton(
+                                onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_INSERT).apply {
+                                            data = ContactsContract.Contacts.CONTENT_URI
+                                            putExtra(ContactsContract.Intents.Insert.PHONE, threadAddress)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val fallback = Intent(Intent.ACTION_INSERT).apply {
+                                                type = ContactsContract.RawContacts.CONTENT_TYPE
+                                                putExtra(ContactsContract.Intents.Insert.PHONE, threadAddress)
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            context.startActivity(fallback)
+                                        } catch (e2: Exception) {
+                                            Toast.makeText(context, "No se pudo abrir contactos", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Rounded.PersonAdd, null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Guardar Contacto", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        cortaRepository.addRule(
+                                            pattern = threadAddress,
+                                            action = FilterAction.ALLOW,
+                                            isRegex = false,
+                                            source = "USER",
+                                            alias = "Remitente de confianza (SMS)"
+                                        )
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Número marcado como legítimo", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Rounded.CheckCircle, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("No es Spam", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Link Protection Banner
             if (protectLinks) {
                 Surface(
@@ -265,13 +369,13 @@ fun SmsThreadScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.Bottom
             ) {
                 IconButton(
                     onClick = { isSharingContact = true },
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(44.dp).padding(bottom = 2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.AttachFile,
@@ -283,12 +387,18 @@ fun SmsThreadScreen(
                 OutlinedTextField(
                     value = replyText,
                     onValueChange = { replyText = it },
-                    placeholder = { Text(strings.sms.threadComposePlaceholder) },
-                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
-                    shape = RoundedCornerShape(24.dp),
+                    placeholder = { Text("Escribe un mensaje de texto...") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    minLines = 1,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(22.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        unfocusedBorderColor = Color.Transparent
                     )
                 )
                 IconButton(
@@ -304,7 +414,7 @@ fun SmsThreadScreen(
                             }
                         }
                     },
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(44.dp).padding(bottom = 2.dp)
                 ) {
                     Surface(
                         shape = CircleShape,
