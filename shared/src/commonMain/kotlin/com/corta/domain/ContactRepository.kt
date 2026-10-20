@@ -3,5 +3,6 @@ package com.corta.domain
 interface ContactRepository {
     suspend fun getContacts(): List<ContactInfo>
     suspend fun toggleFavorite(contactId: String, isFavorite: Boolean): Boolean
+    suspend fun createContact(name: String, phoneNumber: String): Boolean = false
     fun invalidateCache() {}
 }

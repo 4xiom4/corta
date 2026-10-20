@@ -137,6 +137,32 @@ En situaciones de riesgo vital o catástrofe, una aplicación anti-spam jamás d
 * **Líneas 14xx de Seguridad Municipal:** Más de 50 comunas de Chile cuentan con números de patrullaje comunal rápido (ej. `1402` Providencia, `1403` Las Condes, `1406` Ñuñoa, `1414` Vitacura, `1417` Lo Barnechea, `1445` Santiago, etc.).
 * **Directorio de 16 Regiones:** Más de 600 registros oficiales que cubren desde Arica y Parinacota hasta Magallanes y la Antártica Chilena, incluyendo hospitales regionales, comisarías territoriales y servicios públicos de utilidad.
 
+### División Político-Administrativa (DPA-CUT) y Prefiltro Territorial Inteligente
+Para evitar abrumar al usuario con cientos de números que no utilizará en su vida cotidiana, Corta estructura el territorio chileno bajo el estándar oficial de **División Político-Administrativa (DPA)** del Estado:
+$$\text{País (1)} \longrightarrow \text{Regiones (16)} \longrightarrow \text{Provincias (56)} \longrightarrow \text{Comunas (346)}$$
+Cada entidad está indexada por su **Código Único Territorial (CUT)** oficial del INE/SUBDERE (ej. `04` Coquimbo, `041` Provincia de Elqui, `04103` Comuna de Andacollo).
+
+#### El Prefiltro Territorial en Acción
+1. **Pestaña Territorial Fija (ej. `"📍 Andacollo (Coquimbo)"`):**
+   - **Bloque Prioritario `"LOCAL · [COMUNA]"`:** Aparece fijo al inicio de la lista con los números de emergencia y servicios del municipio seleccionado (Tenencia de Carabineros, Bomberos de la comuna, Hospital comunal o CESFAM).
+   - **Soporte Regional Primario:** Hospital provincial/regional base (ej. Hospital de Coquimbo/La Serena) y servicios sanitarios y eléctricos de la concesión regional.
+   - **Líneas Nacionales Inmutables:** Servicios de rescate y auxilio (131, 132, 133, 134) e instituciones bancarias/tributarias.
+   - **Filtrado Anti-Ruido:** Se excluyen automáticamente las patrullas 14xx de otras 50+ comunas lejanas (ej. Las Condes, Vitacura, Providencia), liberando al usuario de contactos irrelevantes.
+2. **Pestaña `"Seguridad 14xx"` (Nacional):**
+   - Agrupa el catálogo completo de líneas de patrullaje comunal rápido de todo el país para usuarios que viajan o requieren consultar la seguridad de otros municipios.
+
+### Creación Nativa de Contactos (Resiliencia AOSP / de-Googled)
+En dispositivos con sistemas operativos sin servicios de Google o con aplicaciones básicas deshabilitadas (AOSP, LineageOS, CalyxOS, GrapheneOS), los intents genéricos del sistema (`Intent.ACTION_INSERT`) fallan arrojando un error de *"No hay una aplicación compatible instalada"*.
+Corta resuelve esto con **total autonomía funcional**:
+* Integra una hoja modal de creación nativa (`AddContactBottomSheet`) dentro de la propia app.
+* Inserta el contacto directamente en el proveedor del sistema (`ContactsContract.RawContacts` y `ContactsContract.Data`) mediante operaciones atómicas en lote (`ContentProviderOperation`), sin depender de aplicaciones de terceros.
+
+### Catálogo de Heráldica Territorial Offline (Escudos y Banderas)
+Para fortalecer la identidad y pertenencia chilena sin comprometer la privacidad ni la latencia:
+* **Generación en Build-Time:** Mediante scripts de extracción (`tools/fetch_chile_heraldry.py`) sobre Wikidata SPARQL y Wikimedia Commons, se recopilan los escudos y banderas oficiales vinculados al código CUT de cada territorio.
+* **Optimización WebP a 200px:** Los gráficos vectoriales complejos (muchos de más de 1 MB en SVG) se pre-rasterizan a WebP ultra-liviano (~4 KB cada uno, total ~1.4 MB para las 346 comunas de Chile).
+* **Zero-Latency Invariant:** Los activos residen en la base de datos y assets locales. La app no realiza solicitudes de red en tiempo de ejecución.
+
 ---
 
 ## 6. Motor de Mensajería SMS y Heurística Anti-Smishing

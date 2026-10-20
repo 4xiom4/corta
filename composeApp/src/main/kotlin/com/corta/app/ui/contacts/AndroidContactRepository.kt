@@ -112,6 +112,49 @@ class AndroidContactRepository(private val context: Context) : ContactRepository
         rowsUpdated > 0
     }
 
+    override suspend fun createContact(name: String, phoneNumber: String): Boolean = withContext(Dispatchers.IO) {
+        if (name.isBlank() && phoneNumber.isBlank()) return@withContext false
+        try {
+            val ops = ArrayList<android.content.ContentProviderOperation>()
+            val rawContactInsertIndex = ops.size
+
+            ops.add(
+                android.content.ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                    .build()
+            )
+
+            if (name.isNotBlank()) {
+                ops.add(
+                    android.content.ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                        .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                        .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name.trim())
+                        .build()
+                )
+            }
+
+            if (phoneNumber.isNotBlank()) {
+                ops.add(
+                    android.content.ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                        .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                        .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneNumber.trim())
+                        .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                        .build()
+                )
+            }
+
+            val results = context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
+            invalidateCache()
+            results.isNotEmpty()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     override fun invalidateCache() {
         cachedContacts = null
         lastLoadedAt = 0L

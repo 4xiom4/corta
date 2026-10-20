@@ -15,6 +15,15 @@
   - Nunca bloquear líneas 14xx de Seguridad Municipal (1402, 1403, 1406, 1414, 1416, 1417, 1418, 1419, 1445, 1468, etc.).
   - Directorio oficial con más de 600 números comunales y regionales (`ChileanRegionalDirectory`) clasificados por región y comuna, presembrados y sin dependencias de red.
   - La verificación de whitelist en `CortaRepository.isWhitelistedNumber()` se evalúa antes que cualquier regla de usuario, SUBTEL o comunidad.
+- **División Político-Administrativa (DPA-CUT) y Filtrado Territorial**:
+  - Jerarquía oficial del Estado de Chile: País (1) > Regiones (16) > Provincias (56) > Comunas (346) indexadas por Código Único Territorial (CUT de SUBDERE/INE).
+  - En la pestaña de la comuna seleccionada (ej. `"📍 Andacollo (Coquimbo)"`), la lista aísla estrictamente: 1) Números locales de la comuna bajo la cabecera destacada `"LOCAL · [COMUNA]"`, 2) Soporte crítico regional (hospital base, sanitarias, eléctricas), 3) Emergencias nacionales (131, 132, 133, 134). Se excluyen patrullas 14xx de comunas ajenas para evitar sobrecarga cognitiva.
+  - La pestaña de categoría `"Seguridad 14xx"` agrupa el directorio de patrullaje comunal a nivel nacional.
+- **Creación Nativa de Contactos y Autonomía AOSP/de-Googled**:
+  - En dispositivos con ROMs sin Google o con apps del sistema deshabilitadas (`com.android.contacts`, `com.android.dialer`, `com.android.messaging`), Corta no debe depender de intents implícitos (`Intent.ACTION_INSERT`).
+  - La inserción de contactos se realiza directamente in-app mediante `AddContactBottomSheet` y `ContactRepository.insertContact()` utilizando `ContentProviderOperation` sobre `ContactsContract.RawContacts` y `ContactsContract.Data`.
+- **Heráldica Territorial Offline (Zero-Latency Invariant)**:
+  - Banderas y escudos (País, Región, Comuna) se integran estrictamente como recursos locales preoptimizados (WebP 200px) vinculados por código CUT. Queda prohibida cualquier consulta a Wikidata SPARQL o descarga externa durante la ejecución de la app.
 - **Búsqueda Unificada On-Device**:
   - En `CallLogScreen`, la barra de búsqueda consulta simultáneamente: historial de llamadas locales, agenda telefónica del dispositivo (`ContactRepository`) y el directorio chileno oficial (`ChileanRegionalDirectory`), mostrando resultados organizados con botones de marcado directo.
 - **Lógica de Categorías y Pestañas Predeterminadas (Orden 1-N)**:

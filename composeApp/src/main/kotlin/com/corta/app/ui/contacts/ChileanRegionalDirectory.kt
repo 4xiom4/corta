@@ -616,6 +616,7 @@ object ChileanRegionalDirectory {
         rawList.add(ItemDef("532541000", "Hospital Dr. Humberto Elorza de Illapel", "IV", "Illapel", DirectoryCategory.HEALTH_HOSPITAL, "Hospital Provincial de Choapa"))
         rawList.add(ItemDef("532551000", "Hospital de Salamanca", "IV", "Salamanca", DirectoryCategory.HEALTH_HOSPITAL, "Atención Salud Choapa Alto"))
         rawList.add(ItemDef("532561000", "Hospital de Los Vilos", "IV", "Los Vilos", DirectoryCategory.HEALTH_HOSPITAL, "Atención de Urgencia Costera Choapa"))
+        rawList.add(ItemDef("512334800", "Hospital Dr. José Arraño de Andacollo", "IV", "Andacollo", DirectoryCategory.HEALTH_HOSPITAL, "Atención de Urgencias y Consultorio Andacollo"))
         rawList.add(ItemDef("452558000", "Hospital Dr. Hernán Henríquez Aravena", "IX", "Temuco", DirectoryCategory.HEALTH_HOSPITAL, "Hospital Regional de La Araucanía"))
         rawList.add(ItemDef("452559000", "Hospital Dr. Mauricio Heyermann de Angol", "IX", "Angol", DirectoryCategory.HEALTH_HOSPITAL, "Hospital Base Provincial de Malleco"))
         rawList.add(ItemDef("452411000", "Hospital San José de Victoria", "IX", "Victoria", DirectoryCategory.HEALTH_HOSPITAL, "Atención Especialidades Malleco Sur"))
@@ -708,6 +709,8 @@ object ChileanRegionalDirectory {
         rawList.add(ItemDef("512651000", "1ª Comisaría Carabineros La Serena", "IV", "La Serena", DirectoryCategory.POLICE_PDI, "Guardia La Serena"))
         rawList.add(ItemDef("512652000", "2ª Comisaría Carabineros Coquimbo", "IV", "Coquimbo", DirectoryCategory.POLICE_PDI, "Guardia Coquimbo"))
         rawList.add(ItemDef("532421111", "3ª Comisaría Carabineros Ovalle", "IV", "Ovalle", DirectoryCategory.POLICE_PDI, "Guardia Ovalle"))
+        rawList.add(ItemDef("512651180", "Tenencia Carabineros Andacollo", "IV", "Andacollo", DirectoryCategory.POLICE_PDI, "Guardia y Patrullaje Comunal Andacollo"))
+        rawList.add(ItemDef("512431222", "Cuerpo de Bomberos de Andacollo", "IV", "Andacollo", DirectoryCategory.FIRE_DEPARTMENT, "Central de Alarmas Bomberos Andacollo"))
         rawList.add(ItemDef("452212222", "Cuerpo de Bomberos de Temuco", "IX", "Temuco", DirectoryCategory.FIRE_DEPARTMENT, "Central de Alarmas Temuco"))
         rawList.add(ItemDef("452712222", "Cuerpo de Bomberos de Villarrica", "IX", "Villarrica", DirectoryCategory.FIRE_DEPARTMENT, "Central de Alarmas Villarrica"))
         rawList.add(ItemDef("452658000", "2ª Comisaría Carabineros Temuco", "IX", "Temuco", DirectoryCategory.POLICE_PDI, "Guardia Temuco"))
@@ -845,10 +848,14 @@ object ChileanRegionalDirectory {
             return regionEntries
         }
         val trimmed = comuna.trim()
-        val (matchingComuna, others) = regionEntries.partition {
-            it.comuna.equals(trimmed, ignoreCase = true)
+        val matchingComuna = regionEntries.filter { it.comuna.equals(trimmed, ignoreCase = true) }
+        val nationalEntries = regionEntries.filter { it.regionCode == "ALL" }
+        val regionalSupport = regionEntries.filter {
+            it.regionCode == region.code &&
+                !it.comuna.equals(trimmed, ignoreCase = true) &&
+                (it.category == DirectoryCategory.UTILITIES || it.category == DirectoryCategory.HEALTH_HOSPITAL)
         }
-        return matchingComuna + others
+        return matchingComuna + regionalSupport + nationalEntries
     }
 
     /**

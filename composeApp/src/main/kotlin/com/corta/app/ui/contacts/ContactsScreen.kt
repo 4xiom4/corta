@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.automirrored.rounded.Message
@@ -37,12 +38,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +59,7 @@ import com.corta.app.ui.designsystem.CortaFloatingActionButton
 import com.corta.app.ui.designsystem.StitchFilterChip
 import com.corta.app.ui.export.CortaExportImportHelper
 import com.corta.app.ui.i18n.Strings
+import kotlinx.coroutines.delay
 import com.corta.app.ui.theme.Handedness
 import com.corta.app.ui.theme.LocalDetailedMode
 import com.corta.app.ui.theme.LocalHandedness
@@ -167,6 +174,7 @@ fun ContactsScreen(
     var showRegionPicker by remember { mutableStateOf(false) }
     var showReorderSheet by remember { mutableStateOf(false) }
     var selectedContactForOptions by remember { mutableStateOf<ClassifiedContact?>(null) }
+    var showAddContactSheet by remember { mutableStateOf(false) }
 
     var selectedRegion by remember {
         val savedCode = prefs.getString("user_selected_region", ChileanRegion.RM.code)
@@ -384,6 +392,16 @@ fun ContactsScreen(
                 it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
             }.toSortedMap()
             Pair(favs, grouped)
+        } else if (currentFilter == ContactCategoryFilter.REGIONAL && query.isEmpty() && effectiveComuna != null && selectedGroup == null && currentSortOrder != ContactSortOrder.NAME_DESC) {
+            val localComuna = sortedList.filter {
+                it.subtitle?.contains(effectiveComuna, ignoreCase = true) == true ||
+                    it.name.contains(effectiveComuna, ignoreCase = true)
+            }
+            val others = sortedList.filter { it !in localComuna }
+            val grouped = others.groupBy {
+                it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+            }.toSortedMap()
+            Pair(localComuna, grouped)
         } else if (currentFilter == ContactCategoryFilter.FAVORITES && selectedGroup == null) {
             Pair(sortedList, emptyMap<String, List<ClassifiedContact>>())
         } else {
@@ -507,11 +525,16 @@ fun ContactsScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Section: FAVORITOS (if any)
+                        // Section: FAVORITOS or LOCAL COMUNA (if any)
                         if (favoriteList.isNotEmpty()) {
                             stickyHeader(key = "header_favoritos") {
+                                val headerTitle = if (currentFilter == ContactCategoryFilter.REGIONAL && effectiveComuna != null) {
+                                    "LOCAL · ${effectiveComuna.uppercase()}"
+                                } else {
+                                    "FAVORITOS"
+                                }
                                 SectionHeader(
-                                    title = "FAVORITOS",
+                                    title = headerTitle,
                                     actionText = if (currentFilter == ContactCategoryFilter.ALL) "Ver solo favoritos" else null,
                                     onActionClick = { currentFilter = ContactCategoryFilter.FAVORITES }
                                 )
@@ -567,33 +590,34 @@ fun ContactsScreen(
             }
         }
 
-        // Floating Action Button (Add Contact) - Safe resolution & Handedness support
+        // Floating Action Button (Add Contact) - Native Corta contact creation
         val fabAlignment = if (handedness == Handedness.LEFT) Alignment.BottomStart else Alignment.BottomEnd
         CortaFloatingActionButton(
             onClick = {
-                try {
-                    val intent = Intent(Intent.ACTION_INSERT).apply {
-                        data = ContactsContract.Contacts.CONTENT_URI
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    try {
-                        val fallback = Intent(Intent.ACTION_INSERT).apply {
-                            type = ContactsContract.RawContacts.CONTENT_TYPE
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(fallback)
-                    } catch (e2: Exception) {
-                        Toast.makeText(context, "No se encontró una aplicación de contactos compatible", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                showAddContactSheet = true
             },
             icon = Icons.Rounded.PersonAdd,
             contentDescription = strings.contacts.addAction,
             modifier = Modifier
                 .align(fabAlignment)
                 .padding(16.dp)
+        )
+    }
+
+    // Modal: Add Contact (Native In-App Sheet)
+    if (showAddContactSheet) {
+        AddContactBottomSheet(
+            onDismiss = { showAddContactSheet = false },
+            onSaveContact = { name, phone ->
+                viewModel.createContact(name, phone) { success ->
+                    showAddContactSheet = false
+                    if (success) {
+                        Toast.makeText(context, "Contacto guardado correctamente", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "No se pudo guardar el contacto en el dispositivo", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         )
     }
 
@@ -879,7 +903,7 @@ private fun ContactCategoryChipsRow(
                         StitchFilterChip(
                             selected = currentFilter == ContactCategoryFilter.MUNICIPAL,
                             onClick = { onFilterSelect(ContactCategoryFilter.MUNICIPAL) },
-                            label = "Comunas",
+                            label = "Seguridad 14xx",
                             icon = Icons.Rounded.LocalPolice,
                             iconTint = MaterialTheme.colorScheme.tertiary,
                             count = counts[ContactCategoryFilter.MUNICIPAL]
@@ -1482,7 +1506,7 @@ fun ContactCategoriesBottomSheet(
                         ContactCategoryFilter.ALL -> "Todos"
                         ContactCategoryFilter.FAVORITES -> "Favoritos"
                         ContactCategoryFilter.EMERGENCIES -> "Emergencias"
-                        ContactCategoryFilter.MUNICIPAL -> "Comunas 14xx"
+                        ContactCategoryFilter.MUNICIPAL -> "Seguridad 14xx"
                         ContactCategoryFilter.OFFICIAL_600 -> "Oficiales 600"
                         ContactCategoryFilter.PERSONAL -> "Personales"
                     }
@@ -1492,7 +1516,7 @@ fun ContactCategoriesBottomSheet(
                         ContactCategoryFilter.PERSONAL -> "Libreta telefónica del dispositivo"
                         ContactCategoryFilter.FAVORITES -> "Contactos con estrella"
                         ContactCategoryFilter.EMERGENCIES -> "Líneas nacionales de emergencia"
-                        ContactCategoryFilter.MUNICIPAL -> "Seguridad comunal y patrullaje 14xx"
+                        ContactCategoryFilter.MUNICIPAL -> "Seguridad comunal y patrullaje 14xx de Chile"
                         ContactCategoryFilter.OFFICIAL_600 -> "Servicios públicos y bancos"
                         ContactCategoryFilter.ALL -> "Directorio completo y contactos"
                     }
@@ -2478,6 +2502,149 @@ fun RegionSelectorBottomSheet(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Native bottom sheet for adding a new contact directly to Android's ContactsContract
+ * without depending on external contacts applications that may be disabled or missing.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddContactBottomSheet(
+    initialName: String = "",
+    initialPhoneNumber: String = "",
+    onDismiss: () -> Unit,
+    onSaveContact: (String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var phoneNumber by remember { mutableStateOf(initialPhoneNumber) }
+    var isSaving by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(200)
+        try {
+            focusRequester.requestFocus()
+        } catch (_: Exception) {}
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Rounded.PersonAdd,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                Column {
+                    Text(
+                        text = "Nuevo contacto",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Se guardará en la libreta del teléfono",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nombre completo") },
+                placeholder = { Text("Ej. Juan Pérez") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                leadingIcon = {
+                    Icon(Icons.Rounded.Person, contentDescription = null)
+                },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Next
+                ),
+                shape = RoundedCornerShape(14.dp)
+            )
+
+            OutlinedTextField(
+                value = phoneNumber,
+                onValueChange = { phoneNumber = it },
+                label = { Text("Número telefónico") },
+                placeholder = { Text("+56 9 1234 5678") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Icon(Icons.Rounded.Phone, contentDescription = null)
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Done
+                ),
+                shape = RoundedCornerShape(14.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancelar")
+                }
+
+                Button(
+                    onClick = {
+                        if (name.isNotBlank() || phoneNumber.isNotBlank()) {
+                            isSaving = true
+                            onSaveContact(name, phoneNumber)
+                        }
+                    },
+                    enabled = (name.isNotBlank() || phoneNumber.isNotBlank()) && !isSaving,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Guardar")
                     }
                 }
             }

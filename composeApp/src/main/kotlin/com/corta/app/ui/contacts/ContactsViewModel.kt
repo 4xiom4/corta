@@ -107,4 +107,19 @@ class ContactsViewModel(
             }
         }
     }
+
+    fun createContact(name: String, phoneNumber: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val success = repository.createContact(name, phoneNumber)
+                if (success) {
+                    refresh()
+                }
+                onResult(success)
+            } catch (e: Exception) {
+                Timber.tag("Corta.ContactsVM").e(e, "Error creating contact")
+                onResult(false)
+            }
+        }
+    }
 }
