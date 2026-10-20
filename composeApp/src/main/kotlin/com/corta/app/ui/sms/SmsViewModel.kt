@@ -264,8 +264,16 @@ class SmsPagingSource(
                 val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
                 val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
 
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    if (position > 0 && !it.moveToPosition(position - 1)) {
+                // Check whether ContentResolver actually honored QUERY_ARG_OFFSET
+                val honoredArgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    it.extras?.getStringArrayList(ContentResolver.EXTRA_HONORED_ARGS)
+                } else null
+                val offsetHonored = honoredArgs?.contains(ContentResolver.QUERY_ARG_OFFSET) == true
+
+                // If not honored by the provider (e.g. system SmsProvider on Android/MIUI),
+                // advance cursor manually to requested position
+                if (!offsetHonored && position > 0) {
+                    if (!it.moveToPosition(position - 1)) {
                         return@use
                     }
                 }
@@ -323,10 +331,11 @@ class SmsPagingSource(
                 messages.sortByDescending { it.message.date }
             }
 
+            val deduplicatedMessages = messages.distinctBy { it.message.threadId.ifBlank { it.message.id } }
             val nextKey = if (itemsRead < loadSize) null else position + itemsRead
 
             LoadResult.Page(
-                data = messages,
+                data = deduplicatedMessages,
                 prevKey = if (position == 0) null else maxOf(0, position - loadSize),
                 nextKey = nextKey
             )

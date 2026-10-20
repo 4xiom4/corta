@@ -236,14 +236,24 @@ class CallLogPagingSource(
                 val subIdIdx = it.getColumnIndex("subscription_id")
                 val accountIdIdx = it.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID)
 
-                // On older APIs without Bundle support, advance cursor to the requested position
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    if (position > 0 && !it.moveToPosition(position - 1)) {
+                // Check whether ContentResolver actually honored QUERY_ARG_OFFSET
+                val honoredArgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    it.extras?.getStringArrayList(ContentResolver.EXTRA_HONORED_ARGS)
+                } else null
+                val offsetHonored = honoredArgs?.contains(ContentResolver.QUERY_ARG_OFFSET) == true
+
+                // If the provider did not honor offset (common in Android/OEM CallLog providers),
+                // advance cursor manually to requested position
+                if (!offsetHonored && position > 0) {
+                    if (!it.moveToPosition(position - 1)) {
                         return@use
                     }
                 }
 
+                val seenIds = mutableSetOf<String>()
                 while (it.moveToNext() && itemsRead < loadSize) {
+                    val callId = it.getString(idIdx) ?: "call_${System.currentTimeMillis()}_$itemsRead"
+                    if (!seenIds.add(callId)) continue
                     itemsRead++
                     val number = it.getString(numIdx) ?: "Desconocido"
                     val callDate = it.getLong(dateIdx)
@@ -281,7 +291,7 @@ class CallLogPagingSource(
 
                     resultLogs.add(
                         buildCallLogUiModel(
-                            id = it.getString(idIdx) ?: "call_${System.currentTimeMillis()}_$itemsRead",
+                            id = callId,
                             number = number,
                             name = it.getString(nameIdx),
                             date = callDate,
@@ -324,10 +334,11 @@ class CallLogPagingSource(
                 resultLogs.sortByDescending { it.date }
             }
 
+            val deduplicatedLogs = resultLogs.distinctBy { it.id }
             val nextKey = if (itemsRead < loadSize) null else position + itemsRead
 
             LoadResult.Page(
-                data = resultLogs,
+                data = deduplicatedLogs,
                 prevKey = if (position == 0) null else maxOf(0, position - loadSize),
                 nextKey = nextKey
             )

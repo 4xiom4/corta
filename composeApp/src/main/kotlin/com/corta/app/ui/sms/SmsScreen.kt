@@ -462,7 +462,7 @@ fun SmsScreen(
                         }
                         itemsIndexed(
                             items = itemsInSection,
-                            key = { _, (item, _) -> item.message.threadId.ifBlank { item.message.id } },
+                            key = { index, (item, _) -> "sms_${item.message.threadId.ifBlank { item.message.id }}_$index" },
                             contentType = { _, _ -> "sms_card" }
                         ) { index, (item, smsMeta) ->
                             if (index >= itemsInSection.size - 2 && inboxSms.itemCount > 0) {

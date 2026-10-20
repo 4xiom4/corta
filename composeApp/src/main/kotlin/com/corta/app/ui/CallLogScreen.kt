@@ -358,7 +358,7 @@ fun CallLogScreen(
 
     // Off-thread pre-classified items: zero regex, zero date formatting, zero string formatting in composition
     val classifiedCalls = remember(loadedLogs) {
-        loadedLogs.map { ClassifiedCall(it) }
+        loadedLogs.distinctBy { it.id }.map { ClassifiedCall(it) }
     }
 
     // Dynamic counts for fast filter chips
@@ -694,10 +694,10 @@ fun CallLogScreen(
                                     }
                                 }
 
-                                items(
+                                itemsIndexed(
                                     items = contactSearchResults,
-                                    key = { "contact_${it.id}" }
-                                ) { contact ->
+                                    key = { index, it -> "contact_${it.id}_$index" }
+                                ) { _, contact ->
                                     ContactSearchCard(
                                         contact = contact,
                                         onCall = {
@@ -739,10 +739,10 @@ fun CallLogScreen(
                                     }
                                 }
 
-                                items(
+                                itemsIndexed(
                                     items = directorySearchResults,
-                                    key = { "dir_${it.id}" }
-                                ) { entry ->
+                                    key = { index, it -> "dir_${it.id}_$index" }
+                                ) { _, entry ->
                                     OfficialDirectorySearchCard(
                                         entry = entry,
                                         onCall = {
@@ -786,7 +786,7 @@ fun CallLogScreen(
 
                                 itemsIndexed(
                                     items = displayList,
-                                    key = { _, item -> item.log.id },
+                                    key = { index, item -> "call_search_${item.log.id}_$index" },
                                     contentType = { _, _ -> "call_card" }
                                 ) { index, item ->
                                     CallLogCard(
@@ -810,10 +810,10 @@ fun CallLogScreen(
                             }
                         } else if (isRegionalMode) {
                             // Regional Directory Tab
-                            items(
+                            itemsIndexed(
                                 items = regionalDirectoryEntries,
-                                key = { "reg_${it.id}" }
-                            ) { entry ->
+                                key = { index, it -> "reg_${it.id}_$index" }
+                            ) { _, entry ->
                                 OfficialDirectorySearchCard(
                                     entry = entry,
                                     onCall = {
@@ -830,7 +830,7 @@ fun CallLogScreen(
                                 }
                                 itemsIndexed(
                                     items = callsInSection,
-                                    key = { _, item -> item.log.id },
+                                    key = { index, item -> "call_${item.log.id}_$index" },
                                     contentType = { _, _ -> "call_card" }
                                 ) { index, item ->
                                     if (index >= callsInSection.size - 2 && logs.itemCount > 0) {
