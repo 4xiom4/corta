@@ -297,6 +297,20 @@ fun SmsScreen(
 
     val listState = rememberLazyListState()
 
+    // Controlled scroll-based pagination: only triggers when user reaches bottom, never inside composition loops
+    val shouldLoadMore = remember(listState) {
+        derivedStateOf {
+            val total = listState.layoutInfo.totalItemsCount
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            total > 0 && lastVisible >= total - 5
+        }
+    }
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && inboxSms.itemCount > 0) {
+            inboxSms.get(inboxSms.itemCount - 1)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -464,12 +478,7 @@ fun SmsScreen(
                             items = itemsInSection,
                             key = { index, (item, _) -> "sms_${item.message.threadId.ifBlank { item.message.id }}_$index" },
                             contentType = { _, _ -> "sms_card" }
-                        ) { index, (item, smsMeta) ->
-                            if (index >= itemsInSection.size - 2 && inboxSms.itemCount > 0) {
-                                SideEffect {
-                                    inboxSms.get(inboxSms.itemCount - 1)
-                                }
-                            }
+                        ) { _, (item, smsMeta) ->
                             ConversationItem(
                                 message = item.message,
                                 displayName = item.displayName,

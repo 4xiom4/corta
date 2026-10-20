@@ -402,6 +402,20 @@ fun CallLogScreen(
 
     val listState = rememberLazyListState()
 
+    // Controlled scroll-based pagination: only triggers when user reaches bottom, never inside composition loops
+    val shouldLoadMore = remember(listState) {
+        derivedStateOf {
+            val total = listState.layoutInfo.totalItemsCount
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            total > 0 && lastVisible >= total - 5
+        }
+    }
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && logs.itemCount > 0) {
+            logs.get(logs.itemCount - 1)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         if (!hasPermission) {
             Column(
@@ -832,12 +846,7 @@ fun CallLogScreen(
                                     items = callsInSection,
                                     key = { index, item -> "call_${item.log.id}_$index" },
                                     contentType = { _, _ -> "call_card" }
-                                ) { index, item ->
-                                    if (index >= callsInSection.size - 2 && logs.itemCount > 0) {
-                                        SideEffect {
-                                            logs.get(logs.itemCount - 1)
-                                        }
-                                    }
+                                ) { _, item ->
                                     CallLogCard(
                                         item = item,
                                         isDetailedMode = isDetailedMode,
