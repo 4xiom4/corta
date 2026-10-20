@@ -477,18 +477,25 @@ fun CallLogScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Location Chip (Región y/o Comuna seleccionada)
-                        StitchFilterChip(
-                            selected = selectedRegion != ChileanRegion.ALL || selectedComuna != null,
-                            onClick = { showRegionPicker = true },
-                            label = locationLabel,
-                            icon = Icons.Rounded.LocationOn,
-                            iconTint = if (selectedRegion != ChileanRegion.ALL || selectedComuna != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
                         categoryOrder.forEach { filter ->
                             val isSelected = currentFilter == filter
                             when (filter) {
+                                CallLogTabFilter.REGIONAL -> {
+                                    StitchFilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            if (currentFilter == CallLogTabFilter.REGIONAL) {
+                                                showRegionPicker = true
+                                            } else {
+                                                currentFilter = CallLogTabFilter.REGIONAL
+                                            }
+                                        },
+                                        label = locationLabel,
+                                        icon = Icons.Rounded.LocationOn,
+                                        iconTint = MaterialTheme.colorScheme.primary,
+                                        count = if (regionalDirectoryEntries.isNotEmpty()) regionalDirectoryEntries.size else null
+                                    )
+                                }
                                 CallLogTabFilter.INCOMING -> {
                                     StitchFilterChip(
                                         selected = isSelected,
@@ -544,16 +551,6 @@ fun CallLogScreen(
                                         onClick = { currentFilter = CallLogTabFilter.ALL },
                                         label = "Todas",
                                         count = if (allCount > 0) allCount else null
-                                    )
-                                }
-                                CallLogTabFilter.REGIONAL -> {
-                                    StitchFilterChip(
-                                        selected = isSelected,
-                                        onClick = { currentFilter = CallLogTabFilter.REGIONAL },
-                                        label = "Directorio",
-                                        icon = Icons.Rounded.ContactPhone,
-                                        iconTint = MaterialTheme.colorScheme.primary,
-                                        count = if (regionalDirectoryEntries.isNotEmpty()) regionalDirectoryEntries.size else null
                                     )
                                 }
                             }
@@ -1754,6 +1751,19 @@ fun CallCategoriesBottomSheet(
 
                         // Reorder Actions (↑ / ↓)
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (filter == CallLogTabFilter.REGIONAL) {
+                                IconButton(
+                                    onClick = onOpenRegionPicker,
+                                    modifier = Modifier.size(34.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Edit,
+                                        contentDescription = "Cambiar ubicación",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
+                            }
                             IconButton(
                                 onClick = {
                                     if (index > 0) {

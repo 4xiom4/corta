@@ -69,12 +69,13 @@ import com.corta.db.ContactGroup
 import org.koin.compose.koinInject
 
 enum class ContactCategoryFilter {
-    ALL,
+    REGIONAL,
+    PERSONAL,
     FAVORITES,
     EMERGENCIES,
     MUNICIPAL,
     OFFICIAL_600,
-    PERSONAL
+    ALL
 }
 
 enum class ContactSourceFilter(val displayName: String) {
@@ -139,6 +140,7 @@ fun ContactsScreen(
     val prefs = remember { context.getSharedPreferences("corta_prefs", Context.MODE_PRIVATE) }
     val defaultOrder = remember {
         listOf(
+            ContactCategoryFilter.REGIONAL,
             ContactCategoryFilter.PERSONAL,
             ContactCategoryFilter.FAVORITES,
             ContactCategoryFilter.EMERGENCIES,
@@ -150,13 +152,16 @@ fun ContactsScreen(
     var categoryOrder by remember {
         val saved = prefs.getString("contact_category_order", null)
         val list = if (saved != null) {
-            saved.split(",").mapNotNull { name ->
+            val names = saved.split(",")
+            val parsed = names.mapNotNull { name ->
                 try { ContactCategoryFilter.valueOf(name) } catch (e: Exception) { null }
-            }
+            }.toMutableList()
+            ContactCategoryFilter.entries.forEach { if (!parsed.contains(it)) parsed.add(it) }
+            parsed
         } else emptyList()
-        mutableStateOf(if (list.size == defaultOrder.size) list else defaultOrder)
+        mutableStateOf(if (list.isNotEmpty()) list else defaultOrder)
     }
-    var currentFilter by remember { mutableStateOf(categoryOrder.firstOrNull() ?: ContactCategoryFilter.PERSONAL) }
+    var currentFilter by remember { mutableStateOf(categoryOrder.firstOrNull() ?: ContactCategoryFilter.REGIONAL) }
     var highlightedTagForDictionary by remember { mutableStateOf<String?>(null) }
     var showCategoriesSheet by remember { mutableStateOf(false) }
     var showRegionPicker by remember { mutableStateOf(false) }
@@ -284,7 +289,7 @@ fun ContactsScreen(
     }
 
     // Category counts for badges
-    val categoryCounts = remember(classifiedContacts, selectedGroup, groupMemberIds) {
+    val categoryCounts = remember(classifiedContacts, selectedGroup, groupMemberIds, chileanDirectory) {
         val total = if (selectedGroup != null) {
             classifiedContacts.count { c ->
                 val personalId = c.rawContact?.id ?: c.id.removePrefix("personal_")
@@ -296,8 +301,10 @@ fun ContactsScreen(
         val munic = classifiedContacts.count { it.category == ContactCategoryFilter.MUNICIPAL }
         val official = classifiedContacts.count { it.category == ContactCategoryFilter.OFFICIAL_600 }
         val personal = classifiedContacts.count { it.category == ContactCategoryFilter.PERSONAL }
+        val regional = chileanDirectory.size
         mapOf(
             ContactCategoryFilter.ALL to total,
+            ContactCategoryFilter.REGIONAL to regional,
             ContactCategoryFilter.FAVORITES to favs,
             ContactCategoryFilter.EMERGENCIES to emerg,
             ContactCategoryFilter.MUNICIPAL to munic,
@@ -324,6 +331,7 @@ fun ContactsScreen(
             } else {
                 val matchesFilter = when (currentFilter) {
                     ContactCategoryFilter.ALL -> true
+                    ContactCategoryFilter.REGIONAL -> c.rawContact?.source == "CHILEAN_DIRECTORY"
                     ContactCategoryFilter.FAVORITES -> c.isFavorite
                     ContactCategoryFilter.EMERGENCIES -> c.category == ContactCategoryFilter.EMERGENCIES
                     ContactCategoryFilter.MUNICIPAL -> c.category == ContactCategoryFilter.MUNICIPAL
@@ -339,7 +347,7 @@ fun ContactsScreen(
                 ContactSourceFilter.GOOGLE -> c.rawContact?.source?.equals("GOOGLE", ignoreCase = true) == true
                 ContactSourceFilter.WHATSAPP -> c.rawContact?.source?.equals("WHATSAPP", ignoreCase = true) == true
                 ContactSourceFilter.SIM -> c.rawContact?.source?.equals("SIM", ignoreCase = true) == true
-                ContactSourceFilter.DEVICE -> c.rawContact?.source?.equals("DEVICE", ignoreCase = true) == true || c.rawContact == null
+                ContactSourceFilter.DEVICE -> c.rawContact?.source?.equals("DEVICE", ignoreCase = true) == true || c.rawContact?.source == "CHILEAN_DIRECTORY"
             }
             if (!matchesSource) return@filter false
 
@@ -792,20 +800,6 @@ private fun ContactCategoryChipsRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Location Chip (Región y/o Comuna seleccionada)
-            val locationLabel = when {
-                selectedComuna != null -> "$selectedComuna (${selectedRegion.shortName})"
-                selectedRegion != ChileanRegion.ALL -> selectedRegion.shortName
-                else -> "Chile"
-            }
-            StitchFilterChip(
-                selected = selectedRegion != ChileanRegion.ALL || selectedComuna != null,
-                onClick = onOpenRegionPicker,
-                label = locationLabel,
-                icon = Icons.Rounded.LocationOn,
-                iconTint = MaterialTheme.colorScheme.tertiary
-            )
-
             // Active Contact Group Chip (if any selected)
             if (selectedGroup != null) {
                 StitchFilterChip(
@@ -831,6 +825,27 @@ private fun ContactCategoryChipsRow(
             // Dynamic User Category Order
             categoryOrder.forEach { cat ->
                 when (cat) {
+                    ContactCategoryFilter.REGIONAL -> {
+                        val locationLabel = when {
+                            selectedComuna != null -> "$selectedComuna (${selectedRegion.shortName})"
+                            selectedRegion != ChileanRegion.ALL -> selectedRegion.shortName
+                            else -> "Chile"
+                        }
+                        StitchFilterChip(
+                            selected = currentFilter == ContactCategoryFilter.REGIONAL && selectedGroup == null,
+                            onClick = {
+                                if (currentFilter == ContactCategoryFilter.REGIONAL) {
+                                    onOpenRegionPicker()
+                                } else {
+                                    onFilterSelect(ContactCategoryFilter.REGIONAL)
+                                }
+                            },
+                            label = locationLabel,
+                            icon = Icons.Rounded.LocationOn,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            count = counts[ContactCategoryFilter.REGIONAL]
+                        )
+                    }
                     ContactCategoryFilter.PERSONAL -> {
                         StitchFilterChip(
                             selected = currentFilter == ContactCategoryFilter.PERSONAL,
@@ -1429,6 +1444,7 @@ fun ContactCategoriesBottomSheet(
                 TextButton(
                     onClick = {
                         val defaultList = listOf(
+                            ContactCategoryFilter.REGIONAL,
                             ContactCategoryFilter.PERSONAL,
                             ContactCategoryFilter.FAVORITES,
                             ContactCategoryFilter.EMERGENCIES,
@@ -1450,12 +1466,19 @@ fun ContactCategoriesBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                val catLocLabel = when {
+                    selectedComuna != null -> "$selectedComuna (${selectedRegion.shortName})"
+                    selectedRegion != ChileanRegion.ALL -> selectedRegion.shortName
+                    else -> "Chile"
+                }
+
                 categoryOrder.forEachIndexed { index, cat ->
                     val isSelected = cat == currentFilter && selectedGroup == null
                     val isFirst = index == 0
                     val count = counts[cat] ?: 0
 
                     val catName = when (cat) {
+                        ContactCategoryFilter.REGIONAL -> "Directorio ($catLocLabel)"
                         ContactCategoryFilter.ALL -> "Todos"
                         ContactCategoryFilter.FAVORITES -> "Favoritos"
                         ContactCategoryFilter.EMERGENCIES -> "Emergencias"
@@ -1465,6 +1488,7 @@ fun ContactCategoriesBottomSheet(
                     }
 
                     val catDesc = when (cat) {
+                        ContactCategoryFilter.REGIONAL -> "Emergencias, seguridad municipal 14xx y utilidad"
                         ContactCategoryFilter.PERSONAL -> "Libreta telefónica del dispositivo"
                         ContactCategoryFilter.FAVORITES -> "Contactos con estrella"
                         ContactCategoryFilter.EMERGENCIES -> "Líneas nacionales de emergencia"
@@ -1538,6 +1562,19 @@ fun ContactCategoriesBottomSheet(
 
                             // Reordering buttons (↑ and ↓)
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (cat == ContactCategoryFilter.REGIONAL) {
+                                    IconButton(
+                                        onClick = onOpenRegionPicker,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Edit,
+                                            contentDescription = "Cambiar ubicación",
+                                            tint = MaterialTheme.colorScheme.tertiary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
                                 IconButton(
                                     onClick = {
                                         if (index > 0) {
@@ -2320,7 +2357,7 @@ fun RegionSelectorBottomSheet(
                                     supportingContent = {
                                         val hasValidComuna = isRegionActive && selectedComuna != null && ChileanRegionalDirectory.isValidComunaForRegion(region, selectedComuna)
                                         Text(
-                                            text = if (hasValidComuna) "Comuna activa: $selectedComuna" else "${comunasForRegion.size} comunas",
+                                            text = if (hasValidComuna) "Comuna activa: $selectedComuna" else "${comunasForRegion.size} comunas (toca para desplegar)",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (hasValidComuna) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -2333,17 +2370,15 @@ fun RegionSelectorBottomSheet(
                                         )
                                     },
                                     trailingContent = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            TextButton(onClick = {
-                                                onSelectLocation(region, null)
-                                                onDismiss()
-                                            }) {
-                                                Text("Toda la región", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                        IconButton(
+                                            onClick = {
+                                                expandedRegionCode = if (isExpanded) null else region.code
                                             }
+                                        ) {
                                             Icon(
                                                 imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                                                contentDescription = if (isExpanded) "Colapsar" else "Expandir",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                contentDescription = if (isExpanded) "Colapsar comunas" else "Expandir comunas",
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     },
