@@ -38,3 +38,7 @@ Thumbs.db
 **/detekt/baseline.xml
 
 *.hprof
+
+# Tool cache
+tools/heraldry_images/
+

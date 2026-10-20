@@ -1,0 +1,2989 @@
+{
+  "metadata": {
+    "source": "Wikidata / Wikimedia Commons",
+    "country": "Chile",
+    "total_comunas": 351,
+    "total_regiones": 16,
+    "generated_at": "2026-10-20T21:38:30Z"
+  },
+  "regiones": [
+    {
+      "name": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20the%20Metropolitan%20Region%20Government%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20the%20Metropolitan%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Chacabuco",
+        "Cordillera",
+        "Maipo",
+        "Provincia de Melipilla",
+        "Provincia de Santiago",
+        "Provincia de Talagante"
+      ]
+    },
+    {
+      "name": "Región de Antofagasta",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Antofagasta%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Antofagasta%20Region%2C%20Chile.svg",
+      "provincias": [
+        "El Loa",
+        "Provincia de Antofagasta",
+        "Tocopilla"
+      ]
+    },
+    {
+      "name": "Región de Arica y Parinacota",
+      "escudo_url": null,
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Arica%20y%20Parinacota%2C%20Chile.svg",
+      "provincias": [
+        "Arica",
+        "Parinacota"
+      ]
+    },
+    {
+      "name": "Región de Atacama",
+      "escudo_url": null,
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Atacama%2C%20Chile.svg",
+      "provincias": [
+        "Chañaral",
+        "Huasco",
+        "Provincia de Copiapó"
+      ]
+    },
+    {
+      "name": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Aysen%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Aysen%2C%20Chile.svg",
+      "provincias": [
+        "Aysén",
+        "Capitán Prat",
+        "Coihaique",
+        "General Carrera"
+      ]
+    },
+    {
+      "name": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Coquimbo%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Coquimbo%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Choapa",
+        "Elqui",
+        "Limarí"
+      ]
+    },
+    {
+      "name": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20La%20Araucania%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20La%20Araucan%C3%ADa%20Region.svg",
+      "provincias": [
+        "Cautín",
+        "Malleco"
+      ]
+    },
+    {
+      "name": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Los%20Lagos%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Los%20Lagos%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Chiloé",
+        "Llanquihue",
+        "Osorno",
+        "Provincia de Palena"
+      ]
+    },
+    {
+      "name": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Los%20R%C3%ADos%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Los%20R%C3%ADos%2C%20Chile.svg",
+      "provincias": [
+        "Ranco",
+        "Valdivia"
+      ]
+    },
+    {
+      "name": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20Arms%20of%20Magallanes%20Region.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Magallanes%20y%20la%20Ant%C3%A1rtica%20Chilena%2C%20Chile.svg",
+      "provincias": [
+        "Antártica Chilena",
+        "Magallanes",
+        "Tierra del Fuego",
+        "Última Esperanza"
+      ]
+    },
+    {
+      "name": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20O%27Higgins%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20O%27Higgins%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Cachapoal",
+        "Cardenal Caro",
+        "Colchagua"
+      ]
+    },
+    {
+      "name": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Tarapaca%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Tarapaca%2C%20Chile.svg",
+      "provincias": [
+        "Provincia de Iquique",
+        "Tamarugal"
+      ]
+    },
+    {
+      "name": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Valparaiso%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Valparaiso%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Isla de Pascua",
+        "Los Andes",
+        "Marga Marga",
+        "Petorca",
+        "Quillota",
+        "San Antonio",
+        "San Felipe de Aconcagua",
+        "Valparaíso"
+      ]
+    },
+    {
+      "name": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20%C3%91uble%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20%C3%91uble%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Provincia de Diguillín",
+        "Provincia de Itata",
+        "Provincia de Punilla"
+      ]
+    },
+    {
+      "name": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Biob%C3%ADo%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Biob%C3%ADo%20Region%2C%20Chile.svg",
+      "provincias": [
+        "Arauco",
+        "Biobío",
+        "Provincia de Concepción"
+      ]
+    },
+    {
+      "name": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Maule%20Region%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Maule%2C%20Chile.svg",
+      "provincias": [
+        "Cauquenes",
+        "Linares",
+        "Talca",
+        "provincia de Curicó"
+      ]
+    }
+  ],
+  "comunas": [
+    {
+      "qid": "Q3841",
+      "name": "Colina",
+      "provincia": "Chacabuco",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Colina%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14477",
+      "name": "Lampa",
+      "provincia": "Chacabuco",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Lampa.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188170",
+      "name": "Tiltil",
+      "provincia": "Chacabuco",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Tiltil.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51113",
+      "name": "Pirque",
+      "provincia": "Cordillera",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pirque.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Pirque.svg"
+    },
+    {
+      "qid": "Q51594",
+      "name": "Puente Alto",
+      "provincia": "Cordillera",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Puente%20Alto.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187847",
+      "name": "San José de Maipo",
+      "provincia": "Cordillera",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Jos%C3%A9%20de%20Maipo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3656",
+      "name": "Buin",
+      "provincia": "Maipo",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Buin.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3725",
+      "name": "Calera de Tango",
+      "provincia": "Maipo",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Calera%20de%20Tango.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51070",
+      "name": "Paine",
+      "provincia": "Maipo",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Paine.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Paine.svg"
+    },
+    {
+      "qid": "Q56136",
+      "name": "San Bernardo",
+      "provincia": "Maipo",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Bernardo%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20San%20Bernardo%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q2208",
+      "name": "Alhué",
+      "provincia": "Provincia de Melipilla",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3885",
+      "name": "Curacaví",
+      "provincia": "Provincia de Melipilla",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16925",
+      "name": "María Pinto",
+      "provincia": "Provincia de Melipilla",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51032",
+      "name": "Melipilla",
+      "provincia": "Provincia de Melipilla",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Melipilla.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Melipilla.png"
+    },
+    {
+      "qid": "Q187885",
+      "name": "San Pedro",
+      "provincia": "Provincia de Melipilla",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Pedro%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3755",
+      "name": "Cerrillos",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cerrillos.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Cerrillos.svg"
+    },
+    {
+      "qid": "Q3756",
+      "name": "Cerro Navia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cerro%20Navia.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Cerro%20Navia%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q3851",
+      "name": "Conchalí",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Conchal%C3%AD.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Conchal%C3%AD.svg"
+    },
+    {
+      "qid": "Q13036",
+      "name": "El Bosque",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13045",
+      "name": "Estación Central",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Estaci%C3%B3n%20Central.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14433",
+      "name": "Huechuraba",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Huechuraba.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14437",
+      "name": "Independencia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Independencia%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Independencia%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q14437",
+      "name": "Independencia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Independencia%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Independencia%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q14437",
+      "name": "Independencia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Independencia%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Independencia%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q14437",
+      "name": "Independencia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Independencia%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Independencia%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q14456",
+      "name": "La Cisterna",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Cisterna.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20La%20Cisterna.png"
+    },
+    {
+      "qid": "Q14460",
+      "name": "La Florida",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Florida%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20La%20Florida%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q14461",
+      "name": "La Granja",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Granja%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14464",
+      "name": "La Pintana",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Pintana.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20La%20Pintana.svg"
+    },
+    {
+      "qid": "Q14466",
+      "name": "La Reina",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Reina.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20La%20Reina.svg"
+    },
+    {
+      "qid": "Q14484",
+      "name": "Las Condes",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Las%20Condes.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14502",
+      "name": "Lo Barnechea",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14503",
+      "name": "Lo Espejo",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14504",
+      "name": "Lo Prado",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Lo%20Prado.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Lo%20Prado.svg"
+    },
+    {
+      "qid": "Q16916",
+      "name": "Macul",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Macul.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16918",
+      "name": "Maipú",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Maip%C3%BA%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Maipu%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q51084",
+      "name": "Pedro Aguirre Cerda",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pedro%20Aguirre%20Cerda.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51100",
+      "name": "Peñalolén",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pe%C3%B1alol%C3%A9n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Pe%C3%B1alol%C3%A9n.svg"
+    },
+    {
+      "qid": "Q51587",
+      "name": "Providencia",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Providencia%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51591",
+      "name": "Pudahuel",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pudahuel.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Pudahuel%20%281975%29.png"
+    },
+    {
+      "qid": "Q51612",
+      "name": "Quilicura",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quilicura.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Quilicura.svg"
+    },
+    {
+      "qid": "Q56113",
+      "name": "Quinta Normal",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quinta%20Normal.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56117",
+      "name": "Recoleta",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Recoleta%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56119",
+      "name": "Renca",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Renca.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Renca.svg"
+    },
+    {
+      "qid": "Q187838",
+      "name": "San Joaquín",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Joaqu%C3%ADn%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187862",
+      "name": "San Miguel",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Miguel%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187919",
+      "name": "San Ramón",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Ram%C3%B3n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20San%20Ram%C3%B3n.svg"
+    },
+    {
+      "qid": "Q188002",
+      "name": "Santiago",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Santiago%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Santiago%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q201036",
+      "name": "Vitacura",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201076",
+      "name": "Ñuñoa",
+      "provincia": "Provincia de Santiago",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20%C3%91u%C3%B1oa.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20%C3%91u%C3%B1oa.svg"
+    },
+    {
+      "qid": "Q13038",
+      "name": "El Monte",
+      "provincia": "Provincia de Talagante",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14445",
+      "name": "Isla de Maipo",
+      "provincia": "Provincia de Talagante",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Isla%20de%20Maipo.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Isla%20de%20Maipo%20Flag.svg"
+    },
+    {
+      "qid": "Q51062",
+      "name": "Padre Hurtado",
+      "provincia": "Provincia de Talagante",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51098",
+      "name": "Peñaflor",
+      "provincia": "Provincia de Talagante",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pe%C3%B1aflor%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20pe%C3%B1aflor.jpg"
+    },
+    {
+      "qid": "Q188038",
+      "name": "Talagante",
+      "provincia": "Provincia de Talagante",
+      "region": "Región Metropolitana de Santiago",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Talagante.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660534",
+      "name": "Calama",
+      "provincia": "El Loa",
+      "region": "Región de Antofagasta",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660235",
+      "name": "Ollagüe",
+      "provincia": "El Loa",
+      "region": "Región de Antofagasta",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660231",
+      "name": "San Pedro de Atacama",
+      "provincia": "El Loa",
+      "region": "Región de Antofagasta",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660303",
+      "name": "Antofagasta",
+      "provincia": "Provincia de Antofagasta",
+      "region": "Región de Antofagasta",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16928",
+      "name": "Mejillones",
+      "provincia": "Provincia de Antofagasta",
+      "region": "Región de Antofagasta",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Mejillones.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Mejillones.png"
+    },
+    {
+      "qid": "Q188027",
+      "name": "Sierra Gorda",
+      "provincia": "Provincia de Antofagasta",
+      "region": "Región de Antofagasta",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Sierra%20Gorda.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Sierra%20Gorda%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q188049",
+      "name": "Taltal",
+      "provincia": "Provincia de Antofagasta",
+      "region": "Región de Antofagasta",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Taltal%20%28nuevo%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16923",
+      "name": "María Elena",
+      "provincia": "Tocopilla",
+      "region": "Región de Antofagasta",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Mar%C3%ADa%20Elena.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660225",
+      "name": "Tocopilla",
+      "provincia": "Tocopilla",
+      "region": "Región de Antofagasta",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660598",
+      "name": "Arica",
+      "provincia": "Arica",
+      "region": "Región de Arica y Parinacota",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3729",
+      "name": "Comuna de Camarones",
+      "provincia": "Arica",
+      "region": "Región de Arica y Parinacota",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Logomuni-01.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13065",
+      "name": "General Lagos",
+      "provincia": "Parinacota",
+      "region": "Región de Arica y Parinacota",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20General%20Lagos.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51605",
+      "name": "Putre",
+      "provincia": "Parinacota",
+      "region": "Región de Arica y Parinacota",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Putre.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Putre.svg"
+    },
+    {
+      "qid": "Q23660220",
+      "name": "Chañaral",
+      "provincia": "Chañaral",
+      "region": "Región de Atacama",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13033",
+      "name": "Diego de Almagro",
+      "provincia": "Chañaral",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20la%20comuna%20de%20Diego%20de%20Almagro.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q2215",
+      "name": "Alto del Carmen",
+      "provincia": "Huasco",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Alto%20del%20Carmen.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13051",
+      "name": "Freirina",
+      "provincia": "Huasco",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Freirina.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14422",
+      "name": "Huasco",
+      "provincia": "Huasco",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Huasco.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Huasco%20Bandera.svg"
+    },
+    {
+      "qid": "Q23660268",
+      "name": "Vallenar",
+      "provincia": "Huasco",
+      "region": "Región de Atacama",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3708",
+      "name": "Caldera",
+      "provincia": "Provincia de Copiapó",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Caldera%20logo.JPG",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660229",
+      "name": "Copiapó",
+      "provincia": "Provincia de Copiapó",
+      "region": "Región de Atacama",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188142",
+      "name": "Tierra Amarilla",
+      "provincia": "Provincia de Copiapó",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Tierra%20Amarilla.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188142",
+      "name": "Tierra Amarilla",
+      "provincia": "Provincia de Copiapó",
+      "region": "Región de Atacama",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Tierra%20Amarilla%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3651",
+      "name": "Aysén",
+      "provincia": "Aysén",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3793",
+      "name": "Cisnes",
+      "provincia": "Aysén",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cisnes.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13069",
+      "name": "Guaitecas",
+      "provincia": "Aysén",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660615",
+      "name": "Cochrane",
+      "provincia": "Capitán Prat",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51051",
+      "name": "O'Higgins",
+      "provincia": "Capitán Prat",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q2390232",
+      "name": "Tortel",
+      "provincia": "Capitán Prat",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660241",
+      "name": "Coyhaique",
+      "provincia": "Coihaique",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14471",
+      "name": "Lago Verde",
+      "provincia": "Coihaique",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660552",
+      "name": "Chile Chico",
+      "provincia": "General Carrera",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56129",
+      "name": "Río Ibáñez",
+      "provincia": "General Carrera",
+      "region": "Región de Aysén del General Carlos Ibáñez del Campo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Rio%20Ib%C3%A1%C3%B1ez.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3735",
+      "name": "Canela",
+      "provincia": "Choapa",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Canela.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660296",
+      "name": "Illapel",
+      "provincia": "Choapa",
+      "region": "Región de Coquimbo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16908",
+      "name": "Los Vilos",
+      "provincia": "Choapa",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Los%20Vilos.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56134",
+      "name": "Salamanca",
+      "provincia": "Choapa",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Salamanca%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Salamanca%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q3602",
+      "name": "Andacollo",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20andacollo.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660214",
+      "name": "Coquimbo",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14462",
+      "name": "La Higuera",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Higuera.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660215",
+      "name": "La Serena",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51064",
+      "name": "Paihuano",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201007",
+      "name": "Vicuña",
+      "provincia": "Elqui",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Vicu%C3%B1a%20Chile.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3850",
+      "name": "Combarbalá",
+      "provincia": "Limarí",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Combarbal%C3%A1.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51034",
+      "name": "Monte Patria",
+      "provincia": "Limarí",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Monte%20Patria.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660217",
+      "name": "Ovalle",
+      "provincia": "Limarí",
+      "region": "Región de Coquimbo",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51598",
+      "name": "Punitaqui",
+      "provincia": "Limarí",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Punitaqui.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56128",
+      "name": "Río Hurtado",
+      "provincia": "Limarí",
+      "region": "Región de Coquimbo",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20R%C3%ADo%20Hurtado.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3736",
+      "name": "Carahue",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20carahue.jpg"
+    },
+    {
+      "qid": "Q3785",
+      "name": "Cholchol",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3878",
+      "name": "Cunco",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13025",
+      "name": "Curarrehue",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13049",
+      "name": "Freire",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13063",
+      "name": "Galvarino",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Galvarino.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Comuna%20de%20Galvarino.jpg"
+    },
+    {
+      "qid": "Q13063",
+      "name": "Galvarino",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Galvarino.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20the%20Mapuches%20%281992%29.svg"
+    },
+    {
+      "qid": "Q13067",
+      "name": "Gorbea",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Gorbea.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Gorbea.svg"
+    },
+    {
+      "qid": "Q14486",
+      "name": "Lautaro",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16900",
+      "name": "Loncoche",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q49076",
+      "name": "Melipeuco",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51050",
+      "name": "Nueva Imperial",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Imperial.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51063",
+      "name": "Padre Las Casas",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Padre%20Las%20Casas.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q15076",
+      "name": "Perquenco",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51115",
+      "name": "Pitrufquén",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pitrufqu%C3%A9n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Pitrufqu%C3%A9n.png"
+    },
+    {
+      "qid": "Q51590",
+      "name": "Pucón",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Puc%C3%B3n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Puc%C3%B3n.svg"
+    },
+    {
+      "qid": "Q56132",
+      "name": "Saavedra",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Saavedra%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660141",
+      "name": "Temuco",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188135",
+      "name": "Teodoro Schmidt",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q17107613",
+      "name": "Toltén",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q1643896",
+      "name": "Vilcún",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201019",
+      "name": "Villarrica",
+      "provincia": "Cautín",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Villarrica.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660240",
+      "name": "Angol",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3843",
+      "name": "Collipulli",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Collipulli.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Collipulli.png"
+    },
+    {
+      "qid": "Q13044",
+      "name": "Ercilla",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Ercilla.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16902",
+      "name": "Lonquimay",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16907",
+      "name": "Los Sauces",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Los%20Sauces.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16914",
+      "name": "Lumaco",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51602",
+      "name": "Purén",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pur%C3%A9n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56118",
+      "name": "Renaico",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Renaico.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q200961",
+      "name": "Traiguén",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Traigu%C3%A9n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q200999",
+      "name": "Victoria",
+      "provincia": "Malleco",
+      "region": "Región de La Araucanía",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Victoria%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Victoria%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q23660274",
+      "name": "Ancud",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660569",
+      "name": "Castro",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Castro%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660568",
+      "name": "Chonchi",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660566",
+      "name": "Curaco de Vélez",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q85867165",
+      "name": "Dalcahue",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Dalcahue.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q2118779",
+      "name": "Puqueldón",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Puqueld%C3%B3n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51607",
+      "name": "Queilén",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51608",
+      "name": "Quellón",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quell%C3%B3n.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51609",
+      "name": "Quemchi",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quemchi.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56111",
+      "name": "Quinchao",
+      "provincia": "Chiloé",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quinchao.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660261",
+      "name": "Calbuco",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3797",
+      "name": "Cochamó",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660584",
+      "name": "Fresia",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660602",
+      "name": "Frutillar",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14500",
+      "name": "Llanquihue",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20comuna%20Llanquihue.png"
+    },
+    {
+      "qid": "Q16906",
+      "name": "Los Muermos",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Los%20Muermos.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16927",
+      "name": "Maullín",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Maullin.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Maull%C3%ADn.png"
+    },
+    {
+      "qid": "Q23660601",
+      "name": "Puerto Montt",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660278",
+      "name": "Puerto Varas",
+      "provincia": "Llanquihue",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q22451496",
+      "name": "Osorno",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51595",
+      "name": "Puerto Octay",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Puerto%20Octay.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Puerto%20Octay.jpg"
+    },
+    {
+      "qid": "Q51601",
+      "name": "Purranque",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q15084",
+      "name": "Puyehue",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56130",
+      "name": "Río Negro",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Armas%2C%20comuna%20de%20R%C3%ADo%20Negro%2C%20Region%20de%20Los%20Lagos%2C%20Chile.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187856",
+      "name": "San Juan de la Costa",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187873",
+      "name": "San Pablo",
+      "provincia": "Osorno",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3759",
+      "name": "Chaitén",
+      "provincia": "Provincia de Palena",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660561",
+      "name": "Futaleufú",
+      "provincia": "Provincia de Palena",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13072",
+      "name": "Hualaihué",
+      "provincia": "Provincia de Palena",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660618",
+      "name": "Palena",
+      "provincia": "Provincia de Palena",
+      "region": "Región de Los Lagos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13062",
+      "name": "Futrono",
+      "provincia": "Ranco",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Futrono.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Futrono.svg"
+    },
+    {
+      "qid": "Q23660622",
+      "name": "La Unión",
+      "provincia": "Ranco",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Uni%C3%B3n%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20La%20Uni%C3%B3n.svg"
+    },
+    {
+      "qid": "Q14470",
+      "name": "Lago Ranco",
+      "provincia": "Ranco",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Lago%20Ranco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660621",
+      "name": "Río Bueno",
+      "provincia": "Ranco",
+      "region": "Región de Los Ríos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q64972453",
+      "name": "Lanco",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16905",
+      "name": "Los Lagos",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Los%20Lagos.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16922",
+      "name": "Mariquina",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Mariquina.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51038",
+      "name": "Máfil",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20M%C3%A1fil.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20M%C3%A1fil.svg"
+    },
+    {
+      "qid": "Q51069",
+      "name": "Paillaco",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Paillaco.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Paillaco.svg"
+    },
+    {
+      "qid": "Q23660623",
+      "name": "Panguipulli",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660540",
+      "name": "Valdivia",
+      "provincia": "Valdivia",
+      "region": "Región de Los Ríos",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q15050531",
+      "name": "Antártica",
+      "provincia": "Antártica Chilena",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20la%20comuna%20de%20Ant%C3%A1rtica.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3673",
+      "name": "Cabo de Hornos",
+      "provincia": "Antártica Chilena",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cabo%20de%20Hornos.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Cabo%20de%20Hornos%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q14474",
+      "name": "Laguna Blanca",
+      "provincia": "Magallanes",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q20530729",
+      "name": "Punta Arenas",
+      "provincia": "Magallanes",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Punta%20Arenas.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Punta%20Arenas.gif"
+    },
+    {
+      "qid": "Q56131",
+      "name": "Río Verde",
+      "provincia": "Magallanes",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187816",
+      "name": "San Gregorio",
+      "provincia": "Magallanes",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51120",
+      "name": "Porvenir",
+      "provincia": "Tierra del Fuego",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/LogoOficialMuni.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51586",
+      "name": "Primavera",
+      "provincia": "Tierra del Fuego",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188177",
+      "name": "Timaukel",
+      "provincia": "Tierra del Fuego",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51043",
+      "name": "Natales",
+      "provincia": "Última Esperanza",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Natales.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q200948",
+      "name": "Torres del Paine",
+      "provincia": "Última Esperanza",
+      "region": "Región de Magallanes y de la Antártica Chilena",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3804",
+      "name": "Codegua",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3833",
+      "name": "Coinco",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3847",
+      "name": "Coltauco",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13035",
+      "name": "Doñihue",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13068",
+      "name": "Graneros",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14480",
+      "name": "Las Cabras",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16915",
+      "name": "Machalí",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16919",
+      "name": "Malloa",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51035",
+      "name": "Mostazal",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51053",
+      "name": "Olivar",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20El%20Olivar.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51097",
+      "name": "Peumo",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Peumo.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Peumo.svg"
+    },
+    {
+      "qid": "Q51097",
+      "name": "Peumo",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Peumo.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Banderapeumo.jpg"
+    },
+    {
+      "qid": "Q51104",
+      "name": "Pichidegua",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56112",
+      "name": "Quinta de Tilcoco",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660166",
+      "name": "Rancagua",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56120",
+      "name": "Rengo",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Rengo.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Rengo.svg"
+    },
+    {
+      "qid": "Q56121",
+      "name": "Requínoa",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Requ%C3%ADnoa.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Requ%C3%ADnoa.svg"
+    },
+    {
+      "qid": "Q187936",
+      "name": "San Vicente de Tagua Tagua",
+      "provincia": "Cachapoal",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14458",
+      "name": "La Estrella",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14496",
+      "name": "Litueche",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Litueche.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16921",
+      "name": "Marchigüe",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51045",
+      "name": "Navidad",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Coat%20of%20arms%20of%20Navidad.jpg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51082",
+      "name": "Paredones",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660186",
+      "name": "Pichilemu",
+      "provincia": "Cardenal Caro",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3782",
+      "name": "Chimbarongo",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Chimbarongo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3790",
+      "name": "Chépica",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16899",
+      "name": "Lolol",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Lolol%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51042",
+      "name": "Nancagua",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Nancagua.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51074",
+      "name": "Palmilla",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51095",
+      "name": "Peralillo",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51117",
+      "name": "Placilla",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Placilla.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Placilla%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q2098355",
+      "name": "Pumanque",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660251",
+      "name": "San Fernando",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187969",
+      "name": "Santa Cruz",
+      "provincia": "Colchagua",
+      "region": "Región de O'Higgins",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Santa%20Cruz%2C%20Chile.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Santa%20Cruz%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q2217",
+      "name": "Alto Hospicio",
+      "provincia": "Provincia de Iquique",
+      "region": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Alto%20Hospicio.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Alto%20Hospicio.svg"
+    },
+    {
+      "qid": "Q23660233",
+      "name": "Iquique",
+      "provincia": "Provincia de Iquique",
+      "region": "Región de Tarapacá",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3731",
+      "name": "Camiña",
+      "provincia": "Tamarugal",
+      "region": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cami%C3%B1a.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3839",
+      "name": "Colchane",
+      "provincia": "Tamarugal",
+      "region": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Colchane.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Colchane.svg"
+    },
+    {
+      "qid": "Q13081",
+      "name": "Huara",
+      "provincia": "Tamarugal",
+      "region": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Huara.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51102",
+      "name": "Pica",
+      "provincia": "Tamarugal",
+      "region": "Región de Tarapacá",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pica.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660626",
+      "name": "Pozo Almonte",
+      "provincia": "Tamarugal",
+      "region": "Región de Tarapacá",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q9009773",
+      "name": "Isla de Pascua",
+      "provincia": "Isla de Pascua",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Emblem%20of%20Easter%20Island.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Rapa%20Nui%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q3728",
+      "name": "Calle Larga",
+      "provincia": "Los Andes",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Calle%20Larga.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660195",
+      "name": "Los Andes",
+      "provincia": "Los Andes",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56123",
+      "name": "Rinconada",
+      "provincia": "Los Andes",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Rinconada.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187784",
+      "name": "San Esteban",
+      "provincia": "Los Andes",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14493",
+      "name": "Limache",
+      "provincia": "Marga Marga",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Limache.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51058",
+      "name": "Olmué",
+      "provincia": "Marga Marga",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Olmu%C3%A9.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660236",
+      "name": "Quilpué",
+      "provincia": "Marga Marga",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660271",
+      "name": "Villa Alemana",
+      "provincia": "Marga Marga",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3668",
+      "name": "Cabildo",
+      "provincia": "Petorca",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660206",
+      "name": "La Ligua",
+      "provincia": "Petorca",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51079",
+      "name": "Papudo",
+      "provincia": "Petorca",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Papudo.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20%2814%29.png"
+    },
+    {
+      "qid": "Q51096",
+      "name": "Petorca",
+      "provincia": "Petorca",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660193",
+      "name": "Zapallar",
+      "provincia": "Petorca",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13071",
+      "name": "Hijuelas",
+      "provincia": "Quillota",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/ESCUDO%20HIJUELAS.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3713",
+      "name": "La Calera",
+      "provincia": "Quillota",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20La%20Calera.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14457",
+      "name": "La Cruz",
+      "provincia": "Quillota",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51049",
+      "name": "Nogales",
+      "provincia": "Quillota",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q31936374",
+      "name": "Quillota",
+      "provincia": "Quillota",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q2206",
+      "name": "Algarrobo",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Algarrobo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3738",
+      "name": "Cartagena",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20la%20Municipalidad%20de%20Cartagena%20-%20Chile.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13040",
+      "name": "El Quisco",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Armas%20de%20El%20Quisco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13041",
+      "name": "El Tabo",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Armas%20de%20El%20Tabo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660190",
+      "name": "San Antonio",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188011",
+      "name": "Santo Domingo",
+      "provincia": "San Antonio",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3747",
+      "name": "Catemu",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14498",
+      "name": "Llay-Llay",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Llay%20Llay.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51078",
+      "name": "Panquehue",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Panquehue.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51604",
+      "name": "Putaendo",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Putaendo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660221",
+      "name": "San Felipe",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187991",
+      "name": "Santa María",
+      "provincia": "San Felipe de Aconcagua",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3742",
+      "name": "Casablanca",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Casablanca.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Casablanca.svg"
+    },
+    {
+      "qid": "Q3860",
+      "name": "Concón",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Conc%C3%B3n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Conc%C3%B3n%2C%20Chile.svg"
+    },
+    {
+      "qid": "Q14454",
+      "name": "Juan Fernández",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Juan%20Fern%C3%A1ndez.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Juan%20Fern%C3%A1ndez.svg"
+    },
+    {
+      "qid": "Q23660192",
+      "name": "Puchuncaví",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56114",
+      "name": "Quintero",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660191",
+      "name": "Valparaíso",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660201",
+      "name": "Viña del Mar",
+      "provincia": "Valparaíso",
+      "region": "Región de Valparaíso",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3663",
+      "name": "Bulnes",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Bulnes.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660244",
+      "name": "Chillán",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660634",
+      "name": "Chillán Viejo",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13037",
+      "name": "El Carmen",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20El%20Carmen.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51090",
+      "name": "Pemuco",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pemuco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51106",
+      "name": "Pinto",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pinto%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56109",
+      "name": "Quillón",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quill%C3%B3n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187824",
+      "name": "San Ignacio",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Ignacio.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201056",
+      "name": "Yungay",
+      "provincia": "Provincia de Diguillín",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Yungay.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Yungay%20Chile.png"
+    },
+    {
+      "qid": "Q3796",
+      "name": "Cobquecura",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cobquecura.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3807",
+      "name": "Coelemu",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Coelemu.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51048",
+      "name": "Ninhue",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Ninhue.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51119",
+      "name": "Portezuelo",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Portezuelo%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56115",
+      "name": "Quirihue",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quirihue.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Quirihue.svg"
+    },
+    {
+      "qid": "Q56125",
+      "name": "Ránquil",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20R%C3%A1nquil.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q200963",
+      "name": "Treguaco",
+      "provincia": "Provincia de Itata",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Trehuaco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3814",
+      "name": "Coihueco",
+      "provincia": "Provincia de Punilla",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/ESCUDO%20COIHUECO.jpg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56137",
+      "name": "San Carlos",
+      "provincia": "Provincia de Punilla",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Carlos%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187795",
+      "name": "San Fabián",
+      "provincia": "Provincia de Punilla",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Fabi%C3%A1n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187866",
+      "name": "San Nicolás",
+      "provincia": "Provincia de Punilla",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Nicol%C3%A1s%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201070",
+      "name": "Ñiquén",
+      "provincia": "Provincia de Punilla",
+      "region": "Región de Ñuble",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20%C3%91iqu%C3%A9n.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20%C3%91iqu%C3%A9n.png"
+    },
+    {
+      "qid": "Q23660149",
+      "name": "Arauco",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3753",
+      "name": "Cañete",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Ca%C3%B1ete%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3864",
+      "name": "Contulmo",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Contulmo.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3892",
+      "name": "Curanilahue",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Curanilahue.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660283",
+      "name": "Lebu",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16909",
+      "name": "Los Álamos",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Los%20%C3%81lamos.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q188183",
+      "name": "Tirúa",
+      "provincia": "Arauco",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Tir%C3%BAa.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q2213",
+      "name": "Alto Biobío",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Alto%20Biob%C3%ADo%20escudo.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3619",
+      "name": "Antuco",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Antuco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3678",
+      "name": "Cabrero",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cabrero.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Cabrero%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q14475",
+      "name": "Laja",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Laja.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q31921981",
+      "name": "Los Ángeles",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51036",
+      "name": "Mulchén",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Mulch%C3%A9n.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Mulch%C3%A9n.png"
+    },
+    {
+      "qid": "Q51039",
+      "name": "Nacimiento",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Nacimiento%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Nacimiento%20Chile.png"
+    },
+    {
+      "qid": "Q51046",
+      "name": "Negrete",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Negrete.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51610",
+      "name": "Quilaco",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quilaco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56107",
+      "name": "Quilleco",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Quilleco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q22137",
+      "name": "San Rosendo",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20San%20Rosendo.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187961",
+      "name": "Santa Bárbara",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Santa%20B%C3%A1rbara%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Santa%20B%C3%A1rbara%20Chile.png"
+    },
+    {
+      "qid": "Q200965",
+      "name": "Tucapel",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Tucapel.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201050",
+      "name": "Yumbel",
+      "provincia": "Biobío",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Yumbel.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Yumbel.png"
+    },
+    {
+      "qid": "Q3765",
+      "name": "Chiguayante",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Chiguayante.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Chiguayante.svg"
+    },
+    {
+      "qid": "Q23659675",
+      "name": "Concepción",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3873",
+      "name": "Coronel",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Coronel.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13048",
+      "name": "Florida",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Florida%20%28Chile%29.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Florida%20%28Chile%29.svg"
+    },
+    {
+      "qid": "Q13077",
+      "name": "Hualpén",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Hualp%C3%A9n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13079",
+      "name": "Hualqui",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Hualqui.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Hualqui.svg"
+    },
+    {
+      "qid": "Q23660628",
+      "name": "Lota",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51093",
+      "name": "Penco",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Heraldica%20Municipalidad%20de%20Penco-01.png",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20muni%20Penco-01.jpg"
+    },
+    {
+      "qid": "Q19344",
+      "name": "San Pedro de la Paz",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Pedro%20de%20la%20Paz.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Logosnpedro.png"
+    },
+    {
+      "qid": "Q187974",
+      "name": "Santa Juana",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Santa%20Juana.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Santa%20Juana.svg"
+    },
+    {
+      "qid": "Q23659669",
+      "name": "Talcahuano",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660282",
+      "name": "Tomé",
+      "provincia": "Provincia de Concepción",
+      "region": "Región del Biobío",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3749",
+      "name": "Cauquenes",
+      "provincia": "Cauquenes",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Cauquenes.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3762",
+      "name": "Chanco",
+      "provincia": "Cauquenes",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51086",
+      "name": "Pelluhue",
+      "provincia": "Cauquenes",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Pelluhue.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q3836",
+      "name": "Colbún",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Armas%20Colb%C3%BAn.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660288",
+      "name": "Linares",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16901",
+      "name": "Longaví",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Longav%C3%AD.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Longav%C3%AD.png"
+    },
+    {
+      "qid": "Q51083",
+      "name": "Parral",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Parral.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Parral%20Chile.png"
+    },
+    {
+      "qid": "Q56122",
+      "name": "Retiro",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Tierradeagricultores.jpg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660142",
+      "name": "San Javier",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q201015",
+      "name": "Villa Alegre",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Villa%20Alegre.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20de%20Villa%20Alegre.png"
+    },
+    {
+      "qid": "Q201046",
+      "name": "Yerbas Buenas",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Yerbas%20Buenas.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Yerbas%20Buenas.svg"
+    },
+    {
+      "qid": "Q201046",
+      "name": "Yerbas Buenas",
+      "provincia": "Linares",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Yerbas%20Buenas.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Yerbas%20Buenas.svg"
+    },
+    {
+      "qid": "Q3862",
+      "name": "Constitución",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Constituci%C3%B3n%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13026",
+      "name": "Curepto",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13042",
+      "name": "Empedrado",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q16926",
+      "name": "Maule",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Maule%20Comuna%20Armas.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51085",
+      "name": "Pelarco",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51091",
+      "name": "Pencahue",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Pencahue.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56127",
+      "name": "Río Claro",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56138",
+      "name": "San Clemente",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Clemente%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q187898",
+      "name": "San Rafael",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20San%20Rafael%20%28Chile%29.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q31947291",
+      "name": "Talca",
+      "provincia": "Talca",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q23660294",
+      "name": "Curicó",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": null,
+      "bandera_url": null
+    },
+    {
+      "qid": "Q13074",
+      "name": "Hualañé",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Huala%C3%B1e.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q14490",
+      "name": "Licantén",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Licant%C3%A9n.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q51033",
+      "name": "Molina",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20molina.jpg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56116",
+      "name": "Rauco",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Rauco.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56124",
+      "name": "Romeral",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Romeral.png",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q56133",
+      "name": "Sagrada Familia",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Sagrada%20Familia.svg",
+      "bandera_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bandera%20Sagrada%20Familia.png"
+    },
+    {
+      "qid": "Q2383688",
+      "name": "Teno",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20de%20Teno.svg",
+      "bandera_url": null
+    },
+    {
+      "qid": "Q200992",
+      "name": "Vichuquén",
+      "provincia": "provincia de Curicó",
+      "region": "Región del Maule",
+      "escudo_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Escudo%20Vichuqu%C3%A9n.png",
+      "bandera_url": null
+    }
+  ]
+}

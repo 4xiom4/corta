@@ -46,6 +46,12 @@
   - Ajustes, reglas y diagnóstico accesibles desde la `TopAppBar` o el menú lateral `NavigationMenuSheet`.
   - Paleta armónica siguiendo la regla **60-30-10** y soporte completo para temas dinámicos Monet y las 4 variantes Stitch (`STITCH_AMBER`, `STITCH_PURPLE`, `STITCH_CORAL`, `STITCH_SAGE`).
   - Objetivos táctiles mínimos de **48x48 dp** y soporte para `WindowInsets.safeDrawing` para cumplir la norma Edge-to-Edge de Android 15.
+- **Arquitectura Canónica de Modales y Hojas Inferiores (CMS-1)**:
+  - **Erradicación de `AlertDialog` central en flujos de usuario:** Prohibido desplegar popups flotantes `AlertDialog` al centro de la pantalla para interacción cotidiana (selección de SIM, creación de contactos, detalles de llamadas/mensajes). Generan fatiga en pantallas altas 20:9 y rompen la coherencia visual.
+  - **Obligatorio `ModalBottomSheet` desde la base:** Todo modal interactivo debe emerger desde abajo con `shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)`, drag handle centrado y padding inferior respetando `WindowInsets.navigationBars.asPaddingValues()`.
+  - **Cabecera Canónica:** Icono temático en contenedor circular de 44-48 dp (`primaryContainer` o `surfaceContainerHigh`), título Bold `titleLarge` y subtítulo en `onSurfaceVariant` comunicando explícitamente privacidad local.
+  - **Cards Contenidas:** Los campos e insumos residen en tarjetas `surfaceContainerLowest` con `shape = RoundedCornerShape(16.dp)` y borde sutil `BorderStroke(1.dp, outlineVariant.copy(alpha = 0.35f))`.
+  - **Botonera Ergonómica:** Botones principales de altura 48 dp, radio de 14-16 dp e iconos descriptivos (`Icons.Rounded.Close`, `Icons.Rounded.Check`).
 - **Comandos del Proyecto**:
   - Compilar APK debug: `./gradlew :composeApp:assembleDebug`
   - Compilar APK release optimizada (14 MB): `./gradlew :composeApp:assembleRelease`

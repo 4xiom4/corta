@@ -226,6 +226,15 @@ A diferencia de interfaces confusas con botones redundantes de "favorito" o "est
 * **OLED Dark Mode:** Negro absoluto (`#000000`) para máxima eficiencia energética en pantallas AMOLED.
 * **Android 15 Edge-to-Edge:** Márgenes ergonómicos respetando `WindowInsets.safeDrawing` y áreas de toque mínimas de 48x48 dp.
 
+### Arquitectura Canónica de Modales y Hojas Inferiores (CMS-1)
+Para resolver la discrepancia histórica entre diferentes tipos de diálogos en la app (como popups flotantes antiguos versus hojas inferiores), Corta establece la norma estricta **CMS-1**:
+1. **Erradicación de `AlertDialog` Flotante:** Queda prohibido el uso de ventanas emergentes centradas tipo `AlertDialog` para flujos cotidianos del usuario (creación de contactos, detalles, selección de SIM o configuración rápida). En dispositivos modernos con pantallas alargadas (20:9), los popups centrales quedan fuera del alcance del pulgar y fragmentan la experiencia.
+2. **Adopción Universal de `ModalBottomSheet`:** Toda interacción modal debe emerger desde el borde inferior de la pantalla:
+   * **Radio Superior:** `shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)` con `BottomSheetDefaults.DragHandle()`.
+   * **Cabecera Canónica:** Contenedor circular de 44-48 dp (`primaryContainer` o `surfaceContainerHigh`) con icono temático, título en tipografía `titleLarge` Bold y subtítulo descriptivo enfocado en privacidad local.
+   * **Cards Contenidas:** Los campos de texto, selectores y opciones deben residir en tarjetas con fondo `surfaceContainerLowest` o `surfaceContainerLow`, esquinas de 16 dp y borde sutil `BorderStroke(1.dp, outlineVariant.copy(alpha = 0.35f))`.
+   * **Ergonomía Táctil y Edge-to-Edge:** Botones de acción inferior con altura fija de 48 dp, esquinas redondeadas (14 dp) y respeto absoluto de `WindowInsets.navigationBars.asPaddingValues()`.
+
 ---
 
 ## 11. Marco Legal y Cumplimiento Normativo en Chile
